@@ -121,9 +121,24 @@ fn handle_chooser_keys(key: KeyEvent, app: &mut App, runtime: &Runtime) {
         }
         KeyCode::Char(' ') => {
             // Space to select current directory and confirm
-            if let AppState::ChoosingDir { path, .. } = &app.state {
-                let path_str = path.to_string_lossy().to_string();
-                let _ = app.msg_tx.try_send(AppMsg::DirectorySelected(path_str));
+            if let AppState::ChoosingDir {
+                path,
+                entries,
+                selected_index,
+                ..
+            } = &app.state
+            {
+                // If there are entries and a valid selection, use the selected subdirectory
+                if !entries.is_empty() && *selected_index < entries.len() {
+                    let selected_name = &entries[*selected_index];
+                    let selected_path = path.join(selected_name);
+                    let path_str = selected_path.to_string_lossy().to_string();
+                    let _ = app.msg_tx.try_send(AppMsg::DirectorySelected(path_str));
+                } else {
+                    // No entries or invalid selection, use current path
+                    let path_str = path.to_string_lossy().to_string();
+                    let _ = app.msg_tx.try_send(AppMsg::DirectorySelected(path_str));
+                }
             }
         }
         KeyCode::Char('j') | KeyCode::Down => {

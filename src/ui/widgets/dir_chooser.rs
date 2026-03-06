@@ -227,7 +227,7 @@ fn render_directory_list(
 
 /// Render help text
 fn render_help(area: Rect, buf: &mut Buffer, theme: &Theme) {
-    let help_text = "[j/k] Navigate  [Enter] Select  [←] Go Back  [q] Cancel";
+    let help_text = "[j/k] Navigate  [Space] Select  [Enter] Open  [←] Go Back  [q] Cancel";
 
     let block = Block::default()
         .borders(Borders::ALL)

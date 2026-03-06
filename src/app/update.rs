@@ -198,14 +198,31 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
             let mut config = app.config.clone().unwrap_or_default();
             config.main_directory = PathBuf::from(path);
 
-            if config::save_config(&config).is_ok() {
-                app.config = Some(config.clone());
-                app.main_dir = Some(config.main_directory.clone());
+            match config::save_config(&config) {
+                Ok(()) => {
+                    // Update state
+                    app.config = Some(config.clone());
+                    app.main_dir = Some(config.main_directory.clone());
+                    
+                    // Clear any previous error messages
+                    app.error_message = None;
+                    
+                    // Set state to Loading while repositories are being discovered
+                    app.state = AppState::Loading {
+                        message: "Discovering repositories...".to_string(),
+                    };
 
-                // Load repositories
-                runtime.dispatch(crate::app::msg::Cmd::LoadRepositories(
-                    config.main_directory,
-                ));
+                    // Load repositories
+                    runtime.dispatch(crate::app::msg::Cmd::LoadRepositories(
+                        config.main_directory,
+                    ));
+                }
+                Err(e) => {
+                    app.error_message = Some(format!("Failed to save config: {}", e));
+                    app.state = AppState::Error {
+                        message: format!("Failed to save configuration: {}", e),
+                    };
+                }
             }
         }
 
