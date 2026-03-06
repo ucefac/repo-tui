@@ -1,0 +1,77 @@
+[package]
+name = "repotui"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+authors = ["repotui Team"]
+description = "A TUI tool for browsing and managing GitHub repositories"
+license = "MIT"
+repository = "https://github.com/repotui/repotui"
+
+[dependencies]
+# TUI Framework
+ratatui = "0.29"
+crossterm = "0.28"
+
+# Configuration
+serde = { version = "1.0", features = ["derive"] }
+toml = "0.8"
+dirs = "5.0"
+path-absolutize = "3.1"
+
+# Async Runtime (minimal features)
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "fs", "time", "macros"] }
+
+# Error Handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Command Discovery
+which = "6.0"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Time Handling
+chrono = { version = "0.4", default-features = false, features = ["clock"] }
+
+# Optional: Git2 for Phase 3
+git2 = { version = "0.19", default-features = false, features = ["vendored-libgit2"], optional = true }
+
+# Optional: Fuzzy Search for Phase 3
+nucleo-matcher = { version = "0.3", optional = true }
+
+# Optional: File System Watcher for Phase 3
+notify = { version = "6", optional = true }
+
+# Cache for Git status
+lru = "0.12"
+
+[dev-dependencies]
+# Testing
+tempfile = "3"
+mockall = "0.12"
+expectrl = "0.7"
+
+# Benchmarking
+criterion = { version = "0.5", features = ["html_reports"] }
+
+[features]
+default = []
+git2 = ["dep:git2"]
+fuzzy = ["dep:nucleo-matcher"]
+watcher = ["dep:notify"]
+
+[[bench]]
+name = "startup"
+harness = false
+
+[[bench]]
+name = "search"
+harness = false
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true

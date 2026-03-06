@@ -1,0 +1,27 @@
+[config]
+# Configuration version
+version = "1.0"
+
+# Main directory to scan for repositories
+# Change this to your GitHub repositories directory
+main_directory = "~/Developer/github"
+
+# Editor configuration
+[editors]
+# webstorm = "/Applications/WebStorm.app/Contents/MacOS/webstorm"
+# vscode = "code"
+
+# Default command (optional)
+# default_command = "claude"
+
+# UI configuration
+[ui]
+theme = "dark"  # dark | light
+show_git_status = true
+show_branch = true
+
+# Security configuration
+[security]
+allow_symlinks = false
+max_search_depth = 2
+# allowed_commands = []
