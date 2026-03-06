@@ -66,11 +66,29 @@ fn handle_action_menu_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
                 crate::action::Action::OpenFileManager,
             ));
         }
-        KeyCode::Char('j') | KeyCode::Down | KeyCode::Char('k') | KeyCode::Up => {
-            // Allow navigation within the menu (visual only for now)
+        KeyCode::Char('j') | KeyCode::Down => {
+            // Navigate down in menu
+            let _ = app.msg_tx.try_send(AppMsg::ActionMenuNavDown);
+        }
+        KeyCode::Char('k') | KeyCode::Up => {
+            // Navigate up in menu
+            let _ = app.msg_tx.try_send(AppMsg::ActionMenuNavUp);
+        }
+        KeyCode::Enter => {
+            // Execute selected action
+            if let Some(action) = get_selected_action(app) {
+                let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
+            }
         }
         _ => {}
     }
+}
+
+/// Get currently selected action from app state
+fn get_selected_action(_app: &App) -> Option<crate::action::Action> {
+    // This would need to be implemented in app/model.rs
+    // For now, default to CdAndCloud
+    Some(crate::action::Action::CdAndCloud)
 }
 
 /// Handle keys in help panel

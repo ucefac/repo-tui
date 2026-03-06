@@ -108,7 +108,8 @@ pub mod security {
     pub const DEFAULT_MAX_SEARCH_DEPTH: usize = 2;
 }
 
-/// Help text
+/// Help text (deprecated: use HelpPanel widget instead)
+#[allow(dead_code)]
 pub const HELP_TEXT: &str = r#"Keyboard Shortcuts
 
 Navigation

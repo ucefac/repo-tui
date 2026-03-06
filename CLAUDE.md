@@ -124,13 +124,28 @@ repotui/
 
 ---
 
-## ⚠️ 当前待修复问题
+## ✅ 已修复问题
 
-### 运行时 Bug: 配置空路径验证 (🔴 高优先级)
+### 配置空路径验证 Bug (✅ 已修复)
 
-**问题描述**:
-当配置文件中 `main_directory = ""` 为空字符串时，程序运行时崩溃：
-```
+**问题描述**: 当配置文件中 `main_directory = ""` 为空字符串时，程序运行时崩溃。
+
+**修复状态**: ✅ 已完成
+
+**修复内容**:
+1. `src/config/validators.rs:31-37` - 添加空路径检查（在 `absolutize()` 之前）
+2. `src/app/update.rs:109-119` - 所有配置错误触发目录选择器
+3. `src/config/load.rs:66-68` - 加载时检查空路径并返回错误
+
+**测试覆盖**:
+- `test_validate_directory_empty_path` - 验证空路径被拒绝
+- 所有 87 个单元测试通过
+
+### 编译错误 (✅ 已修复)
+
+**修复状态**: ✅ 所有 19 处类型不匹配错误已修复
+
+**修复方式**: 将 `ActionError` 正确包装为 `AppError::Action(...)`
 Failed to scan directory: Failed to read directory : No such file or directory (os error 2)
 ```
 

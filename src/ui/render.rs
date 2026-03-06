@@ -3,9 +3,12 @@
 use crate::app::model::App;
 use crate::app::state::AppState;
 use crate::ui::theme::Theme;
-use crate::ui::widgets::{centered_rect, DirChooser, RepoList, SearchBox};
+use crate::ui::widgets::{
+    centered_help_popup, centered_popup, centered_rect, ActionMenu, DirChooser, HelpPanel,
+    RepoList, SearchBox,
+};
 use ratatui::prelude::*;
-use ratatui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph};
+use ratatui::widgets::{Block, Borders, Clear, Paragraph};
 
 /// Render the application UI
 pub fn render(frame: &mut Frame, app: &App) {
@@ -166,49 +169,23 @@ fn render_action_menu(
     frame: &mut Frame,
     area: Rect,
     repo: &crate::repo::Repository,
-    theme: &Theme,
+    _theme: &Theme,
 ) {
     // Create centered popup
-    let popup_area = centered_rect(50, 50, area);
+    let popup_area = centered_popup(50, 50, area);
 
-    // Clear background
-    frame.render_widget(Clear, popup_area);
-
-    let actions = crate::action::Action::all();
-    let items: Vec<ListItem> = actions
-        .iter()
-        .map(|action| ListItem::new(format!("[{}] {}", action.shortcut(), action.description())))
-        .collect();
-
-    let block = Block::default()
-        .title(format!("Actions: {}", repo.name))
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.primary));
-
-    let list = List::new(items)
-        .block(block)
-        .style(Style::default().fg(theme.text_primary));
-
-    frame.render_widget(list, popup_area);
+    // Render action menu widget (includes Clear widget internally)
+    let menu = ActionMenu::new(repo, 0);
+    menu.render(frame, popup_area);
 }
 
 /// Render help panel
-fn render_help(frame: &mut Frame, area: Rect, theme: &Theme) {
-    let popup_area = centered_rect(60, 70, area);
+fn render_help(frame: &mut Frame, area: Rect, _theme: &Theme) {
+    let popup_area = centered_help_popup(area);
 
-    // Clear background
-    frame.render_widget(Clear, popup_area);
-
-    let block = Block::default()
-        .title("Keyboard Shortcuts")
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.primary));
-
-    let paragraph = Paragraph::new(crate::constants::HELP_TEXT)
-        .block(block)
-        .style(Style::default().fg(theme.text_primary));
-
-    frame.render_widget(paragraph, popup_area);
+    // Render help panel widget (includes Clear widget internally)
+    let panel = HelpPanel::new();
+    panel.render(frame, popup_area);
 }
 
 /// Render directory chooser using component

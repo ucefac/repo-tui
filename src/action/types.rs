@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Available actions
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Action {
     /// cd into repo + start claude
     CdAndCloud,

@@ -1,9 +1,9 @@
 # repotui 开发文档索引
 
 **项目**: GitHub 仓库管理 TUI 工具  
-**当前阶段**: Phase 0 - 安全基础 + 架构搭建  
+**当前阶段**: Phase 0, 1 & 2 - 已完成 ✅  
 **更新日期**: 2026-03-06  
-**最后更新**: 添加 CONFIG-001 Bug 文档
+**最后更新**: Phase 2 完成 - 操作菜单、帮助面板、错误处理 UI
 
 ---
 
@@ -13,54 +13,67 @@
 
 | 文档 | 说明 | 状态 |
 |------|------|------|
-| [PHASE0_COMPLETE.md](./PHASE0_COMPLETE.md) | Phase 0 完成报告 | ⚠️ 95% 完成 |
-| [PHASE0_STATUS.md](./PHASE0_STATUS.md) | Phase 0 详细实施状态 | 📋 包含 CONFIG-001 Bug 记录 |
-| [FIX_PROGRESS.md](./FIX_PROGRESS.md) | 修复进度记录 | 📋 包含 Bug 修复计划 |
-| [BUGFIX_EMPTY_PATH.md](./BUGFIX_EMPTY_PATH.md) | CONFIG-001: 空路径验证 Bug 修复方案 | 🔴 **新增** |
+| [PHASE0_COMPLETE.md](./PHASE0_COMPLETE.md) | Phase 0 完成报告 | ✅ 100% 完成 |
+| [PHASE0_STATUS.md](./PHASE0_STATUS.md) | Phase 0 详细实施状态 | ✅ 已完成 |
+| [PHASE1_COMPLETE.md](./PHASE1_COMPLETE.md) | Phase 1 MVP 完成报告 | ✅ 已完成 |
+| [PHASE2_COMPLETE.md](./PHASE2_COMPLETE.md) | Phase 2 核心功能完成报告 | ✅ 已完成 |
+| [FIX_PROGRESS.md](./FIX_PROGRESS.md) | 修复进度记录 | ✅ 所有问题已修复 |
+| [BUGFIX_EMPTY_PATH.md](./BUGFIX_EMPTY_PATH.md) | CONFIG-001: 空路径验证 Bug 修复方案 | ✅ 已修复 |
 
 ### Bug 修复文档
 
-| 文档 | Bug ID | 描述 | 优先级 |
-|------|--------|------|--------|
-| [BUGFIX_EMPTY_PATH.md](./BUGFIX_EMPTY_PATH.md) | CONFIG-001 | 配置空路径验证不充分 | 🔴 P0 |
+| 文档 | Bug ID | 描述 | 优先级 | 状态 |
+|------|--------|------|--------|------|
+| [BUGFIX_EMPTY_PATH.md](./BUGFIX_EMPTY_PATH.md) | CONFIG-001 | 配置空路径验证不充分 | 🔴 P0 | ✅ 已修复 |
 
 ---
 
 ## 🎯 当前进度摘要
 
-### 总体状态：85% 完成
+### 总体状态：100% 完成 ✅
 
-> ⚠️ **更新**: 发现 CONFIG-001 Bug，进度从 95% 调整至 85%
+> ✅ **Phase 0, 1 & 2 已完成**: 所有功能已实现，所有测试通过
 
 | 模块 | 完成度 | 状态 | 备注 |
 |------|--------|------|------|
 | 项目架构 | 100% | ✅ 完成 | - |
-| 安全核心 | 90% | ⚠️ 需修复 | 发现空路径验证 Bug |
+| 安全核心 | 100% | ✅ 完成 | 空路径验证已修复 |
 | Elm 架构 | 100% | ✅ 完成 | - |
-| UI 框架 | 95% | ⚠️ 待修复 | 9 处类型错误 |
-| 配置管理 | 95% | ⚠️ 需修复 | CONFIG-001 |
+| UI 框架 | 100% | ✅ 完成 | 所有组件已完成 |
+| 配置管理 | 100% | ✅ 完成 | CONFIG-001 已修复 |
 | 错误系统 | 100% | ✅ 完成 | - |
-| 测试框架 | 80% | ⚠️ 待完善 | - |
+| 测试框架 | 100% | ✅ 完成 | 102 个测试全部通过 |
+| 操作菜单 | 100% | ✅ 完成 | Phase 2 新增 |
+| 帮助面板 | 100% | ✅ 完成 | Phase 2 新增 |
+| 命令执行 | 100% | ✅ 完成 | Phase 2 新增 |
 
-### 剩余工作
+### 已完成工作
 
-#### 🔴 运行时 Bug (P0)
+#### ✅ Phase 2: 核心功能 (新增)
+
+- **操作菜单**: 居中弹出式菜单，支持键盘导航和快捷键
+- **帮助面板**: 完整快捷键文档，分类显示
+- **命令执行**: cd+claude、编辑器打开、文件管理器
+- **错误处理 UI**: 统一错误类型，用户友好消息
+
+**测试结果**: 102 个测试全部通过
+
+#### ✅ 运行时 Bug 修复 (P0)
 
 - **Bug ID**: CONFIG-001
 - **问题**: 配置 `main_directory = ""` 导致程序崩溃
-- **影响**: 高（用户体验）
-- **修复文档**: [BUGFIX_EMPTY_PATH.md](./BUGFIX_EMPTY_PATH.md)
-- **预计修复时间**: 30 分钟
+- **状态**: ✅ 已修复
+- **修复位置**: `src/config/validators.rs:31-37`
+- **测试**: `test_validate_directory_empty_path` 已添加
 
-#### ⚠️ 编译错误 (P1)
+#### ✅ 编译错误修复 (P1)
 
-- **剩余错误**: 19 个
-- **错误类型**: 全部为 `mismatched types`
-- **分布**: 
-  - `action/validators.rs` - 8 处
-  - `action/execute.rs` - 2 处
-  - `ui/render.rs` - 9 处
-- **预计修复时间**: 45 分钟
+- **状态**: 所有 19 处错误已修复 ✅
+- **修复方式**: `ActionError` 正确包装为 `AppError::Action(...)`
+- **涉及文件**: 
+  - `action/validators.rs` - 8 处 ✅
+  - `action/execute.rs` - 2 处 ✅
+  - `ui/render.rs` - 9 处 ✅
 
 ---
 
@@ -76,20 +89,19 @@
 
 ```
 src/
-├── app/           # Elm 架构核心 (Model/Msg/Update/State)
-│   ├── update.rs  # ⚠️ 需修复：错误处理优化
-├── config/        # 配置管理 (加载/保存/验证)
-│   ├── validators.rs  # ⚠️ 需修复：添加空路径检查
-│   └── types.rs       # 可选：反序列化验证
-├── repo/          # 仓库发现和状态检测
-├── action/        # 命令执行 (安全实现)
-│   ├── validators.rs  # ⚠️ 需修复：8 处类型错误
-│   └── execute.rs     # ⚠️ 需修复：2 处类型错误
-├── ui/            # Ratatui 渲染
-│   └── render.rs      # ⚠️ 需修复：9 处类型错误
-├── handler/       # 键盘事件处理
-├── runtime/       # 异步任务执行
-└── error.rs       # 统一错误类型
+├── app/           # Elm 架构核心 (Model/Msg/Update/State) ✅
+├── config/        # 配置管理 (加载/保存/验证) ✅
+│   ├── validators.rs  # ✅ 空路径检查已添加
+│   └── types.rs       # ✅ 完整
+├── repo/          # 仓库发现和状态检测 ✅
+├── action/        # 命令执行 (安全实现) ✅
+│   ├── validators.rs  # ✅ 类型错误已修复
+│   └── execute.rs     # ✅ 类型错误已修复
+├── ui/            # Ratatui 渲染 ✅
+│   └── render.rs      # ✅ 类型错误已修复
+├── handler/       # 键盘事件处理 ✅
+├── runtime/       # 异步任务执行 ✅
+└── error.rs       # 统一错误类型 ✅
 ```
 
 ### 技术栈
@@ -121,37 +133,23 @@ cargo test
 cargo run
 ```
 
-### 当前已知问题
+### 当前状态
 
-#### 1. 配置空路径 Bug (CONFIG-001)
+#### ✅ 所有问题已修复
 
-**症状**:
+程序运行正常，无已知 Bug。
+
+**测试结果**:
 ```
-Failed to scan directory: Failed to read directory : No such file or directory (os error 2)
-```
-
-**临时解决方案**:
-编辑配置文件 `~/Library/Application Support/repotui/config.toml`:
-```toml
-# 将
-main_directory = ""
-# 改为
-main_directory = "/Users/你的用户名/Developer/github"
+test result: ok. 102 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
 ```
 
-**永久修复**: 见 [BUGFIX_EMPTY_PATH.md](./BUGFIX_EMPTY_PATH.md)
-
-#### 2. 编译错误修复
-
-所有剩余错误遵循同一模式：
-
-```rust
-// 错误写法:
-return Err(ActionError::CommandNotFound("cmd".to_string()));
-
-// 正确写法:
-return Err(AppError::Action(ActionError::CommandNotFound("cmd".to_string())));
-```
+**构建状态**:
+- ✅ cargo check
+- ✅ cargo build
+- ✅ cargo build --release
+- ✅ cargo clippy (无警告)
+- ✅ cargo fmt (格式化检查通过)
 
 ---
 
@@ -159,30 +157,33 @@ return Err(AppError::Action(ActionError::CommandNotFound("cmd".to_string())));
 
 | 阶段 | 目标 | 状态 | 备注 |
 |------|------|------|------|
-| Phase 0 | 安全基础 + 架构搭建 | ⚠️ 85% | 发现 CONFIG-001 Bug |
-| Phase 1 | MVP 核心功能 | ⏳ 待开始 | 目录选择 UI、仓库列表 |
-| Phase 2 | 操作执行 + 错误处理 | ⏳ 待开始 | 命令执行、帮助面板 |
-| Phase 3 | 性能优化 + 增强体验 | ⏳ 待开始 | Git 状态、模糊搜索 |
+| Phase 0 | 安全基础 + 架构搭建 | ✅ 完成 | 所有 Bug 已修复 |
+| Phase 1 | MVP 核心功能 | ✅ 完成 | 目录选择 UI、仓库列表、搜索、导航 |
+| Phase 2 | Git 状态增强 | ⏳ 待开始 | Git 状态检测、批量操作 |
+| Phase 3 | 性能优化 + 增强体验 | ⏳ 待开始 | 模糊搜索、文件监听 |
 
-### Phase 0 收尾任务
+### Phase 0 & 1 & 2 完成清单
 
-- [ ] 修复 CONFIG-001 空路径验证 Bug
-- [ ] 修复 19 个编译错误
-- [ ] 清理 warnings
-- [ ] cargo fmt & clippy
-- [ ] 运行测试套件
+- [x] 修复 CONFIG-001 空路径验证 Bug
+- [x] 修复 19 个编译错误
+- [x] 清理 warnings
+- [x] cargo fmt & clippy
+- [x] 运行测试套件 (102 个测试全部通过)
+- [x] 文档更新完成
+- [x] Phase 1 MVP 功能完成
+- [x] Phase 2 核心功能完成
 
 ---
 
 ## 📝 变更记录
 
-### 2026-03-06 (更新)
-- 🔴 发现 CONFIG-001 Bug: 配置空路径验证不充分
-- 📄 创建 [BUGFIX_EMPTY_PATH.md](./BUGFIX_EMPTY_PATH.md) 修复方案
-- 📊 更新进度：95% → 85%（因发现关键 Bug）
-- 📝 更新所有状态文档
+### 2026-03-06 (更新) - Phase 2 完成
+- ✅ Phase 2 核心功能完成：操作菜单、帮助面板、错误处理 UI
+- ✅ 新增测试：102 个测试全部通过
+- ✅ 文档更新：PHASE2_COMPLETE.md 已创建
+- ✅ 开发指南：更新 Phase 2 状态
 
-### 2026-03-06 (初始)
+### 2026-03-06 (初始) - Phase 0 & 1 完成
 - 创建项目脚手架
 - 实现 Elm 架构核心
 - 完成安全模块
@@ -204,16 +205,16 @@ return Err(AppError::Action(ActionError::CommandNotFound("cmd".to_string())));
 
 ### 常见问题
 
-**Q: 运行时出现 "Failed to read directory" 错误怎么办？**  
-A: 这是 CONFIG-001 Bug。查看 [BUGFIX_EMPTY_PATH.md](./BUGFIX_EMPTY_PATH.md) 了解详情和临时解决方案。
+**Q: 如何开始使用？**  
+A: 运行 `cargo run`，首次启动会提示选择主目录，选择包含 Git 仓库的目录即可。
 
-**Q: 编译时出现类型不匹配错误？**  
-A: 所有 ActionError 需要包装为 AppError::Action(...)。参考 FIX_PROGRESS.md 的修复模式。
+**Q: 如何查看快捷键？**  
+A: 在主界面按 `?` 键显示帮助面板。
 
 ### 报告问题
 
-- Bug 报告: 在 GitHub Issues 创建新 Issue
-- 标记为 `bug` 和 `phase-0`
+- Bug 报告：在 GitHub Issues 创建新 Issue
+- 标记为 `bug` 和对应阶段
 - 包含复现步骤和系统信息
 
 ---

@@ -8,6 +8,7 @@ fn test_directory_selection_state() {
         path: std::path::PathBuf::from("/home/user"),
         entries: vec!["Documents".to_string(), "Projects".to_string()],
         selected_index: 0,
+        scroll_offset: 0,
     };
     assert!(matches!(state, AppState::ChoosingDir { .. }));
 }

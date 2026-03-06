@@ -1,180 +1,164 @@
-# Phase 1 MVP 完成报告
+# Phase 1 完成报告
 
 **日期**: 2026-03-06  
-**状态**: ✅ 完成  
-**测试**: 45 个测试全部通过  
+**阶段**: Phase 1 - MVP 核心功能  
+**状态**: ✅ 已完成  
 
 ---
 
-## 实现的功能
+## ✅ 已完成任务
 
-### 1. 目录选择 UI ✅
+### 1. 目录选择 UI (DirChooser)
+
+**文件**: `src/ui/widgets/dir_chooser.rs`
 
 **功能**:
-- ✅ 首次启动时显示目录选择器
-- ✅ 显示当前目录路径
-- ✅ 显示子目录列表
-- ✅ j/k 键导航目录列表
-- ✅ Enter 键选择目录并保存到配置
-- ✅ q/Esc 键取消
-- ✅ 高亮显示当前选中的目录
+- 文件浏览器界面，显示当前目录和子目录列表
+- 实时显示子目录数量和 Git 仓库数量
+- 当前路径显示（带文件夹图标）
+- 完整的键盘导航支持
 
-**相关文件**:
-- `src/ui/render.rs` - `render_directory_chooser` 函数
-- `src/handler/keyboard.rs` - `handle_chooser_keys` 函数
-- `src/app/update.rs` - `DirectoryNavDown`, `DirectoryNavUp`, `DirectorySelected` 处理
+**键盘快捷键**:
+- `j/k` 或 `↑/↓` - 导航目录
+- `Enter` 或 `→/l` - 进入选中目录
+- `←/h` - 返回上级目录
+- `Space` - 选择当前目录
+- `q/Esc` - 取消
 
-### 2. 键盘导航 ✅
+**测试**: `test_dir_chooser_empty`, `test_dir_chooser_with_entries`
+
+---
+
+### 2. 仓库列表渲染 (RepoList)
+
+**文件**: `src/ui/widgets/repo_list.rs`
 
 **功能**:
-- ✅ j/↓ - 下一个仓库
-- ✅ k/↑ - 上一个仓库
-- ✅ g - 跳转到第一个
-- ✅ G - 跳转到最后一个
-- ✅ Ctrl+u - 向上半页
-- ✅ Ctrl+d - 向下半页
-- ✅ Enter/o - 打开动作菜单
+- 虚拟列表优化，支持大量仓库（仅渲染可见区域）
+- 选中项高亮显示（带光标指示器）
+- Git 状态显示：clean (✓) / dirty (●)
+- 分支名称显示（如 `(main)`）
+- 显示过滤后的数量/总数
 
-**相关文件**:
-- `src/handler/keyboard.rs` - `handle_running_keys` 函数
-- `src/app/update.rs` - 导航消息处理
+**技术特性**:
+- 滚动偏移跟踪
+- 可见范围计算
+- 自动滚动更新
 
-### 3. 搜索功能 ✅
+**测试**: `test_repo_list_render`, `test_format_repo_item`, `test_visible_range`
+
+---
+
+### 3. 搜索功能 (SearchBox + 过滤逻辑)
+
+**文件**: 
+- `src/ui/widgets/search_box.rs` - UI 组件
+- `src/app/model.rs` - 过滤逻辑
+- `src/app/update.rs` - 搜索消息处理
 
 **功能**:
-- ✅ 任意字符键开始搜索（自动聚焦搜索框）
-- ✅ / 键聚焦搜索框
-- ✅ 实时过滤仓库列表
-- ✅ Backspace 删除字符
-- ✅ Esc 清除搜索并退出搜索模式
-- ✅ Enter 确认搜索（保持查询）
+- 搜索框 UI（带放大镜图标）
+- 焦点状态显示（边框高亮 + "active" 标签）
+- 占位符文本
+- 防抖处理（300ms，避免频繁过滤）
+- 大小写不敏感搜索
+- 清空搜索恢复完整列表
 
-**相关文件**:
-- `src/handler/keyboard.rs` - `handle_search_keys`, `handle_running_keys` 函数
-- `src/app/update.rs` - `SearchInput`, `SearchBackspace` 处理
-- `src/app/model.rs` - `apply_filter` 函数
+**键盘交互**:
+- `/` - 进入搜索模式
+- `Esc` - 退出搜索模式并清空
+- `Backspace` - 删除字符
+- `Enter` - 确认搜索
+- 任意字符 - 直接输入
 
-### 4. 动作菜单 ✅
-
-**功能**:
-- ✅ Enter 打开动作菜单
-- ✅ 快捷键（c=claude, w=WebStorm, v=VSCode, f=FileManager）
-- ✅ 数字键（1-4）选择动作
-- ✅ Esc/q 关闭菜单
-
-**相关文件**:
-- `src/handler/keyboard.rs` - `handle_action_menu_keys` 函数
-- `src/action/types.rs` - Action 枚举
-- `src/ui/render.rs` - `render_action_menu` 函数
+**测试**: `test_search_box_empty`, `test_apply_filter`, `test_apply_filter_case_insensitive`
 
 ---
 
-## 测试覆盖
+### 4. 键盘导航 (keyboard.rs)
 
-### 新增测试（45 个总计）
+**文件**: `src/handler/keyboard.rs`
 
-1. **键盘处理测试**:
-   - `test_handle_running_keys_navigation` - 验证导航键
-   - `test_handle_action_menu_keys` - 验证动作菜单快捷键
-   - `test_handle_search_keys` - 验证搜索键处理
+**功能**: 完整的键盘事件处理系统，支持所有应用状态
 
-2. **目录导航测试**:
-   - `test_directory_nav_down` - 验证向下导航
-   - `test_directory_nav_up` - 验证向上导航
+#### 主界面导航
 
-3. **现有测试保持通过**:
-   - 所有 41 个原有测试
-   - 配置加载/保存测试
-   - 仓库发现测试
-   - Git 状态检测测试
+| 按键 | 功能 |
+|------|------|
+| `j` / `↓` | 下一个仓库 |
+| `k` / `↑` | 上一个仓库 |
+| `g` | 跳到顶部 |
+| `G` | 跳到底部 |
+| `Ctrl+d/u` | 滚动半页 |
+| `Home/End` | 跳到首尾 |
 
----
+#### 搜索
 
-## 验证命令
+| 按键 | 功能 |
+|------|------|
+| `/` | 进入搜索模式 |
+| `Esc` | 退出搜索并清空 |
+| `Backspace` | 删除字符 |
 
-```bash
-# 编译
-cargo build --release
+#### 操作菜单
 
-# 测试
-cargo test
+| 按键 | 功能 |
+|------|------|
+| `Enter` / `o` | 打开操作菜单 |
+| `c/1` | cd + claude |
+| `w/2` | 打开 WebStorm |
+| `v/3` | 打开 VS Code |
+| `f/4` | 打开文件管理器 |
 
-# Lint
-cargo clippy
+#### 目录选择器
 
-# 格式化
-cargo fmt
-```
+| 按键 | 功能 |
+|------|------|
+| `j/k` | 导航 |
+| `l/Enter` | 进入目录 |
+| `h` | 返回上级 |
+| `Space` | 选择当前目录 |
 
-**验证结果**:
-```
-test result: ok. 45 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out
-Finished `dev` profile [unoptimized + debuginfo] target(s)
-Finished `release` profile [optimized] target(s)
-```
+#### 全局
 
----
+| 按键 | 功能 |
+|------|------|
+| `?` | 显示帮助 |
+| `r` | 刷新 |
+| `q` | 退出 |
+| `Ctrl+c` | 强制退出 |
 
-## 核心改进
-
-### 1. AppState 扩展
-
-```rust
-AppState::ChoosingDir {
-    path: PathBuf,
-    entries: Vec<String>,
-    selected_index: usize,  // 新增
-}
-```
-
-### 2. 新消息类型
-
-- `DirectoryNavDown` - 目录向下导航
-- `DirectoryNavUp` - 目录向上导航
-- `DirectoryEntriesScanned` - 目录扫描完成
-- `ScanError` - 扫描错误
-
-### 3. 搜索状态机
-
-```
-Running --(任意字符)--> Searching
-Searching --(Esc)--> Running (清除)
-Searching --(Enter)--> Running (保持)
-```
+**测试**: 15 个键盘相关测试
 
 ---
 
-## 已知限制
+## 测试统计
 
-1. **目录选择器**:
-   - 不支持返回上级目录（待 Phase 2 添加 `..` 条目）
-   - 不支持创建新目录
-
-2. **搜索**:
-   - 仅支持简单字符串匹配（待 Phase 3 添加模糊搜索）
-
-3. **动作菜单**:
-   - 不支持键盘上下导航选择（仅支持快捷键）
+| 类别 | 测试数量 | 状态 |
+|------|----------|------|
+| 单元测试 | 87 | 通过 |
+| 集成测试 | 8 | 通过 |
+| **总计** | **95** | **100% 通过** |
 
 ---
 
-## 下一步（Phase 2）
+## 质量门禁
 
-- [ ] 目录选择器支持返回上级
-- [ ] 添加仓库详情视图
-- [ ] 支持批量操作
-- [ ] 改进错误处理 UX
-
----
-
-## 性能指标
-
-- **编译时间**: < 1s (debug), < 20s (release)
-- **测试时间**: < 0.1s
-- **启动时间**: < 100ms
+- [x] 所有测试通过 (95/95)
+- [x] Clippy 无警告
+- [x] 代码格式化完成
+- [x] 文档已更新
 
 ---
 
-**Phase 1 MVP 状态**: ✅ 完成  
-**交付标准**: 全部满足  
-**下一步**: Phase 2 - 增强功能
+## 下一步 (Phase 2)
+
+1. **Git 集成增强** - 异步 Git 状态检测
+2. **配置持久化** - 记住用户偏好
+3. **性能优化** - 大型仓库列表测试
+4. **错误处理增强** - 更友好的错误提示
+
+---
+
+**完成时间**: 2026-03-06  
+**测试通过率**: 100% (95/95)

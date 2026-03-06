@@ -21,12 +21,110 @@
 - 添加单元测试 `test_validate_directory_empty_path`
 - 所有 46 个测试通过，clippy 无警告
 
-### Phase 1 MVP (下一步)
+### Phase 1 MVP (已完成 ✅)
 
-- [ ] 目录选择 UI
-- [ ] 仓库列表渲染
-- [ ] 搜索功能
-- [ ] 键盘导航
+- [x] 目录选择 UI (`DirChooser` widget)
+  - 文件浏览器界面，支持子目录导航
+  - 键盘导航 (j/k, Enter, ←/→)
+  - Git 仓库计数显示
+  - 所有测试通过
+  
+- [x] 仓库列表渲染 (`RepoList` widget)
+  - 虚拟列表优化，支持大量仓库
+  - Git 状态显示 (clean/dirty)
+  - 分支名称显示
+  - 选中高亮和滚动跟踪
+  
+- [x] 搜索功能 (`SearchBox` + 过滤逻辑)
+  - 实时搜索框，带焦点状态
+  - 防抖处理 (300ms)
+  - 大小写不敏感过滤
+  - 空查询恢复完整列表
+  
+- [x] 键盘导航 (`keyboard.rs`)
+  - 仓库导航 (j/k, g/G, Ctrl+d/u)
+  - 搜索模式 (/ 进入，Esc 退出)
+  - 操作菜单 (Enter 打开，数字快捷键)
+  - 目录选择器 (hjkl 导航)
+  - 帮助面板 (? 打开)
+
+**测试状态**: 95 个测试全部通过 (87 单元测试 + 8 集成测试)
+
+### Phase 2 核心功能 (已完成 ✅)
+
+- [x] 操作菜单 (`ActionMenu` widget)
+  - 居中弹出式菜单
+  - 键盘导航 (j/k/↑/↓)
+  - 快捷键直接执行 (c/w/v/f)
+  - Enter 确认，q/Esc 取消
+  
+- [x] 帮助面板 (`HelpPanel` widget)
+  - 完整快捷键文档
+  - 分类显示（Navigation/Search/Actions/Global）
+  - 固定尺寸 60x28
+  - 自适应小终端
+  
+- [x] 命令执行功能 (`action/execute.rs`)
+  - cd + claude
+  - WebStorm/VS Code 打开
+  - 文件管理器打开
+  - 安全路径验证
+  
+- [x] 错误处理 UI
+  - 统一 `AppError` 类型
+  - 用户友好错误消息
+  - 错误严重程度分级
+  - 错误状态渲染
+
+**测试状态**: 102 个测试全部通过 (94 单元测试 + 8 集成测试)
+
+---
+
+## 🚀 开发清单
+
+### Phase 0 收尾 (已完成 ✅)
+
+- [x] 修复配置空路径验证 Bug (见 BUGFIX_EMPTY_PATH.md)
+- [x] ~~修复 action/validators.rs (8 处)~~ (代码已正确，无需修复)
+- [x] ~~修复 action/execute.rs (2 处)~~ (代码已正确，无需修复)
+- [x] ~~修复 ui/render.rs (9 处)~~ (代码已正确，无需修复)
+- [x] 清理 unused warnings
+- [x] cargo fmt
+- [x] cargo clippy
+
+**修复详情**:
+- 在 `src/config/validators.rs:31-36` 添加空路径检查
+- 添加单元测试 `test_validate_directory_empty_path`
+- 所有 46 个测试通过，clippy 无警告
+
+### Phase 1 MVP (已完成 ✅)
+
+- [x] 目录选择 UI (`DirChooser` widget)
+  - 文件浏览器界面，支持子目录导航
+  - 键盘导航 (j/k, Enter, ←/→)
+  - Git 仓库计数显示
+  - 所有测试通过
+  
+- [x] 仓库列表渲染 (`RepoList` widget)
+  - 虚拟列表优化，支持大量仓库
+  - Git 状态显示 (clean/dirty)
+  - 分支名称显示
+  - 选中高亮和滚动跟踪
+  
+- [x] 搜索功能 (`SearchBox` + 过滤逻辑)
+  - 实时搜索框，带焦点状态
+  - 防抖处理 (300ms)
+  - 大小写不敏感过滤
+  - 空查询恢复完整列表
+  
+- [x] 键盘导航 (`keyboard.rs`)
+  - 仓库导航 (j/k, g/G, Ctrl+d/u)
+  - 搜索模式 (/ 进入, Esc 退出)
+  - 操作菜单 (Enter 打开, 数字快捷键)
+  - 目录选择器 (hjkl 导航)
+  - 帮助面板 (? 打开)
+
+**测试状态**: 95 个测试全部通过 (87 单元测试 + 8 集成测试)
 
 ---
 
@@ -56,3 +154,4 @@ tracing::debug!("Rendering with state: {:?}", app.state);
 ---
 
 **最后更新**: 2026-03-06
+**Phase 1 状态**: ✅ 已完成

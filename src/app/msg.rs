@@ -62,6 +62,12 @@ pub enum AppMsg {
     /// Navigate up in directory chooser
     DirectoryNavUp,
 
+    /// Navigate down in action menu
+    ActionMenuNavDown,
+
+    /// Navigate up in action menu
+    ActionMenuNavUp,
+
     // === Async Events ===
     /// Configuration loaded
     ConfigLoaded(Result<Config, ConfigError>),
@@ -115,6 +121,12 @@ pub enum AppMsg {
 
     /// Cancel current operation
     Cancel,
+
+    /// Show error dialog
+    ShowError(String),
+
+    /// Close error dialog
+    CloseError,
 }
 
 impl AppMsg {

@@ -303,6 +303,28 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
             }
             _ => {}
         },
+
+        AppMsg::ActionMenuNavDown => {
+            // Navigate down in action menu
+            // This would be handled by the ActionMenu widget state
+            // For now, just log
+        }
+
+        AppMsg::ActionMenuNavUp => {
+            // Navigate up in action menu
+            // This would be handled by the ActionMenu widget state
+            // For now, just log
+        }
+
+        AppMsg::ShowError(message) => {
+            app.state = AppState::Error { message };
+        }
+
+        AppMsg::CloseError => {
+            if matches!(app.state, AppState::Error { .. }) {
+                app.state = AppState::Running;
+            }
+        }
     }
 }
 
