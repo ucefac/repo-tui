@@ -147,7 +147,8 @@ fn render_main_ui(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
         .show_git_status(app.config.as_ref().is_some_and(|c| c.ui.show_git_status))
         .favorites(favorites_set)
         .selection_mode(app.selection_mode)
-        .selected(app.selected_indices.clone());
+        .selected(app.selected_indices.clone())
+        .area_width(chunks[1].width);
     frame.render_widget(repo_list, chunks[1]);
 
     // Render status bar (with path bar)

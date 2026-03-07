@@ -214,6 +214,17 @@ fn format_repo_item(
         }
     }
 
+    // Add repo name
+    let max_name_len = display_mode.max_name_length();
+    let truncated_name = truncate_middle(&repo.name, max_name_len);
+    spans.push(Span::styled(
+        truncated_name,
+        Style::default().fg(theme.colors.foreground.into()),
+    ));
+
+    // Add separator space before branch
+    spans.push(Span::raw(" "));
+
     // Add branch name for Medium+ modes
     if display_mode.show_branch() {
         if let Some(ref branch) = repo.branch {
@@ -396,5 +407,190 @@ mod tests {
         let (start, end) = list.visible_range();
         assert_eq!(start, 0);
         assert!(end <= 2);
+    }
+
+    #[test]
+    fn test_format_repo_item_contains_name() {
+        use crate::ui::layout::DisplayMode;
+        use std::path::PathBuf;
+
+        let repo = Repository {
+            name: "test-repo-name".to_string(),
+            path: PathBuf::from("/tmp/test-repo-name"),
+            last_modified: None,
+            is_dirty: true,
+            branch: Some("main".to_string()),
+        };
+
+        let theme = Theme::dark();
+        let formatted = format_repo_item(
+            &repo,
+            true,
+            true,
+            DisplayMode::Large,
+            100,
+            &theme,
+            RepoItemParams {
+                is_favorite: false,
+                selection_mode: false,
+                is_checked: false,
+            },
+        );
+
+        // 验证 spans 包含仓库名称
+        let content: String = formatted.spans.iter().map(|s| s.content.as_ref()).collect();
+
+        assert!(
+            content.contains("test-repo-name"),
+            "Repository name should be displayed, got: {}",
+            content
+        );
+    }
+
+    #[test]
+    fn test_display_mode_compact() {
+        let theme = Theme::dark();
+        let repos = create_test_repos();
+        let filtered: Vec<usize> = vec![0, 1];
+
+        let mut list = RepoList::new(&repos, &filtered, &theme);
+        list.area_width = 50;
+        assert_eq!(list.display_mode(), DisplayMode::Compact);
+    }
+
+    #[test]
+    fn test_display_mode_medium() {
+        let theme = Theme::dark();
+        let repos = create_test_repos();
+        let filtered: Vec<usize> = vec![0, 1];
+
+        let mut list = RepoList::new(&repos, &filtered, &theme);
+        list.area_width = 80;
+        assert_eq!(list.display_mode(), DisplayMode::Medium);
+    }
+
+    #[test]
+    fn test_display_mode_large() {
+        let theme = Theme::dark();
+        let repos = create_test_repos();
+        let filtered: Vec<usize> = vec![0, 1];
+
+        let mut list = RepoList::new(&repos, &filtered, &theme);
+        list.area_width = 120;
+        assert_eq!(list.display_mode(), DisplayMode::Large);
+    }
+
+    #[test]
+    fn test_format_repo_item_compact_mode() {
+        let repo = Repository {
+            name: "test-repo".to_string(),
+            path: PathBuf::from("/tmp/test-repo"),
+            last_modified: None,
+            is_dirty: true,
+            branch: Some("main".to_string()),
+        };
+
+        let theme = Theme::dark();
+        let formatted = format_repo_item(
+            &repo,
+            false,
+            true,
+            DisplayMode::Compact,
+            50,
+            &theme,
+            RepoItemParams {
+                is_favorite: false,
+                selection_mode: false,
+                is_checked: false,
+            },
+        );
+
+        let content: String = formatted.spans.iter().map(|s| s.content.as_ref()).collect();
+        assert!(
+            content.contains("test-repo"),
+            "Compact mode should show repo name"
+        );
+        assert!(
+            !content.contains("main"),
+            "Compact mode should NOT show branch"
+        );
+    }
+
+    #[test]
+    fn test_format_repo_item_medium_mode() {
+        let repo = Repository {
+            name: "test-repo".to_string(),
+            path: PathBuf::from("/tmp/test-repo"),
+            last_modified: None,
+            is_dirty: true,
+            branch: Some("main".to_string()),
+        };
+
+        let theme = Theme::dark();
+        let formatted = format_repo_item(
+            &repo,
+            false,
+            true,
+            DisplayMode::Medium,
+            80,
+            &theme,
+            RepoItemParams {
+                is_favorite: false,
+                selection_mode: false,
+                is_checked: false,
+            },
+        );
+
+        let content: String = formatted.spans.iter().map(|s| s.content.as_ref()).collect();
+        assert!(
+            content.contains("test-repo"),
+            "Medium mode should show repo name"
+        );
+        assert!(content.contains("main"), "Medium mode should show branch");
+        assert!(
+            !content.contains("Modified"),
+            "Medium mode should NOT show status"
+        );
+        assert!(
+            !content.contains("Clean"),
+            "Medium mode should NOT show status"
+        );
+    }
+
+    #[test]
+    fn test_format_repo_item_large_mode_with_status() {
+        let repo = Repository {
+            name: "test-repo".to_string(),
+            path: PathBuf::from("/tmp/test-repo"),
+            last_modified: None,
+            is_dirty: true,
+            branch: Some("main".to_string()),
+        };
+
+        let theme = Theme::dark();
+        let formatted = format_repo_item(
+            &repo,
+            false,
+            true,
+            DisplayMode::Large,
+            120,
+            &theme,
+            RepoItemParams {
+                is_favorite: false,
+                selection_mode: false,
+                is_checked: false,
+            },
+        );
+
+        let content: String = formatted.spans.iter().map(|s| s.content.as_ref()).collect();
+        assert!(
+            content.contains("test-repo"),
+            "Large mode should show repo name"
+        );
+        assert!(content.contains("main"), "Large mode should show branch");
+        assert!(
+            content.contains("Modified"),
+            "Large mode should show status for dirty repo"
+        );
     }
 }
