@@ -296,6 +296,11 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
             app.search_active = true;
         }
 
+        // Toggle theme (dark/light)
+        KeyCode::Char('t') => {
+            let _ = app.msg_tx.try_send(AppMsg::ThemeChanged);
+        }
+
         // Change main directory
         KeyCode::Char('m') => {
             let _ = app.msg_tx.try_send(AppMsg::ShowDirectoryChooser);

@@ -130,6 +130,9 @@ pub enum AppMsg {
 
     /// Copy path to clipboard
     CopyPathToClipboard(PathBuf),
+
+    /// Theme changed (dark/light toggle)
+    ThemeChanged,
 }
 
 impl AppMsg {

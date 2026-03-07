@@ -357,6 +357,32 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 }
             }
         }
+
+        AppMsg::ThemeChanged => {
+            // Toggle theme
+            app.theme = app.theme.toggle();
+
+            // Update theme in config
+            if let Some(ref mut config) = app.config {
+                config.ui.theme = app.theme.name.clone();
+
+                // Save configuration with better error handling
+                match config::save_config(config) {
+                    Ok(()) => {
+                        // Show success message briefly
+                        app.loading_message = Some("Theme saved".to_string());
+                    }
+                    Err(e) => {
+                        app.error_message = Some(format!(
+                            "Failed to save theme: {}. Theme will reset on restart.",
+                            e
+                        ));
+                        // Rollback theme in app state
+                        app.theme = app.theme.toggle();
+                    }
+                }
+            }
+        }
     }
 }
 

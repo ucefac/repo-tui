@@ -2,67 +2,174 @@
 
 use crate::constants;
 use ratatui::style::{Color, Modifier, Style};
+use serde::{Deserialize, Serialize};
+
+/// RGB color representation for serialization
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct ColorRgb {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+}
+
+impl From<ColorRgb> for Color {
+    fn from(rgb: ColorRgb) -> Self {
+        Color::Rgb(rgb.r, rgb.g, rgb.b)
+    }
+}
+
+/// Color palette for a theme
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ColorPalette {
+    pub primary: ColorRgb,
+    pub secondary: ColorRgb,
+    pub success: ColorRgb,
+    pub warning: ColorRgb,
+    pub error: ColorRgb,
+    pub background: ColorRgb,
+    pub foreground: ColorRgb,
+    pub border: ColorRgb,
+    pub selected_bg: ColorRgb,
+    pub selected_fg: ColorRgb,
+    pub text_muted: ColorRgb,
+    pub border_focused: ColorRgb,
+}
 
 /// UI Theme
 #[derive(Debug, Clone)]
 pub struct Theme {
-    pub primary: Color,
-    pub success: Color,
-    pub warning: Color,
-    pub error: Color,
-    pub selected_bg: Color,
-    pub selected_fg: Color,
-    pub border_focused: Color,
-    pub border_normal: Color,
-    pub border_active: Color,
-    pub text_primary: Color,
-    pub text_secondary: Color,
-    pub text_muted: Color,
-    pub cursor: Color,
-    pub highlight: Color,
-    pub background: Color,
+    pub name: String,
+    pub colors: ColorPalette,
 }
 
 impl Theme {
     /// Create dark theme
     pub fn dark() -> Self {
         Self {
-            primary: constants::ui::dark::PRIMARY,
-            success: constants::ui::dark::SUCCESS,
-            warning: constants::ui::dark::WARNING,
-            error: constants::ui::dark::ERROR,
-            selected_bg: constants::ui::dark::SELECTED_BG,
-            selected_fg: Color::White,
-            border_focused: constants::ui::dark::BORDER_FOCUSED,
-            border_normal: constants::ui::dark::BORDER_NORMAL,
-            border_active: constants::ui::dark::PRIMARY,
-            text_primary: constants::ui::dark::TEXT_PRIMARY,
-            text_secondary: constants::ui::dark::TEXT_SECONDARY,
-            text_muted: Color::DarkGray,
-            cursor: constants::ui::dark::PRIMARY,
-            highlight: constants::ui::dark::PRIMARY,
-            background: Color::Black,
+            name: "dark".to_string(),
+            colors: ColorPalette {
+                primary: ColorRgb {
+                    r: constants::ui::dark::PRIMARY.r,
+                    g: constants::ui::dark::PRIMARY.g,
+                    b: constants::ui::dark::PRIMARY.b,
+                },
+                secondary: ColorRgb {
+                    r: 139,
+                    g: 92,
+                    b: 246,
+                },
+                success: ColorRgb {
+                    r: constants::ui::dark::SUCCESS.r,
+                    g: constants::ui::dark::SUCCESS.g,
+                    b: constants::ui::dark::SUCCESS.b,
+                },
+                warning: ColorRgb {
+                    r: constants::ui::dark::WARNING.r,
+                    g: constants::ui::dark::WARNING.g,
+                    b: constants::ui::dark::WARNING.b,
+                },
+                error: ColorRgb {
+                    r: constants::ui::dark::ERROR.r,
+                    g: constants::ui::dark::ERROR.g,
+                    b: constants::ui::dark::ERROR.b,
+                },
+                background: ColorRgb { r: 9, g: 9, b: 11 },
+                foreground: ColorRgb {
+                    r: 248,
+                    g: 248,
+                    b: 242,
+                },
+                border: ColorRgb {
+                    r: 63,
+                    g: 63,
+                    b: 70,
+                },
+                selected_bg: ColorRgb {
+                    r: constants::ui::dark::SELECTED_BG.r,
+                    g: constants::ui::dark::SELECTED_BG.g,
+                    b: constants::ui::dark::SELECTED_BG.b,
+                },
+                selected_fg: ColorRgb {
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                },
+                text_muted: ColorRgb {
+                    r: 107,
+                    g: 107,
+                    b: 107,
+                },
+                border_focused: ColorRgb {
+                    r: 56,
+                    g: 189,
+                    b: 248,
+                },
+            },
         }
     }
 
     /// Create light theme
     pub fn light() -> Self {
         Self {
-            primary: constants::ui::light::PRIMARY,
-            success: constants::ui::light::SUCCESS,
-            warning: constants::ui::light::WARNING,
-            error: constants::ui::light::ERROR,
-            selected_bg: constants::ui::light::SELECTED_BG,
-            selected_fg: Color::White,
-            border_focused: constants::ui::light::BORDER_FOCUSED,
-            border_normal: constants::ui::light::BORDER_NORMAL,
-            border_active: constants::ui::light::PRIMARY,
-            text_primary: constants::ui::light::TEXT_PRIMARY,
-            text_secondary: constants::ui::light::TEXT_SECONDARY,
-            text_muted: Color::Gray,
-            cursor: constants::ui::light::PRIMARY,
-            highlight: constants::ui::light::PRIMARY,
-            background: Color::White,
+            name: "light".to_string(),
+            colors: ColorPalette {
+                primary: ColorRgb {
+                    r: constants::ui::light::PRIMARY.r,
+                    g: constants::ui::light::PRIMARY.g,
+                    b: constants::ui::light::PRIMARY.b,
+                },
+                secondary: ColorRgb {
+                    r: 126,
+                    g: 34,
+                    b: 206,
+                },
+                success: ColorRgb {
+                    r: constants::ui::light::SUCCESS.r,
+                    g: constants::ui::light::SUCCESS.g,
+                    b: constants::ui::light::SUCCESS.b,
+                },
+                warning: ColorRgb {
+                    r: constants::ui::light::WARNING.r,
+                    g: constants::ui::light::WARNING.g,
+                    b: constants::ui::light::WARNING.b,
+                },
+                error: ColorRgb {
+                    r: constants::ui::light::ERROR.r,
+                    g: constants::ui::light::ERROR.g,
+                    b: constants::ui::light::ERROR.b,
+                },
+                background: ColorRgb {
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                },
+                foreground: ColorRgb { r: 9, g: 9, b: 11 },
+                border: ColorRgb {
+                    r: 209,
+                    g: 213,
+                    b: 219,
+                },
+                selected_bg: ColorRgb {
+                    r: constants::ui::light::SELECTED_BG.r,
+                    g: constants::ui::light::SELECTED_BG.g,
+                    b: constants::ui::light::SELECTED_BG.b,
+                },
+                selected_fg: ColorRgb {
+                    r: 255,
+                    g: 255,
+                    b: 255,
+                },
+                text_muted: ColorRgb {
+                    r: 156,
+                    g: 163,
+                    b: 175,
+                },
+                border_focused: ColorRgb {
+                    r: 37,
+                    g: 99,
+                    b: 235,
+                },
+            },
         }
     }
 
@@ -74,32 +181,61 @@ impl Theme {
         }
     }
 
+    /// Toggle between dark and light theme
+    pub fn toggle(&self) -> Self {
+        if self.name == "dark" {
+            Self::light()
+        } else {
+            Self::dark()
+        }
+    }
+
     /// Get selected style
     pub fn selected_style(&self) -> Style {
         Style::default()
-            .fg(self.selected_fg)
-            .bg(self.selected_bg)
+            .fg(self.colors.selected_fg.into())
+            .bg(self.colors.selected_bg.into())
             .add_modifier(Modifier::BOLD)
     }
 
     /// Get focused border style
     pub fn focused_border_style(&self) -> Style {
-        Style::default().fg(self.border_focused)
+        Style::default().fg(self.colors.border_focused.into())
     }
 
     /// Get normal border style
     pub fn normal_border_style(&self) -> Style {
-        Style::default().fg(self.border_normal)
+        Style::default().fg(self.colors.border.into())
     }
 
     /// Get primary text style
     pub fn primary_text_style(&self) -> Style {
-        Style::default().fg(self.text_primary)
+        Style::default().fg(self.colors.foreground.into())
     }
 
     /// Get secondary text style
     pub fn secondary_text_style(&self) -> Style {
-        Style::default().fg(self.text_secondary)
+        Style::default().fg(self.colors.text_muted.into())
+    }
+
+    /// Get primary color style
+    pub fn primary_style(&self) -> Style {
+        Style::default().fg(self.colors.primary.into())
+    }
+
+    /// Get success color style
+    pub fn success_style(&self) -> Style {
+        Style::default().fg(self.colors.success.into())
+    }
+
+    /// Get warning color style
+    pub fn warning_style(&self) -> Style {
+        Style::default().fg(self.colors.warning.into())
+    }
+
+    /// Get error color style
+    pub fn error_style(&self) -> Style {
+        Style::default().fg(self.colors.error.into())
     }
 }
 
@@ -116,25 +252,35 @@ mod tests {
     #[test]
     fn test_dark_theme() {
         let theme = Theme::dark();
-        assert_eq!(theme.primary, constants::ui::dark::PRIMARY);
+        assert_eq!(theme.name, "dark");
     }
 
     #[test]
     fn test_light_theme() {
         let theme = Theme::light();
-        assert_eq!(theme.primary, constants::ui::light::PRIMARY);
+        assert_eq!(theme.name, "light");
     }
 
     #[test]
     fn test_from_config() {
         let dark = Theme::from_config("dark");
-        assert_eq!(dark.background, Color::Black);
+        assert_eq!(dark.name, "dark");
 
         let light = Theme::from_config("light");
-        assert_eq!(light.background, Color::White);
+        assert_eq!(light.name, "light");
 
         let default = Theme::from_config("unknown");
-        assert_eq!(default.background, Color::Black);
+        assert_eq!(default.name, "dark");
+    }
+
+    #[test]
+    fn test_toggle_theme() {
+        let dark = Theme::dark();
+        let light = dark.toggle();
+        assert_eq!(light.name, "light");
+
+        let dark_again = light.toggle();
+        assert_eq!(dark_again.name, "dark");
     }
 
     #[test]
@@ -145,6 +291,6 @@ mod tests {
         assert!(selected.add_modifier == Modifier::BOLD);
 
         let focused = theme.focused_border_style();
-        assert_eq!(focused.fg, Some(constants::ui::dark::BORDER_FOCUSED));
+        assert_eq!(focused.fg, Some(theme.colors.border_focused.into()));
     }
 }

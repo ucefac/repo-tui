@@ -7,7 +7,11 @@ use tokio::sync::mpsc;
 use crate::app::msg::AppMsg;
 use crate::app::state::AppState;
 use crate::config::Config;
+use crate::git::cache::StatusCache;
+use crate::git::scheduler::GitStatusScheduler;
 use crate::repo::Repository;
+use crate::ui::Theme;
+use std::sync::Arc;
 
 /// Application model
 pub struct App {
@@ -58,11 +62,26 @@ pub struct App {
 
     /// Path bar click area (for mouse events)
     pub path_bar_area: Option<ratatui::layout::Rect>,
+
+    /// Git status cache
+    pub git_cache: Arc<StatusCache>,
+
+    /// Git status scheduler
+    pub git_scheduler: Option<GitStatusScheduler>,
+
+    /// Current UI theme
+    pub theme: Theme,
 }
 
 impl App {
     /// Create a new application instance
     pub fn new(msg_tx: mpsc::Sender<AppMsg>) -> Self {
+        let git_cache = Arc::new(StatusCache::default_cache());
+        let git_scheduler = Some(GitStatusScheduler::new(
+            Arc::clone(&git_cache),
+            msg_tx.clone(),
+        ));
+
         Self {
             config: None,
             main_dir: None,
@@ -82,6 +101,9 @@ impl App {
             selected_repo: None,
             msg_tx,
             path_bar_area: None,
+            git_cache,
+            git_scheduler,
+            theme: Theme::dark(),
         }
     }
 
