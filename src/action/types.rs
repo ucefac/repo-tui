@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 /// Available actions
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Action {
-    /// cd into repo + start claude
+    /// Open in Claude Code
     CdAndCloud,
 
     /// Open in WebStorm
@@ -32,7 +32,7 @@ impl Action {
     /// Get action description
     pub fn description(&self) -> &'static str {
         match self {
-            Action::CdAndCloud => "cd + cloud (claude)",
+            Action::CdAndCloud => "Open in Claude Code",
             Action::OpenWebStorm => "Open in WebStorm",
             Action::OpenVsCode => "Open in VS Code",
             Action::OpenFileManager => "Open in Finder/Explorer",
@@ -62,7 +62,7 @@ mod tests {
 
     #[test]
     fn test_action_description() {
-        assert!(Action::CdAndCloud.description().contains("claude"));
+        assert!(Action::CdAndCloud.description().contains("Claude Code"));
         assert!(Action::OpenWebStorm.description().contains("WebStorm"));
     }
 
