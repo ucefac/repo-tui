@@ -109,10 +109,37 @@
   | `r` | 刷新列表 | - | - | - |
   | `?` | 打开帮助 | - | - | - |
   | `Ctrl+C` | 退出确认 | 退出 | 退出 | 退出 |
-  | `j/k` | 循环导航 | 循环导航 | 导航 | - |
+  | `↑/↓` | 循环导航 | 循环导航 | 导航 | - |
+  | `1/2/3/4` | - | - | 执行操作 | - |
 
 **状态优先级**: `ActionMenu > Help > ChoosingDir > Searching > Running`  
 (高优先级状态拦截所有按键)
+
+### 2.5 UI 设计原则
+
+#### 2.5.1 单一按键原则
+
+**核心理念**: 一个功能只能有一个单按键触发方式，禁止多个按键触发同一功能。
+
+**设计理由**:
+1. **减少认知负担**: 用户只需记忆一个键位
+2. **避免误操作**: 防止意外触发非预期功能
+3. **一致性体验**: 符合 TUI 工具的标准设计模式
+
+**例外情况**:
+- `g/Home` 和 `G/End`: 传统 vim 风格与现代键盘的兼容
+- 方向键 `↑/↓`: 标准导航键，符合用户习惯
+
+**实施清单**:
+| 功能 | 保留按键 | 移除按键 |
+|------|----------|----------|
+| 向下导航 | `↓` | `j` |
+| 向上导航 | `↑` | `k` |
+| 打开菜单 | `Enter` | `o` |
+| CdAndCloud | `1` | `c` |
+| OpenWebStorm | `2` | `w` |
+| OpenVsCode | `3` | `v` |
+| OpenFileManager | `4` | `f` |
 
 ---
 
@@ -356,7 +383,7 @@ fn view(app: &App, frame: &mut Frame) {
 │ │                                                           │ │
 │ ╰───────────────────────────────────────────────────────────╯ │
 │                                                               │
-│ [j/k] Nav  [g/G] Jump  [/] Search  [Enter] Open  [r] Refresh │
+│ ↑↓ navigate   g/G jump   / search   ENTER open   r refresh   ? help   q quit │
 ╰───────────────────────────────────────────────────────────────╯
 ```
 
@@ -380,7 +407,7 @@ fn view(app: &App, frame: &mut Frame) {
 │ Current: /home/username/projects                             │
 │ Found: 42 Git repositories                                    │
 │                                                               │
-│ [j/k] Navigate  [Enter] Select  [q] Cancel                   │
+│ ↑↓ navigate   SPACE select   ENTER open   ← back   q cancel       │
 ╰───────────────────────────────────────────────────────────────╯
 ```
 
@@ -392,10 +419,10 @@ fn view(app: &App, frame: &mut Frame) {
 ### 4.3 操作菜单
 ```
 ╭─ Actions: github_facebook_react ─────────────────╮
-│ [c] cd + cloud (claude)                          │
-│ [w] Open in WebStorm                             │
-│ [v] Open in VS Code                              │
-│ [f] Open in Finder/Explorer                      │
+│ [1] cd + cloud (claude)                          │
+│ [2] Open in WebStorm                             │
+│ [3] Open in VS Code                              │
+│ [4] Open in Finder/Explorer                      │
 │ [q] Cancel                                       │
 ╰──────────────────────────────────────────────────╯
 ```
@@ -404,8 +431,8 @@ fn view(app: &App, frame: &mut Frame) {
 ```
 ╭─ Keyboard Shortcuts ─────────────────────────────────────────╮
 │ Navigation                                                    │
-│   j/↓     Move down (cyclic: last → first)                   │
-│   k/↑     Move up (cyclic: first → last)                     │
+│   ↓       Move down (cyclic: last → first)                   │
+│   ↑       Move up (cyclic: first → last)                     │
 │   g       Go to top                                          │
 │   G       Go to bottom                                       │
 │   Ctrl+d  Scroll down half-page                              │
@@ -418,7 +445,12 @@ fn view(app: &App, frame: &mut Frame) {
 │                                                               │
 │ Actions                                                       │
 │   Enter   Open action menu                                   │
-│   o       Open action menu                                   │
+│   1       cd + cloud (claude)                                │
+│   2       Open in WebStorm                                   │
+│   3       Open in VS Code                                    │
+│   4       Open in Finder/Explorer                            │
+│                                                               │
+│ Global                                                        │
 │   r       Refresh list                                       │
 │   ?       Show this help                                     │
 │   q       Quit                                               │

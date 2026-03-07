@@ -164,8 +164,7 @@ fn render_status_bar_with_path(frame: &mut Frame, app: &mut App, area: Rect, the
     } else if let Some(ref error) = app.error_message {
         error
     } else {
-        // Optimized spacing: reduce space between keys and description
-        "[j/k]Nav [g/G]Jump [/]Search [Enter]Open [r]Refresh [?]Help [q]Quit [m]ChangeDir"
+        "↑↓ navigate   g/G jump   / search   ENTER open   r refresh   ? help   q quit"
     };
 
     let mut status_bar = StatusBar::new(status_text, theme)

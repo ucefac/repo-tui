@@ -47,7 +47,7 @@ fn handle_action_menu_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
         KeyCode::Char('q') | KeyCode::Esc => {
             let _ = app.msg_tx.try_send(AppMsg::CloseActions);
         }
-        KeyCode::Char('c') | KeyCode::Char('1') => {
+        KeyCode::Char('1') => {
             let action = crate::action::Action::CdAndCloud;
             if app.selection_mode && app.selected_count() > 0 {
                 let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
@@ -55,7 +55,7 @@ fn handle_action_menu_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
                 let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
             }
         }
-        KeyCode::Char('w') | KeyCode::Char('2') => {
+        KeyCode::Char('2') => {
             let action = crate::action::Action::OpenWebStorm;
             if app.selection_mode && app.selected_count() > 0 {
                 let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
@@ -63,7 +63,7 @@ fn handle_action_menu_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
                 let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
             }
         }
-        KeyCode::Char('v') | KeyCode::Char('3') => {
+        KeyCode::Char('3') => {
             let action = crate::action::Action::OpenVsCode;
             if app.selection_mode && app.selected_count() > 0 {
                 let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
@@ -71,7 +71,7 @@ fn handle_action_menu_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
                 let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
             }
         }
-        KeyCode::Char('f') | KeyCode::Char('4') => {
+        KeyCode::Char('4') => {
             let action = crate::action::Action::OpenFileManager;
             if app.selection_mode && app.selected_count() > 0 {
                 let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
@@ -79,11 +79,11 @@ fn handle_action_menu_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
                 let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
             }
         }
-        KeyCode::Char('j') | KeyCode::Down => {
+        KeyCode::Down => {
             // Navigate down in menu
             let _ = app.msg_tx.try_send(AppMsg::ActionMenuNavDown);
         }
-        KeyCode::Char('k') | KeyCode::Up => {
+        KeyCode::Up => {
             // Navigate up in menu
             let _ = app.msg_tx.try_send(AppMsg::ActionMenuNavUp);
         }
@@ -328,10 +328,10 @@ fn handle_search_input(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
 fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
     match key.code {
         // Navigation
-        KeyCode::Char('j') | KeyCode::Down => {
+        KeyCode::Down => {
             let _ = app.msg_tx.try_send(AppMsg::NextRepo);
         }
-        KeyCode::Char('k') | KeyCode::Up => {
+        KeyCode::Up => {
             let _ = app.msg_tx.try_send(AppMsg::PreviousRepo);
         }
         KeyCode::Char('g') => {
@@ -371,43 +371,8 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
         }
 
         // Actions
-        KeyCode::Enter | KeyCode::Char('o') => {
+        KeyCode::Enter => {
             let _ = app.msg_tx.try_send(AppMsg::OpenActions);
-        }
-
-        // Direct action shortcuts (without opening menu)
-        KeyCode::Char('c') => {
-            if let Some(repo) = app.selected_repository().cloned() {
-                app.selected_repo = Some(repo);
-                let _ = app
-                    .msg_tx
-                    .try_send(AppMsg::ExecuteAction(crate::action::Action::CdAndCloud));
-            }
-        }
-        KeyCode::Char('w') => {
-            if let Some(repo) = app.selected_repository().cloned() {
-                app.selected_repo = Some(repo);
-                let _ = app
-                    .msg_tx
-                    .try_send(AppMsg::ExecuteAction(crate::action::Action::OpenWebStorm));
-            }
-        }
-        KeyCode::Char('v') => {
-            if let Some(repo) = app.selected_repository().cloned() {
-                app.selected_repo = Some(repo);
-                let _ = app
-                    .msg_tx
-                    .try_send(AppMsg::ExecuteAction(crate::action::Action::OpenVsCode));
-            }
-        }
-        KeyCode::Char('f') => {
-            // Open file manager
-            if let Some(repo) = app.selected_repository().cloned() {
-                app.selected_repo = Some(repo);
-                let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(
-                    crate::action::Action::OpenFileManager,
-                ));
-            }
         }
         KeyCode::Char('F') => {
             // Toggle favorite (Shift+F)

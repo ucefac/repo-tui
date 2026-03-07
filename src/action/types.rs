@@ -22,10 +22,10 @@ impl Action {
     /// Get action shortcut key
     pub fn shortcut(&self) -> char {
         match self {
-            Action::CdAndCloud => 'c',
-            Action::OpenWebStorm => 'w',
-            Action::OpenVsCode => 'v',
-            Action::OpenFileManager => 'f',
+            Action::CdAndCloud => '1',
+            Action::OpenWebStorm => '2',
+            Action::OpenVsCode => '3',
+            Action::OpenFileManager => '4',
         }
     }
 
@@ -56,8 +56,10 @@ mod tests {
 
     #[test]
     fn test_action_shortcut() {
-        assert_eq!(Action::CdAndCloud.shortcut(), 'c');
-        assert_eq!(Action::OpenWebStorm.shortcut(), 'w');
+        assert_eq!(Action::CdAndCloud.shortcut(), '1');
+        assert_eq!(Action::OpenWebStorm.shortcut(), '2');
+        assert_eq!(Action::OpenVsCode.shortcut(), '3');
+        assert_eq!(Action::OpenFileManager.shortcut(), '4');
     }
 
     #[test]

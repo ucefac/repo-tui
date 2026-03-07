@@ -1,6 +1,7 @@
 //! Unified status bar widget
 
 use ratatui::prelude::*;
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{Padding, Paragraph, Wrap};
 use std::path::Path;
 
@@ -77,17 +78,23 @@ impl<'a> Widget for StatusBar<'a> {
             return;
         }
 
-        // Status message
-        let status_text = if self.loading {
-            format!("⏳ {}", self.status_message)
+        // Status message with highlighted key hints
+        let status_spans = if self.loading {
+            vec![
+                Span::styled("⏳ ", Style::default().fg(self.theme.colors.primary.into())),
+                Span::raw(self.status_message),
+            ]
         } else if self.error {
-            format!("⚠️ {}", self.status_message)
+            vec![
+                Span::styled("⚠️ ", Style::default().fg(self.theme.colors.error.into())),
+                Span::raw(self.status_message),
+            ]
         } else {
-            self.status_message.to_string()
+            parse_status_message(self.status_message, self.theme)
         };
 
         // Render status on top row
-        let status_paragraph = Paragraph::new(status_text)
+        let status_paragraph = Paragraph::new(Line::from(status_spans))
             .style(Style::default().fg(self.theme.colors.text_muted.into()))
             .wrap(Wrap { trim: true })
             .alignment(Alignment::Left);
@@ -113,6 +120,34 @@ impl<'a> Widget for StatusBar<'a> {
             }
         }
     }
+}
+
+/// Parse status message and apply theme color highlight to key hints
+/// Format: "↑↓ navigate   g/G jump   ENTER open"
+fn parse_status_message<'a>(message: &'a str, theme: &'a Theme) -> Vec<Span<'a>> {
+    let mut spans = Vec::new();
+    let segments: Vec<&'a str> = message.split("   ").collect();
+
+    for (i, segment) in segments.iter().enumerate() {
+        if i > 0 {
+            spans.push(Span::raw("   "));
+        }
+
+        if let Some(space_pos) = segment.find(' ') {
+            let keys: String = segment[..space_pos].to_string();
+            let desc: String = segment[space_pos..].to_string();
+
+            spans.push(Span::styled(
+                keys,
+                Style::default().fg(theme.colors.primary.into()),
+            ));
+            spans.push(Span::raw(desc));
+        } else {
+            spans.push(Span::raw(segment.to_string()));
+        }
+    }
+
+    spans
 }
 
 #[cfg(test)]

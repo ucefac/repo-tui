@@ -93,10 +93,7 @@ impl<'a> ActionMenu<'a> {
                 let desc = action.description();
 
                 ListItem::new(Line::from(vec![
-                    Span::styled(
-                        format!("[{}]", shortcut),
-                        Style::default().fg(Color::Yellow),
-                    ),
+                    Span::styled(format!("[{}]", shortcut), Style::default().fg(Color::Cyan)),
                     Span::raw(" "),
                     Span::styled(desc, style),
                 ]))

@@ -283,7 +283,7 @@ fn render_theme_list(
 
 /// Render help text
 fn render_help(area: Rect, buf: &mut Buffer, theme: &Theme) {
-    let help_text = "[j/k/↑/↓] Navigate  [Enter] Select  [Esc/q] Cancel";
+    let help_text = "↑↓ navigate   ENTER select   ESC cancel";
 
     let block = Block::default()
         .borders(Borders::ALL)
