@@ -20,7 +20,7 @@ dirs = "5.0"
 path-absolutize = "3.1"
 
 # Async Runtime (minimal features)
-tokio = { version = "1", features = ["rt-multi-thread", "sync", "fs", "time", "macros"] }
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "fs", "time", "macros", "process"] }
 
 # Error Handling
 thiserror = "1.0"
@@ -47,6 +47,10 @@ notify = { version = "6", optional = true }
 
 # Cache for Git status
 lru = "0.12"
+dashmap = "5.5"
+
+# Futures utilities
+futures = "0.3"
 
 # Clipboard support
 arboard = "3.3"
@@ -72,6 +76,10 @@ harness = false
 
 [[bench]]
 name = "search"
+harness = false
+
+[[bench]]
+name = "performance"
 harness = false
 
 [profile.release]
