@@ -2,9 +2,10 @@
 
 use crate::app::model::App;
 use crate::app::msg::AppMsg;
-use crate::app::state::AppState;
+use crate::app::state::{AppState, ViewMode};
 use crate::config;
 use crate::constants;
+use crate::repo::Repository;
 use crate::runtime::executor::Runtime;
 use crate::ui::Theme;
 use std::path::PathBuf;
@@ -90,10 +91,16 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
 
         // === Async Events ===
         AppMsg::ConfigLoaded(result) => {
-            match result {
+            match *result {
                 Ok(config) => {
                     app.main_dir = Some(config.main_directory.clone());
                     app.config = Some(config.clone());
+
+                    // Load favorites from config
+                    app.favorites = config.favorites.to_store();
+
+                    // Load recent repositories from config
+                    app.recent = config.recent.to_store();
 
                     // 处理 random 配置 - 启动时随机选择一个主题
                     app.theme = if config.ui.theme == "random" {
@@ -187,6 +194,15 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
 
         AppMsg::ExecuteAction(action) => {
             if let Some(repo) = app.selected_repo.clone() {
+                // Record as recently opened
+                app.recent.add(&repo.path);
+
+                // Save recent to config
+                if let Some(ref mut config) = app.config {
+                    config.recent.repositories = app.recent.get_all().to_vec();
+                    let _ = config::save_config(config);
+                }
+
                 runtime.dispatch(crate::app::msg::Cmd::ExecuteAction(action, repo));
                 app.state = AppState::Running;
                 app.selected_repo = None;
@@ -511,6 +527,95 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 let len = themes.len();
                 let next = (current + 1) % len;
                 theme_list_state.select(Some(next));
+            }
+        }
+
+        // === Favorites ===
+        AppMsg::ToggleFavorite => {
+            app.toggle_favorite();
+            // Save favorites to config
+            if let Some(ref mut config) = app.config {
+                config.favorites.repositories = app.favorites.get_all().to_vec();
+                let _ = config::save_config(config);
+            }
+        }
+
+        AppMsg::ShowFavorites => {
+            app.toggle_view_mode();
+        }
+
+        AppMsg::ShowAllRepos => {
+            if app.view_mode != ViewMode::All {
+                app.view_mode = ViewMode::All;
+                app.filter_by_view_mode();
+            }
+        }
+
+        AppMsg::ShowRecent => {
+            if app.view_mode != ViewMode::Recent {
+                app.view_mode = ViewMode::Recent;
+                app.filter_by_view_mode();
+            }
+        }
+
+        // === Batch Operations ===
+        AppMsg::ToggleSelectionMode => {
+            app.toggle_selection_mode();
+        }
+
+        AppMsg::ToggleSelection => {
+            if app.selection_mode {
+                app.toggle_selection();
+            }
+        }
+
+        AppMsg::SelectAll => {
+            if app.selection_mode {
+                app.select_all();
+            }
+        }
+
+        AppMsg::ClearSelection => {
+            app.clear_selection();
+        }
+
+        AppMsg::ExecuteBatchAction(action) => {
+            // Exit selection mode
+            app.selection_mode = false;
+
+            // Get selected repositories
+            let selected_repos: Vec<Repository> = app
+                .get_selected_repos()
+                .into_iter()
+                .cloned()
+                .collect::<Vec<_>>();
+
+            if selected_repos.is_empty() {
+                app.error_message = Some("No repositories selected".to_string());
+                return;
+            }
+
+            // Execute batch action with concurrency limit of 5
+            runtime.dispatch(crate::app::msg::Cmd::ExecuteBatchAction(
+                action,
+                selected_repos,
+            ));
+
+            // Clear selection after execution
+            app.clear_selection();
+        }
+
+        AppMsg::BatchActionExecuted(result) => {
+            if result.all_succeeded() {
+                app.loading_message = Some(format!(
+                    "✓ Batch completed: {}/{} succeeded",
+                    result.success, result.total
+                ));
+            } else {
+                app.error_message = Some(format!(
+                    "Batch completed with errors: {}/{} succeeded, {} failed",
+                    result.success, result.total, result.failed
+                ));
             }
         }
     }
@@ -956,5 +1061,98 @@ mod tests {
 
         assert!(matches!(app.state, AppState::Running));
         assert_eq!(app.theme.name, "nord");
+    }
+
+    #[test]
+    fn test_update_toggle_favorite() {
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        app.repositories = vec![Repository {
+            name: "repo1".to_string(),
+            path: std::path::PathBuf::from("/tmp/repo1"),
+            last_modified: None,
+            is_dirty: false,
+            branch: Some("main".to_string()),
+        }];
+        app.filtered_indices = vec![0];
+        app.set_selected_index(Some(0));
+        app.config = Some(crate::config::Config::default());
+
+        // Initially not favorited
+        assert!(!app.favorites.contains(&app.repositories[0].path));
+
+        // Toggle favorite
+        update(AppMsg::ToggleFavorite, &mut app, &runtime);
+        assert!(app.favorites.contains(&app.repositories[0].path));
+
+        // Toggle again to remove
+        update(AppMsg::ToggleFavorite, &mut app, &runtime);
+        assert!(!app.favorites.contains(&app.repositories[0].path));
+    }
+
+    #[test]
+    fn test_update_show_favorites() {
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        app.repositories = vec![
+            Repository {
+                name: "repo1".to_string(),
+                path: std::path::PathBuf::from("/tmp/repo1"),
+                last_modified: None,
+                is_dirty: false,
+                branch: Some("main".to_string()),
+            },
+            Repository {
+                name: "repo2".to_string(),
+                path: std::path::PathBuf::from("/tmp/repo2"),
+                last_modified: None,
+                is_dirty: false,
+                branch: Some("main".to_string()),
+            },
+        ];
+        app.filtered_indices = vec![0, 1];
+        app.set_selected_index(Some(0));
+
+        // Add one to favorites
+        app.favorites.add(&app.repositories[0].path);
+
+        // Initially All mode
+        assert_eq!(app.view_mode, ViewMode::All);
+
+        // Switch to Favorites
+        update(AppMsg::ShowFavorites, &mut app, &runtime);
+        assert_eq!(app.view_mode, ViewMode::Favorites);
+        assert_eq!(app.filtered_indices.len(), 1);
+
+        // Switch back to All
+        update(AppMsg::ShowAllRepos, &mut app, &runtime);
+        assert_eq!(app.view_mode, ViewMode::All);
+        assert_eq!(app.filtered_indices.len(), 2);
+    }
+
+    #[test]
+    fn test_update_show_favorites_no_favorites() {
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        app.repositories = vec![Repository {
+            name: "repo1".to_string(),
+            path: std::path::PathBuf::from("/tmp/repo1"),
+            last_modified: None,
+            is_dirty: false,
+            branch: Some("main".to_string()),
+        }];
+        app.filtered_indices = vec![0];
+        app.set_selected_index(Some(0));
+
+        // No favorites
+        update(AppMsg::ShowFavorites, &mut app, &runtime);
+        assert_eq!(app.view_mode, ViewMode::Favorites);
+        assert_eq!(app.filtered_indices.len(), 0);
     }
 }

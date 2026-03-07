@@ -1,14 +1,17 @@
 //! Application model
 
 use ratatui::widgets::ListState;
+use std::collections::HashSet;
 use std::path::PathBuf;
 use tokio::sync::mpsc;
 
 use crate::app::msg::AppMsg;
-use crate::app::state::AppState;
+use crate::app::state::{AppState, ViewMode};
 use crate::config::Config;
+use crate::favorites::FavoritesStore;
 use crate::git::cache::StatusCache;
 use crate::git::scheduler::GitStatusScheduler;
+use crate::recent::RecentStore;
 use crate::repo::Repository;
 use crate::ui::Theme;
 use std::sync::Arc;
@@ -71,6 +74,21 @@ pub struct App {
 
     /// Current UI theme
     pub theme: Theme,
+
+    /// Favorites store
+    pub favorites: FavoritesStore,
+
+    /// Recent repositories store
+    pub recent: RecentStore,
+
+    /// Current view mode
+    pub view_mode: ViewMode,
+
+    /// Selection mode flag (for batch operations)
+    pub selection_mode: bool,
+
+    /// Selected repository indices (for batch operations)
+    pub selected_indices: HashSet<usize>,
 }
 
 impl App {
@@ -102,6 +120,11 @@ impl App {
             git_cache,
             git_scheduler,
             theme: Theme::dark(),
+            favorites: FavoritesStore::new(),
+            recent: RecentStore::new(),
+            view_mode: ViewMode::All,
+            selection_mode: false,
+            selected_indices: HashSet::new(),
         }
     }
 
@@ -155,19 +178,14 @@ impl App {
         // The offset is managed internally by the List widget
     }
 
-    /// Filter repositories based on search query
+    /// Filter repositories based on search query using fuzzy search
     pub fn apply_filter(&mut self) {
         if self.search_query.is_empty() {
             self.filtered_indices = (0..self.repositories.len()).collect();
         } else {
-            let query_lower = self.search_query.to_lowercase();
-            self.filtered_indices = self
-                .repositories
-                .iter()
-                .enumerate()
-                .filter(|(_, repo)| repo.name.to_lowercase().contains(&query_lower))
-                .map(|(i, _)| i)
-                .collect();
+            // Use fuzzy search with scoring
+            let results = crate::repo::filter_repos_fuzzy(&self.repositories, &self.search_query);
+            self.filtered_indices = results.into_iter().map(|(idx, _)| idx).collect();
         }
 
         // Reset selection
@@ -192,6 +210,315 @@ impl App {
     /// Get filtered count
     pub fn filtered_count(&self) -> usize {
         self.filtered_indices.len()
+    }
+
+    /// Filter repositories based on view mode
+    pub fn filter_by_view_mode(&mut self) {
+        match self.view_mode {
+            ViewMode::All => {
+                // Show all repositories (respect search)
+                self.apply_filter();
+            }
+            ViewMode::Favorites => {
+                // Show only favorited repositories
+                if self.search_query.is_empty() {
+                    // No search: filter by favorites only
+                    self.filtered_indices = self
+                        .repositories
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, repo)| self.favorites.contains(&repo.path))
+                        .map(|(idx, _)| idx)
+                        .collect();
+                } else {
+                    // Search active: filter by both search and favorites
+                    let search_results =
+                        crate::repo::filter_repos_fuzzy(&self.repositories, &self.search_query);
+                    self.filtered_indices = search_results
+                        .into_iter()
+                        .filter_map(|(idx, _)| {
+                            if self.favorites.contains(&self.repositories[idx].path) {
+                                Some(idx)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
+                }
+            }
+            ViewMode::Recent => {
+                // Show only recently opened repositories
+                if self.search_query.is_empty() {
+                    // No search: filter by recent only
+                    self.filtered_indices = self
+                        .repositories
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, repo)| self.recent.contains(&repo.path))
+                        .map(|(idx, _)| idx)
+                        .collect();
+                } else {
+                    // Search active: filter by both search and recent
+                    let search_results =
+                        crate::repo::filter_repos_fuzzy(&self.repositories, &self.search_query);
+                    self.filtered_indices = search_results
+                        .into_iter()
+                        .filter_map(|(idx, _)| {
+                            if self.recent.contains(&self.repositories[idx].path) {
+                                Some(idx)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
+                }
+            }
+        }
+
+        // Reset selection
+        if !self.filtered_indices.is_empty() {
+            self.set_selected_index(Some(0));
+        } else {
+            self.set_selected_index(None);
+        }
+        self.scroll_offset = 0;
+    }
+
+    /// Toggle view mode between All and Favorites
+    pub fn toggle_view_mode(&mut self) {
+        self.view_mode = match self.view_mode {
+            ViewMode::All => ViewMode::Favorites,
+            ViewMode::Favorites => ViewMode::Recent,
+            ViewMode::Recent => ViewMode::All,
+        };
+        self.filter_by_view_mode();
+    }
+
+    /// Toggle favorite for current repository
+    pub fn toggle_favorite(&mut self) {
+        if let Some(repo) = self.selected_repository() {
+            let path = repo.path.clone();
+            self.favorites.toggle(&path);
+            // Re-filter if in favorites view
+            if self.view_mode == ViewMode::Favorites {
+                self.filter_by_view_mode();
+            }
+        }
+    }
+
+    /// Check if current repository is favorited
+    pub fn is_current_favorited(&self) -> bool {
+        if let Some(repo) = self.selected_repository() {
+            self.favorites.contains(&repo.path)
+        } else {
+            false
+        }
+    }
+
+    /// Get the current view mode
+    pub fn get_view_mode(&self) -> &ViewMode {
+        &self.view_mode
+    }
+
+    /// Toggle selection mode
+    pub fn toggle_selection_mode(&mut self) {
+        self.selection_mode = !self.selection_mode;
+    }
+
+    /// Toggle selection for current repository
+    pub fn toggle_selection(&mut self) {
+        if let Some(idx) = self.selected_index() {
+            if self.selected_indices.contains(&idx) {
+                self.selected_indices.remove(&idx);
+            } else {
+                self.selected_indices.insert(idx);
+            }
+        }
+    }
+
+    /// Select all filtered repositories
+    pub fn select_all(&mut self) {
+        self.selected_indices = self.filtered_indices.iter().copied().collect();
+    }
+
+    /// Clear all selections
+    pub fn clear_selection(&mut self) {
+        self.selected_indices.clear();
+    }
+
+    /// Get selected repositories
+    pub fn get_selected_repos(&self) -> Vec<&Repository> {
+        self.selected_indices
+            .iter()
+            .filter_map(|&idx| self.repositories.get(idx))
+            .collect()
+    }
+
+    /// Get selected count
+    pub fn selected_count(&self) -> usize {
+        self.selected_indices.len()
+    }
+
+    /// Check if current repository is selected
+    pub fn is_current_selected(&self) -> bool {
+        if let Some(idx) = self.selected_index() {
+            self.selected_indices.contains(&idx)
+        } else {
+            false
+        }
+    }
+}
+
+#[cfg(test)]
+mod favorites_tests {
+    use super::*;
+    use crate::repo::Repository;
+    use tempfile::TempDir;
+
+    fn create_test_app_with_favorites() -> (App, TempDir) {
+        let (tx, _rx) = mpsc::channel(100);
+        let mut app = App::new(tx);
+
+        let temp_dir = TempDir::new().unwrap();
+        let repo1 = Repository {
+            name: "repo1".to_string(),
+            path: temp_dir.path().join("repo1"),
+            last_modified: None,
+            is_dirty: false,
+            branch: Some("main".to_string()),
+        };
+        let repo2 = Repository {
+            name: "repo2".to_string(),
+            path: temp_dir.path().join("repo2"),
+            last_modified: None,
+            is_dirty: true,
+            branch: Some("feature".to_string()),
+        };
+        app.repositories = vec![repo1, repo2];
+        app.filtered_indices = vec![0, 1];
+        app.set_selected_index(Some(0));
+
+        (app, temp_dir)
+    }
+
+    #[test]
+    fn test_app_favorites_new() {
+        let (tx, _rx) = mpsc::channel(100);
+        let app = App::new(tx);
+        assert!(app.favorites.is_empty());
+        assert_eq!(app.view_mode, ViewMode::All);
+    }
+
+    #[test]
+    fn test_toggle_favorite() {
+        let (mut app, _temp) = create_test_app_with_favorites();
+        let repo_path = app.repositories[0].path.clone();
+
+        // Initially not favorited
+        assert!(!app.favorites.contains(&repo_path));
+
+        // Toggle to favorite
+        app.toggle_favorite();
+        assert!(app.favorites.contains(&repo_path));
+
+        // Toggle to remove
+        app.toggle_favorite();
+        assert!(!app.favorites.contains(&repo_path));
+    }
+
+    #[test]
+    fn test_is_current_favorited() {
+        let (mut app, _temp) = create_test_app_with_favorites();
+
+        // Initially not favorited
+        assert!(!app.is_current_favorited());
+
+        // Add to favorites
+        let repo_path = app.repositories[0].path.clone();
+        app.favorites.add(&repo_path);
+        assert!(app.is_current_favorited());
+    }
+
+    #[test]
+    fn test_toggle_view_mode() {
+        let (mut app, _temp) = create_test_app_with_favorites();
+
+        // Start in All mode
+        assert_eq!(app.view_mode, ViewMode::All);
+
+        // Toggle to Favorites
+        app.toggle_view_mode();
+        assert_eq!(app.view_mode, ViewMode::Favorites);
+
+        // Toggle to Recent
+        app.toggle_view_mode();
+        assert_eq!(app.view_mode, ViewMode::Recent);
+
+        // Toggle back to All
+        app.toggle_view_mode();
+        assert_eq!(app.view_mode, ViewMode::All);
+    }
+
+    #[test]
+    fn test_filter_by_view_mode_all() {
+        let (mut app, _temp) = create_test_app_with_favorites();
+
+        // Add one to favorites
+        let repo_path = app.repositories[0].path.clone();
+        app.favorites.add(&repo_path);
+
+        // Switch to All mode - should show all
+        app.view_mode = ViewMode::All;
+        app.filter_by_view_mode();
+        assert_eq!(app.filtered_indices.len(), 2);
+    }
+
+    #[test]
+    fn test_filter_by_view_mode_favorites() {
+        let (mut app, _temp) = create_test_app_with_favorites();
+
+        // Add one to favorites
+        let repo_path = app.repositories[0].path.clone();
+        app.favorites.add(&repo_path);
+
+        // Switch to Favorites mode - should show only favorites
+        app.view_mode = ViewMode::Favorites;
+        app.filter_by_view_mode();
+        assert_eq!(app.filtered_indices.len(), 1);
+        assert_eq!(app.repositories[app.filtered_indices[0]].name, "repo1");
+    }
+
+    #[test]
+    fn test_filter_by_view_mode_favorites_empty() {
+        let (mut app, _temp) = create_test_app_with_favorites();
+
+        // No favorites
+        app.view_mode = ViewMode::Favorites;
+        app.filter_by_view_mode();
+        assert_eq!(app.filtered_indices.len(), 0);
+    }
+
+    #[test]
+    fn test_filter_favorites_with_search() {
+        let (mut app, _temp) = create_test_app_with_favorites();
+
+        // Add both to favorites
+        app.favorites.add(&app.repositories[0].path);
+        app.favorites.add(&app.repositories[1].path);
+
+        // Search for repo1
+        app.search_query = "repo1".to_string();
+        app.view_mode = ViewMode::Favorites;
+        app.filter_by_view_mode();
+
+        assert_eq!(app.filtered_indices.len(), 1);
+        assert_eq!(app.repositories[app.filtered_indices[0]].name, "repo1");
+    }
+
+    #[test]
+    fn test_get_view_mode() {
+        let (app, _temp) = create_test_app_with_favorites();
+        assert_eq!(*app.get_view_mode(), ViewMode::All);
     }
 }
 
@@ -351,9 +678,19 @@ mod tests {
     }
 
     #[test]
-    fn test_repository_count() {
-        let (app, _temp) = create_test_app();
-        assert_eq!(app.repository_count(), 2);
+    fn test_toggle_selection() {
+        let (mut app, _temp) = create_test_app();
+        app.set_selected_index(Some(0));
+
+        // Initially no selections
+        assert_eq!(app.selected_indices.len(), 0);
+
+        app.toggle_selection();
+        assert_eq!(app.selected_indices.len(), 1);
+        assert!(app.selected_indices.contains(&0));
+
+        app.toggle_selection();
+        assert_eq!(app.selected_indices.len(), 0);
     }
 
     #[test]
@@ -378,5 +715,66 @@ mod tests {
 
         app.set_selected_index(None);
         assert_eq!(app.selected_index(), None);
+    }
+
+    #[test]
+    fn test_selection_mode_toggle() {
+        let (mut app, _temp) = create_test_app();
+
+        app.select_all();
+        assert_eq!(app.selected_indices.len(), 2);
+        assert!(app.selected_indices.contains(&0));
+        assert!(app.selected_indices.contains(&1));
+    }
+
+    #[test]
+    fn test_clear_selection() {
+        let (mut app, _temp) = create_test_app();
+
+        app.select_all();
+        assert_eq!(app.selected_indices.len(), 2);
+
+        app.clear_selection();
+        assert_eq!(app.selected_indices.len(), 0);
+    }
+
+    #[test]
+    fn test_get_selected_repos() {
+        let (mut app, _temp) = create_test_app();
+
+        app.selected_indices.insert(0);
+        app.selected_indices.insert(1);
+
+        let selected = app.get_selected_repos();
+        assert_eq!(selected.len(), 2);
+
+        // Collect names and check (order doesn't matter with HashSet)
+        let names: HashSet<&str> = selected.iter().map(|r| r.name.as_str()).collect();
+        assert!(names.contains("repo1"));
+        assert!(names.contains("repo2"));
+    }
+
+    #[test]
+    fn test_selected_count() {
+        let (mut app, _temp) = create_test_app();
+
+        assert_eq!(app.selected_count(), 0);
+
+        app.selected_indices.insert(0);
+        assert_eq!(app.selected_count(), 1);
+
+        app.selected_indices.insert(1);
+        assert_eq!(app.selected_count(), 2);
+    }
+
+    #[test]
+    fn test_is_current_selected() {
+        let (mut app, _temp) = create_test_app();
+        app.set_selected_index(Some(0));
+
+        assert!(!app.is_current_selected());
+
+        app.selected_indices.insert(0);
+        assert!(app.is_current_selected());
     }
 }

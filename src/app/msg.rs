@@ -21,6 +21,9 @@ pub enum Cmd {
     /// Execute an action
     ExecuteAction(Action, Repository),
 
+    /// Execute batch actions
+    ExecuteBatchAction(Action, Vec<Repository>),
+
     /// Scan a directory (for directory chooser)
     ScanDirectory(PathBuf),
 }
@@ -70,7 +73,7 @@ pub enum AppMsg {
 
     // === Async Events ===
     /// Configuration loaded
-    ConfigLoaded(Result<Config, ConfigError>),
+    ConfigLoaded(Box<Result<Config, ConfigError>>),
 
     /// Repositories loaded
     RepositoriesLoaded(Result<Vec<Repository>, RepoError>),
@@ -148,6 +151,36 @@ pub enum AppMsg {
 
     /// Navigate down in theme selector
     ThemeNavDown,
+
+    /// Toggle favorite for current repository
+    ToggleFavorite,
+
+    /// Switch to favorites view
+    ShowFavorites,
+
+    /// Switch to all repositories view
+    ShowAllRepos,
+
+    /// Switch to recent repositories view
+    ShowRecent,
+
+    /// Toggle selection mode
+    ToggleSelectionMode,
+
+    /// Toggle selection for current repository
+    ToggleSelection,
+
+    /// Select all filtered repositories
+    SelectAll,
+
+    /// Clear all selections
+    ClearSelection,
+
+    /// Execute batch action
+    ExecuteBatchAction(Action),
+
+    /// Batch action completed
+    BatchActionExecuted(crate::action::batch::BatchResult),
 }
 
 impl AppMsg {
@@ -171,6 +204,14 @@ impl AppMsg {
                 | AppMsg::ScrollUp
         )
     }
+
+    /// Check if message is a view mode switch
+    pub fn is_view_switch(&self) -> bool {
+        matches!(
+            self,
+            AppMsg::ShowFavorites | AppMsg::ShowAllRepos | AppMsg::ShowRecent
+        )
+    }
 }
 
 #[cfg(test)]
@@ -190,5 +231,13 @@ mod tests {
         assert!(AppMsg::NextRepo.is_navigation());
         assert!(AppMsg::PreviousRepo.is_navigation());
         assert!(!AppMsg::SearchInput('a').is_navigation());
+    }
+
+    #[test]
+    fn test_is_view_switch() {
+        assert!(AppMsg::ShowFavorites.is_view_switch());
+        assert!(AppMsg::ShowAllRepos.is_view_switch());
+        assert!(!AppMsg::NextRepo.is_view_switch());
+        assert!(!AppMsg::ToggleFavorite.is_view_switch());
     }
 }

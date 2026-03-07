@@ -58,6 +58,17 @@ pub enum AppState {
     },
 }
 
+/// View mode for repository list
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ViewMode {
+    /// Show all repositories
+    All,
+    /// Show only favorited repositories
+    Favorites,
+    /// Show recently opened repositories
+    Recent,
+}
+
 impl AppState {
     /// Get state priority for key handling
     ///

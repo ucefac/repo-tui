@@ -27,6 +27,14 @@ pub struct Config {
     /// Security configuration
     #[serde(default)]
     pub security: SecurityConfig,
+
+    /// Favorites configuration
+    #[serde(default)]
+    pub favorites: FavoritesConfig,
+
+    /// Recent repositories configuration
+    #[serde(default)]
+    pub recent: RecentConfig,
 }
 
 impl Default for Config {
@@ -38,6 +46,8 @@ impl Default for Config {
             default_command: None,
             ui: UiConfig::default(),
             security: SecurityConfig::default(),
+            favorites: FavoritesConfig::default(),
+            recent: RecentConfig::default(),
         }
     }
 }
@@ -124,6 +134,50 @@ fn default_false() -> bool {
 
 fn default_max_depth() -> usize {
     crate::constants::security::DEFAULT_MAX_SEARCH_DEPTH
+}
+
+/// Favorites configuration
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct FavoritesConfig {
+    /// List of favorite repository paths
+    #[serde(default)]
+    pub repositories: Vec<String>,
+}
+
+impl FavoritesConfig {
+    /// Convert to FavoritesStore
+    pub fn to_store(&self) -> crate::favorites::FavoritesStore {
+        crate::favorites::FavoritesStore::from_paths(self.repositories.clone())
+    }
+
+    /// Create from FavoritesStore
+    pub fn from_store(store: &crate::favorites::FavoritesStore) -> Self {
+        Self {
+            repositories: store.get_all().to_vec(),
+        }
+    }
+}
+
+/// Recent repositories configuration
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct RecentConfig {
+    /// List of recent repositories with timestamps
+    #[serde(default)]
+    pub repositories: Vec<crate::recent::RecentEntry>,
+}
+
+impl RecentConfig {
+    /// Convert to RecentStore
+    pub fn to_store(&self) -> crate::recent::RecentStore {
+        crate::recent::RecentStore::from_config_entries(self.repositories.clone())
+    }
+
+    /// Create from RecentStore
+    pub fn from_store(store: &crate::recent::RecentStore) -> Self {
+        Self {
+            repositories: store.get_all().to_vec(),
+        }
+    }
 }
 
 #[cfg(test)]
