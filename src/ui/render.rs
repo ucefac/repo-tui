@@ -22,13 +22,9 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         return;
     }
 
-    // Get theme
-    let theme = Theme::from_config(
-        app.config
-            .as_ref()
-            .map(|c| c.ui.theme.as_str())
-            .unwrap_or("dark"),
-    );
+    // Get theme - use the already-applied theme from app state
+    // Clone to avoid borrow conflicts with render functions that need &mut App
+    let theme = app.theme.clone();
 
     // Clone state for matching (to avoid borrow conflicts with app)
     let state_clone = app.state.clone();
