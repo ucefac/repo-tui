@@ -419,7 +419,7 @@ fn view(app: &App, frame: &mut Frame) {
 ### 4.3 操作菜单
 ```
 ╭─ Actions: github_facebook_react ─────────────────╮
-│ [1] cd + cloud (claude)                          │
+│ [1] Open in Claude Code                          │
 │ [2] Open in WebStorm                             │
 │ [3] Open in VS Code                              │
 │ [4] Open in Finder/Explorer                      │
@@ -445,7 +445,7 @@ fn view(app: &App, frame: &mut Frame) {
 │                                                               │
 │ Actions                                                       │
 │   Enter   Open action menu                                   │
-│   1       cd + cloud (claude)                                │
+│   1       Open in Claude Code                                │
 │   2       Open in WebStorm                                   │
 │   3       Open in VS Code                                    │
 │   4       Open in Finder/Explorer                            │

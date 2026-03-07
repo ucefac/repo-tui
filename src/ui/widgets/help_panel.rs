@@ -56,7 +56,7 @@ impl HelpPanel {
             )),
             Line::from(""),
             self.key_binding("Enter", "Open action menu"),
-            self.key_binding("1", "cd + cloud (claude)"),
+            self.key_binding("1", "Open in Claude Code"),
             self.key_binding("2", "Open in WebStorm"),
             self.key_binding("3", "Open in VS Code"),
             self.key_binding("4", "Open in Finder/Explorer"),
