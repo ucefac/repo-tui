@@ -15,7 +15,7 @@ fn test_key_code_mappings() {
 
 #[test]
 fn test_navigation_keys() {
-    let nav_keys = vec![
+    let nav_keys = [
         KeyCode::Up,
         KeyCode::Down,
         KeyCode::Left,

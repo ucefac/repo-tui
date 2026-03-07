@@ -140,11 +140,9 @@ mod tests {
         // Give async task time to complete
         tokio::time::sleep(Duration::from_millis(100)).await;
 
-        if let Ok(msg) = rx.try_recv() {
-            if let AppMsg::GitStatusChecked(idx, result) = msg {
-                assert_eq!(idx, 0);
-                assert!(result.is_ok());
-            }
+        if let Ok(AppMsg::GitStatusChecked(idx, result)) = rx.try_recv() {
+            assert_eq!(idx, 0);
+            assert!(result.is_ok());
         }
     }
 
@@ -170,13 +168,11 @@ mod tests {
         scheduler.schedule_check(0, path.clone()).await;
 
         // Should receive immediately
-        if let Ok(msg) = rx.try_recv() {
-            if let AppMsg::GitStatusChecked(idx, result) = msg {
-                assert_eq!(idx, 0);
-                let returned_status = result.unwrap();
-                assert!(returned_status.is_dirty);
-                assert_eq!(returned_status.branch, Some("main".to_string()));
-            }
+        if let Ok(AppMsg::GitStatusChecked(idx, result)) = rx.try_recv() {
+            assert_eq!(idx, 0);
+            let returned_status = result.unwrap();
+            assert!(returned_status.is_dirty);
+            assert_eq!(returned_status.branch, Some("main".to_string()));
         }
     }
 

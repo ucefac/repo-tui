@@ -246,7 +246,7 @@ fn bench_cache_cleanup(c: &mut Criterion) {
             },
             |cache| {
                 // Cleanup
-                black_box(cache.cleanup());
+                cache.cleanup();
                 black_box(cache.len());
             },
             BatchSize::PerIteration,

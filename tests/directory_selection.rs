@@ -15,7 +15,7 @@ fn test_directory_selection_state() {
 
 #[test]
 fn test_directory_chooser_navigation() {
-    let entries = vec!["dir1".to_string(), "dir2".to_string(), "dir3".to_string()];
+    let entries = ["dir1".to_string(), "dir2".to_string(), "dir3".to_string()];
     let mut selected_index = 0;
     selected_index = (selected_index + 1).min(entries.len() - 1);
     assert_eq!(selected_index, 1);

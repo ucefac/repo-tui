@@ -6,6 +6,7 @@ use crate::app::state::AppState;
 use crate::config;
 use crate::constants;
 use crate::runtime::executor::Runtime;
+use crate::ui::Theme;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -400,6 +401,59 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 }
             }
         }
+
+        AppMsg::OpenThemeSelector => {
+            let mut theme_list_state = ratatui::widgets::ListState::default();
+            theme_list_state.select(Some(0));
+            app.state = AppState::SelectingTheme { theme_list_state };
+        }
+
+        AppMsg::CloseThemeSelector => {
+            app.state = AppState::Running;
+        }
+
+        AppMsg::SelectTheme(theme_name) => {
+            app.theme = Theme::new(&theme_name);
+
+            if let Some(ref mut config) = app.config {
+                config.ui.theme = app.theme.name.clone();
+
+                match config::save_config(config) {
+                    Ok(()) => {
+                        app.loading_message = Some(format!("Theme '{}' saved", app.theme.name));
+                    }
+                    Err(e) => {
+                        app.error_message = Some(format!("Failed to save theme: {}", e));
+                    }
+                }
+            }
+
+            app.state = AppState::Running;
+        }
+
+        AppMsg::ThemeNavUp => {
+            if let AppState::SelectingTheme { theme_list_state } = &mut app.state {
+                let themes = crate::ui::themes::THEME_NAMES;
+                if themes.is_empty() {
+                    return;
+                }
+                let current = theme_list_state.selected().unwrap_or(0);
+                let next = current.saturating_sub(1);
+                theme_list_state.select(Some(next));
+            }
+        }
+
+        AppMsg::ThemeNavDown => {
+            if let AppState::SelectingTheme { theme_list_state } = &mut app.state {
+                let themes = crate::ui::themes::THEME_NAMES;
+                if themes.is_empty() {
+                    return;
+                }
+                let current = theme_list_state.selected().unwrap_or(0);
+                let next = (current + 1).min(themes.len() - 1);
+                theme_list_state.select(Some(next));
+            }
+        }
     }
 }
 
@@ -653,5 +707,74 @@ mod tests {
 
         update(AppMsg::Quit, &mut app, &runtime);
         assert!(matches!(app.state, AppState::Quit));
+    }
+
+    #[test]
+    fn test_update_open_theme_selector() {
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        app.state = AppState::Running;
+
+        update(AppMsg::OpenThemeSelector, &mut app, &runtime);
+
+        assert!(matches!(app.state, AppState::SelectingTheme { .. }));
+        assert!(app.state.is_modal());
+    }
+
+    #[test]
+    fn test_update_close_theme_selector() {
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        app.state = AppState::SelectingTheme {
+            theme_list_state: ratatui::widgets::ListState::default(),
+        };
+
+        update(AppMsg::CloseThemeSelector, &mut app, &runtime);
+
+        assert!(matches!(app.state, AppState::Running));
+    }
+
+    #[test]
+    fn test_update_theme_nav() {
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        app.state = AppState::SelectingTheme {
+            theme_list_state: ratatui::widgets::ListState::default(),
+        };
+
+        // Test nav down
+        update(AppMsg::ThemeNavDown, &mut app, &runtime);
+        if let AppState::SelectingTheme { theme_list_state } = &app.state {
+            assert_eq!(theme_list_state.selected(), Some(1));
+        }
+
+        // Test nav up
+        update(AppMsg::ThemeNavUp, &mut app, &runtime);
+        if let AppState::SelectingTheme { theme_list_state } = &app.state {
+            assert_eq!(theme_list_state.selected(), Some(0));
+        }
+    }
+
+    #[test]
+    fn test_update_select_theme() {
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        app.state = AppState::SelectingTheme {
+            theme_list_state: ratatui::widgets::ListState::default(),
+        };
+        app.config = Some(crate::config::Config::default());
+
+        update(AppMsg::SelectTheme("nord".to_string()), &mut app, &runtime);
+
+        assert!(matches!(app.state, AppState::Running));
+        assert_eq!(app.theme.name, "nord");
     }
 }

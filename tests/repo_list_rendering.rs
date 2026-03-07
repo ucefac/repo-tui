@@ -18,7 +18,7 @@ fn test_repository_display_format() {
 
 #[test]
 fn test_repository_sorting() {
-    let mut repos = vec![
+    let mut repos = [
         Repository {
             name: "zebra".to_string(),
             path: PathBuf::from("/tmp/zebra"),

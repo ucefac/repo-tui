@@ -48,6 +48,12 @@ pub enum AppState {
 
     /// Quitting
     Quit,
+
+    /// Selecting theme
+    SelectingTheme {
+        /// Theme list state
+        theme_list_state: ratatui::widgets::ListState,
+    },
 }
 
 impl AppState {
@@ -59,6 +65,7 @@ impl AppState {
             AppState::ShowingActions { .. } => 5,
             AppState::ShowingHelp => 4,
             AppState::ChoosingDir { .. } => 3,
+            AppState::SelectingTheme { .. } => 3,
             AppState::Running => 1,
             AppState::Loading { .. } | AppState::Error { .. } => 0,
             AppState::Quit => 0,
@@ -69,7 +76,10 @@ impl AppState {
     pub fn is_modal(&self) -> bool {
         matches!(
             self,
-            AppState::ShowingActions { .. } | AppState::ShowingHelp | AppState::ChoosingDir { .. }
+            AppState::ShowingActions { .. }
+                | AppState::ShowingHelp
+                | AppState::ChoosingDir { .. }
+                | AppState::SelectingTheme { .. }
         )
     }
 
@@ -81,6 +91,15 @@ impl AppState {
     /// Check if application is in a loading/error state
     pub fn is_blocking(&self) -> bool {
         matches!(self, AppState::Loading { .. } | AppState::Error { .. })
+    }
+
+    /// Get mutable reference to theme list state if in SelectingTheme state
+    pub fn theme_list_state_mut(&mut self) -> Option<&mut ratatui::widgets::ListState> {
+        if let AppState::SelectingTheme { theme_list_state } = self {
+            Some(theme_list_state)
+        } else {
+            None
+        }
     }
 }
 
@@ -119,5 +138,22 @@ mod tests {
     fn test_is_running() {
         assert!(AppState::Running.is_running());
         assert!(!AppState::ShowingHelp.is_running());
+    }
+
+    #[test]
+    fn test_selecting_theme_state() {
+        let mut state = AppState::SelectingTheme {
+            theme_list_state: ratatui::widgets::ListState::default(),
+        };
+
+        assert!(state.is_modal());
+        assert_eq!(state.priority(), 3);
+        assert!(state.theme_list_state_mut().is_some());
+    }
+
+    #[test]
+    fn test_theme_list_state_mut_wrong_state() {
+        let mut state = AppState::Running;
+        assert!(state.theme_list_state_mut().is_none());
     }
 }

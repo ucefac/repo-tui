@@ -133,6 +133,21 @@ pub enum AppMsg {
 
     /// Theme changed (dark/light toggle)
     ThemeChanged,
+
+    /// Open theme selector
+    OpenThemeSelector,
+
+    /// Close theme selector
+    CloseThemeSelector,
+
+    /// Select specified theme
+    SelectTheme(String),
+
+    /// Navigate up in theme selector
+    ThemeNavUp,
+
+    /// Navigate down in theme selector
+    ThemeNavDown,
 }
 
 impl AppMsg {

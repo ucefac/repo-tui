@@ -34,7 +34,7 @@ async fn test_m_key_opens_directory_chooser() {
     handle_key_event(create_key(KeyCode::Char('m')), &mut app, &runtime);
 
     // Process the message
-    if let Some(msg) = rx.try_recv().ok() {
+    if let Ok(msg) = rx.try_recv() {
         repotui::app::update::update(msg, &mut app, &runtime);
     }
 
@@ -123,7 +123,7 @@ async fn test_directory_chooser_can_be_opened_with_m_key() {
     handle_key_event(create_key(KeyCode::Char('m')), &mut app, &runtime);
 
     // Process the message
-    if let Some(msg) = rx.try_recv().ok() {
+    if let Ok(msg) = rx.try_recv() {
         repotui::app::update::update(msg, &mut app, &runtime);
     }
 

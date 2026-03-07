@@ -3,6 +3,7 @@
 pub mod layout;
 pub mod render;
 pub mod theme;
+pub mod themes;
 pub mod widgets;
 
 pub use layout::{get_display_mode, DisplayMode};

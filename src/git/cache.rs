@@ -91,8 +91,8 @@ impl Default for StatusCache {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
     use super::*;
+    use std::sync::Arc;
     use std::thread;
 
     #[test]

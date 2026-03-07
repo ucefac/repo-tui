@@ -16,7 +16,8 @@ main_directory = "~/Developer/github"
 
 # UI configuration
 [ui]
-theme = "dark"  # dark | light
+# Available themes: dark, light, nord, dracula, gruvbox_dark, tokyo_night, catppuccin_mocha
+theme = "dark"
 show_git_status = true
 show_branch = true
 

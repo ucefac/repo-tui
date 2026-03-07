@@ -85,7 +85,7 @@ impl Default for UiConfig {
 }
 
 fn default_theme() -> String {
-    crate::constants::ui::DEFAULT_THEME.to_string()
+    crate::ui::themes::default_theme_name().to_string()
 }
 
 fn default_true() -> bool {

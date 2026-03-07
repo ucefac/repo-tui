@@ -68,7 +68,7 @@ impl HelpPanel {
             Line::from(""),
             self.key_binding("m", "Change main directory"),
             self.key_binding("r", "Refresh list"),
-            self.key_binding("t", "Toggle theme (dark/light)"),
+            self.key_binding("t", "Open theme selector"),
             self.key_binding("?", "Show this help"),
             self.key_binding("q", "Quit"),
             self.key_binding("Ctrl+c", "Force quit"),

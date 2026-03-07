@@ -5,7 +5,7 @@ use crate::app::state::AppState;
 use crate::ui::theme::Theme;
 use crate::ui::widgets::{
     centered_help_popup, centered_popup, centered_rect, ActionMenu, DirChooser, HelpPanel,
-    RepoList, SearchBox,
+    RepoList, SearchBox, ThemeSelector,
 };
 use ratatui::prelude::*;
 use ratatui::widgets::{Clear, Paragraph};
@@ -30,11 +30,11 @@ pub fn render(frame: &mut Frame, app: &mut App) {
             .unwrap_or("dark"),
     );
 
-    // Clone state to avoid borrow conflicts
-    let state = app.state.clone();
+    // Clone state for matching (to avoid borrow conflicts with app)
+    let state_clone = app.state.clone();
 
     // Render based on state
-    match state {
+    match state_clone {
         AppState::Loading { ref message } => {
             render_loading(frame, area, message, &theme);
         }
@@ -67,6 +67,12 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         AppState::ShowingHelp => {
             render_main_ui(frame, area, app, &theme);
             render_help(frame, area, &theme);
+        }
+        AppState::SelectingTheme { .. } => {
+            render_main_ui(frame, area, app, &theme);
+            if let Some(theme_list_state) = app.state.theme_list_state_mut() {
+                render_theme_selector(frame, area, theme_list_state, &theme);
+            }
         }
         AppState::Quit => {
             // Don't render anything when quitting
@@ -210,4 +216,37 @@ fn render_directory_chooser(
     let chooser = DirChooser::new(path, entries, selected_index, scroll_offset, theme)
         .visible_height(popup_area.height.saturating_sub(10)); // Reserve space for title, path, stats, help
     frame.render_widget(chooser, popup_area);
+}
+
+/// Render theme selector
+fn render_theme_selector(
+    frame: &mut Frame,
+    area: Rect,
+    theme_list_state: &mut ratatui::widgets::ListState,
+    theme: &Theme,
+) {
+    use crate::ui::themes::THEME_NAMES;
+
+    let popup_area = centered_rect(60, 55, area);
+
+    // Clear background for modal
+    frame.render_widget(Clear, popup_area);
+
+    // Get current theme for comparison
+    let current_theme = theme.clone();
+
+    // Get preview theme (currently selected theme)
+    let preview_theme = Theme::from_config(
+        theme_list_state
+            .selected()
+            .map(|i| THEME_NAMES[i])
+            .unwrap_or("dark"),
+    );
+
+    // Create and render theme selector component
+    let selected_index = theme_list_state.selected().unwrap_or(0);
+    let selector = ThemeSelector::new(THEME_NAMES, selected_index, &current_theme, preview_theme)
+        .title("🎨 Select Theme");
+
+    frame.render_widget(selector, popup_area);
 }

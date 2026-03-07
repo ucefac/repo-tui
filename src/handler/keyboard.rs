@@ -25,6 +25,9 @@ pub fn handle_key_event(key: KeyEvent, app: &mut App, runtime: &Runtime) {
         AppState::ChoosingDir { .. } => {
             handle_chooser_keys(key, app, runtime);
         }
+        AppState::SelectingTheme { .. } => {
+            handle_theme_selector_keys(key, app);
+        }
         AppState::Running | AppState::Loading { .. } | AppState::Error { .. } => {
             if app.search_active {
                 handle_search_input(key, app, runtime);
@@ -97,6 +100,43 @@ fn handle_help_keys(key: KeyEvent, app: &mut App) {
         }
         _ => {}
     }
+}
+
+/// Handle keys in theme selector
+fn handle_theme_selector_keys(key: KeyEvent, app: &mut App) {
+    match key.code {
+        KeyCode::Esc | KeyCode::Char('q') => {
+            let _ = app.msg_tx.try_send(AppMsg::CloseThemeSelector);
+        }
+        KeyCode::Char('j') | KeyCode::Down => {
+            let _ = app.msg_tx.try_send(AppMsg::ThemeNavDown);
+        }
+        KeyCode::Char('k') | KeyCode::Up => {
+            let _ = app.msg_tx.try_send(AppMsg::ThemeNavUp);
+        }
+        KeyCode::Enter => {
+            // Get selected theme name and send it
+            let theme_name = get_selected_theme_name(app);
+            if let Some(name) = theme_name {
+                let _ = app.msg_tx.try_send(AppMsg::SelectTheme(name));
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Get currently selected theme name from app state
+fn get_selected_theme_name(app: &App) -> Option<String> {
+    use crate::ui::themes::THEME_NAMES;
+
+    if let AppState::SelectingTheme { theme_list_state } = &app.state {
+        if let Some(selected) = theme_list_state.selected() {
+            if selected < THEME_NAMES.len() {
+                return Some(THEME_NAMES[selected].to_string());
+            }
+        }
+    }
+    None
 }
 
 /// Handle keys in directory chooser
@@ -296,9 +336,9 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
             app.search_active = true;
         }
 
-        // Toggle theme (dark/light)
+        // Toggle theme selector (t key)
         KeyCode::Char('t') => {
-            let _ = app.msg_tx.try_send(AppMsg::ThemeChanged);
+            let _ = app.msg_tx.try_send(AppMsg::OpenThemeSelector);
         }
 
         // Change main directory
@@ -526,5 +566,41 @@ mod tests {
         handle_chooser_keys(create_test_key(KeyCode::Char('l')), &mut app, &runtime);
         handle_chooser_keys(create_test_key(KeyCode::Left), &mut app, &runtime);
         handle_chooser_keys(create_test_key(KeyCode::Right), &mut app, &runtime);
+    }
+
+    #[test]
+    fn test_handle_theme_selector_keys() {
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+
+        // Setup theme selector state
+        app.state = AppState::SelectingTheme {
+            theme_list_state: ratatui::widgets::ListState::default(),
+        };
+
+        // Test close
+        handle_theme_selector_keys(create_test_key(KeyCode::Esc), &mut app);
+        handle_theme_selector_keys(create_test_key(KeyCode::Char('q')), &mut app);
+
+        // Test navigation
+        handle_theme_selector_keys(create_test_key(KeyCode::Char('j')), &mut app);
+        handle_theme_selector_keys(create_test_key(KeyCode::Char('k')), &mut app);
+        handle_theme_selector_keys(create_test_key(KeyCode::Down), &mut app);
+        handle_theme_selector_keys(create_test_key(KeyCode::Up), &mut app);
+
+        // Test enter (select)
+        handle_theme_selector_keys(create_test_key(KeyCode::Enter), &mut app);
+    }
+
+    #[test]
+    fn test_handle_running_keys_opens_theme_selector() {
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        app.state = AppState::Running;
+
+        // Test 't' key opens theme selector
+        handle_running_keys(create_test_key(KeyCode::Char('t')), &mut app, &runtime);
     }
 }

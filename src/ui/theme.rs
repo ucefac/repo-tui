@@ -1,6 +1,5 @@
 //! UI theme configuration
 
-use crate::constants;
 use ratatui::style::{Color, Modifier, Style};
 use serde::{Deserialize, Serialize};
 
@@ -43,151 +42,51 @@ pub struct Theme {
 }
 
 impl Theme {
-    /// Create dark theme
+    /// Create theme from name
+    pub fn new(name: &str) -> Self {
+        crate::ui::themes::get_theme(name).unwrap_or_else(Self::dark)
+    }
+
+    /// Get dark theme (fallback)
     pub fn dark() -> Self {
-        Self {
-            name: "dark".to_string(),
-            colors: ColorPalette {
-                primary: ColorRgb {
-                    r: constants::ui::dark::PRIMARY.r,
-                    g: constants::ui::dark::PRIMARY.g,
-                    b: constants::ui::dark::PRIMARY.b,
-                },
-                secondary: ColorRgb {
-                    r: 139,
-                    g: 92,
-                    b: 246,
-                },
-                success: ColorRgb {
-                    r: constants::ui::dark::SUCCESS.r,
-                    g: constants::ui::dark::SUCCESS.g,
-                    b: constants::ui::dark::SUCCESS.b,
-                },
-                warning: ColorRgb {
-                    r: constants::ui::dark::WARNING.r,
-                    g: constants::ui::dark::WARNING.g,
-                    b: constants::ui::dark::WARNING.b,
-                },
-                error: ColorRgb {
-                    r: constants::ui::dark::ERROR.r,
-                    g: constants::ui::dark::ERROR.g,
-                    b: constants::ui::dark::ERROR.b,
-                },
-                background: ColorRgb { r: 9, g: 9, b: 11 },
-                foreground: ColorRgb {
-                    r: 248,
-                    g: 248,
-                    b: 242,
-                },
-                border: ColorRgb {
-                    r: 63,
-                    g: 63,
-                    b: 70,
-                },
-                selected_bg: ColorRgb {
-                    r: constants::ui::dark::SELECTED_BG.r,
-                    g: constants::ui::dark::SELECTED_BG.g,
-                    b: constants::ui::dark::SELECTED_BG.b,
-                },
-                selected_fg: ColorRgb {
-                    r: 255,
-                    g: 255,
-                    b: 255,
-                },
-                text_muted: ColorRgb {
-                    r: 107,
-                    g: 107,
-                    b: 107,
-                },
-                border_focused: ColorRgb {
-                    r: 56,
-                    g: 189,
-                    b: 248,
-                },
-            },
-        }
+        crate::ui::themes::dark_theme()
     }
 
-    /// Create light theme
+    /// Get light theme
     pub fn light() -> Self {
-        Self {
-            name: "light".to_string(),
-            colors: ColorPalette {
-                primary: ColorRgb {
-                    r: constants::ui::light::PRIMARY.r,
-                    g: constants::ui::light::PRIMARY.g,
-                    b: constants::ui::light::PRIMARY.b,
-                },
-                secondary: ColorRgb {
-                    r: 126,
-                    g: 34,
-                    b: 206,
-                },
-                success: ColorRgb {
-                    r: constants::ui::light::SUCCESS.r,
-                    g: constants::ui::light::SUCCESS.g,
-                    b: constants::ui::light::SUCCESS.b,
-                },
-                warning: ColorRgb {
-                    r: constants::ui::light::WARNING.r,
-                    g: constants::ui::light::WARNING.g,
-                    b: constants::ui::light::WARNING.b,
-                },
-                error: ColorRgb {
-                    r: constants::ui::light::ERROR.r,
-                    g: constants::ui::light::ERROR.g,
-                    b: constants::ui::light::ERROR.b,
-                },
-                background: ColorRgb {
-                    r: 255,
-                    g: 255,
-                    b: 255,
-                },
-                foreground: ColorRgb { r: 9, g: 9, b: 11 },
-                border: ColorRgb {
-                    r: 209,
-                    g: 213,
-                    b: 219,
-                },
-                selected_bg: ColorRgb {
-                    r: constants::ui::light::SELECTED_BG.r,
-                    g: constants::ui::light::SELECTED_BG.g,
-                    b: constants::ui::light::SELECTED_BG.b,
-                },
-                selected_fg: ColorRgb {
-                    r: 255,
-                    g: 255,
-                    b: 255,
-                },
-                text_muted: ColorRgb {
-                    r: 156,
-                    g: 163,
-                    b: 175,
-                },
-                border_focused: ColorRgb {
-                    r: 37,
-                    g: 99,
-                    b: 235,
-                },
-            },
-        }
+        crate::ui::themes::light_theme()
     }
 
-    /// Create theme from config
+    /// Get default theme
+    pub fn default_theme() -> Self {
+        Self::new(crate::ui::themes::default_theme_name())
+    }
+
+    /// Create theme from config (backward compatible)
     pub fn from_config(theme_name: &str) -> Self {
-        match theme_name {
-            "light" => Self::light(),
-            _ => Self::dark(),
-        }
+        Self::new(theme_name)
     }
 
-    /// Toggle between dark and light theme
+    /// Toggle between dark and light theme (backward compatible)
     pub fn toggle(&self) -> Self {
         if self.name == "dark" {
             Self::light()
         } else {
             Self::dark()
         }
+    }
+
+    /// Get next theme in rotation
+    pub fn next(&self) -> Self {
+        let themes = crate::ui::themes::THEME_NAMES;
+        let current_idx = themes.iter().position(|&t| t == self.name).unwrap_or(0);
+        let next_idx = (current_idx + 1) % themes.len();
+        Self::new(themes[next_idx])
+    }
+
+    /// Get all available theme names
+    pub fn available_themes() -> Vec<&'static str> {
+        crate::ui::themes::THEME_NAMES.to_vec()
     }
 
     /// Get selected style
@@ -241,7 +140,7 @@ impl Theme {
 
 impl Default for Theme {
     fn default() -> Self {
-        Self::dark()
+        Self::default_theme()
     }
 }
 
@@ -259,6 +158,18 @@ mod tests {
     fn test_light_theme() {
         let theme = Theme::light();
         assert_eq!(theme.name, "light");
+    }
+
+    #[test]
+    fn test_theme_new() {
+        let dark = Theme::new("dark");
+        assert_eq!(dark.name, "dark");
+
+        let nord = Theme::new("nord");
+        assert_eq!(nord.name, "nord");
+
+        let invalid = Theme::new("invalid");
+        assert_eq!(invalid.name, "dark");
     }
 
     #[test]
@@ -281,6 +192,26 @@ mod tests {
 
         let dark_again = light.toggle();
         assert_eq!(dark_again.name, "dark");
+    }
+
+    #[test]
+    fn test_theme_next() {
+        let dark = Theme::new("dark");
+        let next = dark.next();
+        assert_eq!(next.name, "light");
+
+        let last = Theme::new("catppuccin_mocha");
+        let wrapped = last.next();
+        assert_eq!(wrapped.name, "dark");
+    }
+
+    #[test]
+    fn test_available_themes() {
+        let themes = Theme::available_themes();
+        assert_eq!(themes.len(), 7);
+        assert!(themes.contains(&"dark"));
+        assert!(themes.contains(&"nord"));
+        assert!(themes.contains(&"catppuccin_mocha"));
     }
 
     #[test]
