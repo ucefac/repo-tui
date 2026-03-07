@@ -53,6 +53,8 @@ pub enum AppState {
     SelectingTheme {
         /// Theme list state
         theme_list_state: ratatui::widgets::ListState,
+        /// Preview theme (stored to ensure "what you see is what you get")
+        preview_theme: crate::ui::theme::Theme,
     },
 }
 
@@ -95,8 +97,20 @@ impl AppState {
 
     /// Get mutable reference to theme list state if in SelectingTheme state
     pub fn theme_list_state_mut(&mut self) -> Option<&mut ratatui::widgets::ListState> {
-        if let AppState::SelectingTheme { theme_list_state } = self {
+        if let AppState::SelectingTheme {
+            theme_list_state, ..
+        } = self
+        {
             Some(theme_list_state)
+        } else {
+            None
+        }
+    }
+
+    /// Get reference to preview theme if in SelectingTheme state
+    pub fn preview_theme(&self) -> Option<&crate::ui::theme::Theme> {
+        if let AppState::SelectingTheme { preview_theme, .. } = self {
+            Some(preview_theme)
         } else {
             None
         }
@@ -144,6 +158,7 @@ mod tests {
     fn test_selecting_theme_state() {
         let mut state = AppState::SelectingTheme {
             theme_list_state: ratatui::widgets::ListState::default(),
+            preview_theme: crate::ui::theme::Theme::dark(),
         };
 
         assert!(state.is_modal());

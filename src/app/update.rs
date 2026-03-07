@@ -57,7 +57,8 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 return;
             }
             let current = app.selected_index().unwrap_or(0);
-            let next = (current + 1).min(app.filtered_indices.len() - 1);
+            let len = app.filtered_indices.len();
+            let next = (current + 1) % len;
             app.set_selected_index(Some(next));
         }
 
@@ -66,7 +67,8 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 return;
             }
             let current = app.selected_index().unwrap_or(0);
-            let prev = current.saturating_sub(1);
+            let len = app.filtered_indices.len();
+            let prev = if current == 0 { len - 1 } else { current - 1 };
             app.set_selected_index(Some(prev));
         }
 
@@ -92,6 +94,13 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 Ok(config) => {
                     app.main_dir = Some(config.main_directory.clone());
                     app.config = Some(config.clone());
+
+                    // 处理 random 配置 - 启动时随机选择一个主题
+                    app.theme = if config.ui.theme == "random" {
+                        crate::ui::themes::get_random_theme()
+                    } else {
+                        Theme::new(&config.ui.theme)
+                    };
 
                     // Start loading repositories
                     runtime.dispatch(crate::app::msg::Cmd::LoadRepositories(
@@ -272,9 +281,8 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
             } = &mut app.state
             {
                 if !entries.is_empty() {
-                    *selected_index = (*selected_index + 1).min(entries.len() - 1);
-                    // Auto-scroll: ensure selected item is visible
-                    // Assuming visible height of ~15 items (adjust as needed)
+                    let len = entries.len();
+                    *selected_index = (*selected_index + 1) % len;
                     let visible_count = 15usize;
                     if *selected_index >= *scroll_offset + visible_count {
                         *scroll_offset = selected_index.saturating_sub(visible_count - 1);
@@ -285,16 +293,22 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
 
         AppMsg::DirectoryNavUp => {
             if let AppState::ChoosingDir {
-                entries: _,
+                entries,
                 selected_index,
                 scroll_offset,
                 ..
             } = &mut app.state
             {
-                *selected_index = selected_index.saturating_sub(1);
-                // Auto-scroll: ensure selected item is visible
-                if *selected_index < *scroll_offset {
-                    *scroll_offset = *selected_index;
+                if !entries.is_empty() {
+                    let len = entries.len();
+                    *selected_index = if *selected_index == 0 {
+                        len - 1
+                    } else {
+                        *selected_index - 1
+                    };
+                    if *selected_index < *scroll_offset {
+                        *scroll_offset = *selected_index;
+                    }
                 }
             }
         }
@@ -404,8 +418,31 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
 
         AppMsg::OpenThemeSelector => {
             let mut theme_list_state = ratatui::widgets::ListState::default();
-            theme_list_state.select(Some(0));
-            app.state = AppState::SelectingTheme { theme_list_state };
+
+            // 根据当前配置决定选中项
+            let default_index = if app.config.as_ref().is_some_and(|c| c.ui.theme == "random") {
+                0 // "🎲 Random (随机)"
+            } else {
+                // 查找当前主题在列表中的索引
+                app.config
+                    .as_ref()
+                    .and_then(|c| {
+                        crate::ui::themes::THEME_NAMES
+                            .iter()
+                            .position(|&t| t == c.ui.theme.as_str())
+                    })
+                    .unwrap_or(1) // 默认选中 dark
+            };
+
+            theme_list_state.select(Some(default_index));
+
+            // 固定预览主题（不再随机生成）
+            let preview_theme = Theme::dark();
+
+            app.state = AppState::SelectingTheme {
+                theme_list_state,
+                preview_theme,
+            };
         }
 
         AppMsg::CloseThemeSelector => {
@@ -413,14 +450,28 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
         }
 
         AppMsg::SelectTheme(theme_name) => {
-            app.theme = Theme::new(&theme_name);
+            // 确定要应用的主题
+            let theme_to_apply = if theme_name.contains("Random") {
+                // 选择 random 时，立即随机选择一个具体主题
+                crate::ui::themes::get_random_theme()
+            } else {
+                Theme::new(&theme_name)
+            };
+
+            app.theme = theme_to_apply;
 
             if let Some(ref mut config) = app.config {
-                config.ui.theme = app.theme.name.clone();
+                // Save "random" in config if random was selected
+                config.ui.theme = if theme_name.contains("Random") {
+                    "random".to_string()
+                } else {
+                    theme_name
+                };
 
+                // 保存配置
                 match config::save_config(config) {
                     Ok(()) => {
-                        app.loading_message = Some(format!("Theme '{}' saved", app.theme.name));
+                        app.loading_message = Some(format!("Theme '{}' saved", config.ui.theme));
                     }
                     Err(e) => {
                         app.error_message = Some(format!("Failed to save theme: {}", e));
@@ -432,25 +483,33 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
         }
 
         AppMsg::ThemeNavUp => {
-            if let AppState::SelectingTheme { theme_list_state } = &mut app.state {
+            if let AppState::SelectingTheme {
+                theme_list_state, ..
+            } = &mut app.state
+            {
                 let themes = crate::ui::themes::THEME_NAMES;
                 if themes.is_empty() {
                     return;
                 }
                 let current = theme_list_state.selected().unwrap_or(0);
-                let next = current.saturating_sub(1);
-                theme_list_state.select(Some(next));
+                let len = themes.len();
+                let prev = if current == 0 { len - 1 } else { current - 1 };
+                theme_list_state.select(Some(prev));
             }
         }
 
         AppMsg::ThemeNavDown => {
-            if let AppState::SelectingTheme { theme_list_state } = &mut app.state {
+            if let AppState::SelectingTheme {
+                theme_list_state, ..
+            } = &mut app.state
+            {
                 let themes = crate::ui::themes::THEME_NAMES;
                 if themes.is_empty() {
                     return;
                 }
                 let current = theme_list_state.selected().unwrap_or(0);
-                let next = (current + 1).min(themes.len() - 1);
+                let len = themes.len();
+                let next = (current + 1) % len;
                 theme_list_state.select(Some(next));
             }
         }
@@ -487,6 +546,28 @@ mod tests {
     }
 
     #[test]
+    fn test_directory_nav_down_cyclic() {
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        app.state = AppState::ChoosingDir {
+            path: std::path::PathBuf::from("/tmp"),
+            entries: vec!["dir1".to_string(), "dir2".to_string(), "dir3".to_string()],
+            selected_index: 2,
+            scroll_offset: 0,
+        };
+
+        update(AppMsg::DirectoryNavDown, &mut app, &runtime);
+
+        if let AppState::ChoosingDir { selected_index, .. } = app.state {
+            assert_eq!(selected_index, 0);
+        } else {
+            panic!("State should be ChoosingDir");
+        }
+    }
+
+    #[test]
     fn test_directory_nav_up() {
         let (tx, _rx) = tokio::sync::mpsc::channel(100);
         let mut app = App::new(tx.clone());
@@ -509,6 +590,28 @@ mod tests {
     }
 
     #[test]
+    fn test_directory_nav_up_cyclic() {
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        app.state = AppState::ChoosingDir {
+            path: std::path::PathBuf::from("/tmp"),
+            entries: vec!["dir1".to_string(), "dir2".to_string(), "dir3".to_string()],
+            selected_index: 0,
+            scroll_offset: 0,
+        };
+
+        update(AppMsg::DirectoryNavUp, &mut app, &runtime);
+
+        if let AppState::ChoosingDir { selected_index, .. } = app.state {
+            assert_eq!(selected_index, 2);
+        } else {
+            panic!("State should be ChoosingDir");
+        }
+    }
+
+    #[test]
     fn test_update_next_repo() {
         let (tx, _rx) = tokio::sync::mpsc::channel(100);
         let mut app = App::new(tx.clone());
@@ -521,6 +624,32 @@ mod tests {
         assert_eq!(app.selected_index(), Some(1));
 
         update(AppMsg::NextRepo, &mut app, &runtime);
+        assert_eq!(app.selected_index(), Some(2));
+    }
+
+    #[test]
+    fn test_update_next_repo_cyclic() {
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        app.filtered_indices = vec![0, 1, 2];
+        app.set_selected_index(Some(2));
+
+        update(AppMsg::NextRepo, &mut app, &runtime);
+        assert_eq!(app.selected_index(), Some(0));
+    }
+
+    #[test]
+    fn test_update_previous_repo_cyclic() {
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        app.filtered_indices = vec![0, 1, 2];
+        app.set_selected_index(Some(0));
+
+        update(AppMsg::PreviousRepo, &mut app, &runtime);
         assert_eq!(app.selected_index(), Some(2));
     }
 
@@ -538,6 +667,19 @@ mod tests {
 
         update(AppMsg::PreviousRepo, &mut app, &runtime);
         assert_eq!(app.selected_index(), Some(0));
+    }
+
+    #[test]
+    fn test_update_previous_repo_from_middle() {
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        app.filtered_indices = vec![0, 1, 2, 3, 4];
+        app.set_selected_index(Some(2));
+
+        update(AppMsg::PreviousRepo, &mut app, &runtime);
+        assert_eq!(app.selected_index(), Some(1));
     }
 
     #[test]
@@ -724,21 +866,6 @@ mod tests {
     }
 
     #[test]
-    fn test_update_close_theme_selector() {
-        let (tx, _rx) = tokio::sync::mpsc::channel(100);
-        let mut app = App::new(tx.clone());
-        let runtime = Runtime::new(tx);
-
-        app.state = AppState::SelectingTheme {
-            theme_list_state: ratatui::widgets::ListState::default(),
-        };
-
-        update(AppMsg::CloseThemeSelector, &mut app, &runtime);
-
-        assert!(matches!(app.state, AppState::Running));
-    }
-
-    #[test]
     fn test_update_theme_nav() {
         let (tx, _rx) = tokio::sync::mpsc::channel(100);
         let mut app = App::new(tx.clone());
@@ -746,18 +873,70 @@ mod tests {
 
         app.state = AppState::SelectingTheme {
             theme_list_state: ratatui::widgets::ListState::default(),
+            preview_theme: Theme::dark(),
         };
 
-        // Test nav down
         update(AppMsg::ThemeNavDown, &mut app, &runtime);
-        if let AppState::SelectingTheme { theme_list_state } = &app.state {
+        if let AppState::SelectingTheme {
+            theme_list_state, ..
+        } = &app.state
+        {
             assert_eq!(theme_list_state.selected(), Some(1));
         }
 
-        // Test nav up
         update(AppMsg::ThemeNavUp, &mut app, &runtime);
-        if let AppState::SelectingTheme { theme_list_state } = &app.state {
+        if let AppState::SelectingTheme {
+            theme_list_state, ..
+        } = &app.state
+        {
             assert_eq!(theme_list_state.selected(), Some(0));
+        }
+    }
+
+    #[test]
+    fn test_update_theme_nav_cyclic() {
+        use crate::ui::themes::THEME_NAMES;
+
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        let theme_count = THEME_NAMES.len();
+        app.state = AppState::SelectingTheme {
+            theme_list_state: ratatui::widgets::ListState::default(),
+            preview_theme: Theme::dark(),
+        };
+
+        if let AppState::SelectingTheme {
+            theme_list_state, ..
+        } = &mut app.state
+        {
+            theme_list_state.select(Some(theme_count - 1));
+        }
+
+        update(AppMsg::ThemeNavDown, &mut app, &runtime);
+
+        if let AppState::SelectingTheme {
+            theme_list_state, ..
+        } = &app.state
+        {
+            assert_eq!(theme_list_state.selected(), Some(0));
+        }
+
+        if let AppState::SelectingTheme {
+            theme_list_state, ..
+        } = &mut app.state
+        {
+            theme_list_state.select(Some(0));
+        }
+
+        update(AppMsg::ThemeNavUp, &mut app, &runtime);
+
+        if let AppState::SelectingTheme {
+            theme_list_state, ..
+        } = &app.state
+        {
+            assert_eq!(theme_list_state.selected(), Some(theme_count - 1));
         }
     }
 
@@ -769,6 +948,7 @@ mod tests {
 
         app.state = AppState::SelectingTheme {
             theme_list_state: ratatui::widgets::ListState::default(),
+            preview_theme: Theme::dark(),
         };
         app.config = Some(crate::config::Config::default());
 

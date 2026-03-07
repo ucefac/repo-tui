@@ -129,10 +129,18 @@ fn handle_theme_selector_keys(key: KeyEvent, app: &mut App) {
 fn get_selected_theme_name(app: &App) -> Option<String> {
     use crate::ui::themes::THEME_NAMES;
 
-    if let AppState::SelectingTheme { theme_list_state } = &app.state {
+    if let AppState::SelectingTheme {
+        theme_list_state, ..
+    } = &app.state
+    {
         if let Some(selected) = theme_list_state.selected() {
             if selected < THEME_NAMES.len() {
-                return Some(THEME_NAMES[selected].to_string());
+                let name = THEME_NAMES[selected];
+                // Return "random" for the random option
+                if name.contains("Random") {
+                    return Some("random".to_string());
+                }
+                return Some(name.to_string());
             }
         }
     }
@@ -403,6 +411,7 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::ui::Theme;
     use crossterm::event::KeyEventKind;
     use std::path::PathBuf;
 
@@ -576,6 +585,7 @@ mod tests {
         // Setup theme selector state
         app.state = AppState::SelectingTheme {
             theme_list_state: ratatui::widgets::ListState::default(),
+            preview_theme: Theme::dark(),
         };
 
         // Test close

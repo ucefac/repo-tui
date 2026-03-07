@@ -131,7 +131,32 @@ fn render_preview(
     current_theme: &Theme,
 ) {
     if let Some(theme_name) = themes.get(selected_index) {
-        // Create preview block with color samples
+        // Check if random option is selected
+        if theme_name.contains("Random") {
+            // Show random hint instead of color samples
+            let preview_block = Block::default()
+                .title(" Preview: 🎲 随机 ")
+                .title_alignment(Alignment::Center)
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(preview_theme.colors.border.into()));
+
+            let lines = vec![
+                Line::from("🎲 随机主题"),
+                Line::from(""),
+                Line::from("将随机选择一个主题"),
+                Line::from("每次启动时变化"),
+            ];
+
+            let preview_text = Paragraph::new(lines)
+                .block(preview_block)
+                .alignment(Alignment::Center)
+                .style(Style::default().fg(preview_theme.colors.foreground.into()));
+
+            preview_text.render(area, buf);
+            return;
+        }
+
+        // Normal theme preview
         let preview_block = Block::default()
             .title(format!(" Preview: {} ", theme_name))
             .title_alignment(Alignment::Center)
@@ -288,7 +313,8 @@ mod tests {
         let current_theme = Theme::dark();
         let preview_theme = Theme::new("nord");
 
-        let selector = ThemeSelector::new(themes, 0, &current_theme, preview_theme);
+        // Index 1 is "dark" (index 0 is "🎲 Random (随机)")
+        let selector = ThemeSelector::new(themes, 1, &current_theme, preview_theme);
         assert_eq!(selector.selected(), Some("dark"));
     }
 
@@ -298,7 +324,8 @@ mod tests {
         let current_theme = Theme::dark();
         let preview_theme = Theme::new("nord");
 
-        let mut selector = ThemeSelector::new(themes, 0, &current_theme, preview_theme);
+        // Start at index 1 ("dark")
+        let mut selector = ThemeSelector::new(themes, 1, &current_theme, preview_theme);
         assert_eq!(selector.selected(), Some("dark"));
 
         selector.next();
@@ -311,14 +338,15 @@ mod tests {
         let current_theme = Theme::dark();
         let preview_theme = Theme::new("nord");
 
-        let mut selector = ThemeSelector::new(themes, 0, &current_theme, preview_theme);
+        // Start at index 1 ("dark")
+        let mut selector = ThemeSelector::new(themes, 1, &current_theme, preview_theme);
         assert_eq!(selector.selected(), Some("dark"));
 
         selector.previous();
         assert_eq!(
             selector.selected(),
-            Some("catppuccin_mocha"),
-            "Should wrap around to last item"
+            Some("🎲 Random (随机)"),
+            "Should wrap around to first item (random)"
         );
     }
 
@@ -328,14 +356,15 @@ mod tests {
         let current_theme = Theme::dark();
         let preview_theme = Theme::new("nord");
 
+        // Start at last theme
         let mut selector =
             ThemeSelector::new(themes, themes.len() - 1, &current_theme, preview_theme);
 
         selector.next();
         assert_eq!(
             selector.selected(),
-            Some("dark"),
-            "Should wrap around to first item"
+            Some("🎲 Random (随机)"),
+            "Should wrap around to first item (random)"
         );
     }
 

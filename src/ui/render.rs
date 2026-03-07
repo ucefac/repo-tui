@@ -70,9 +70,7 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         }
         AppState::SelectingTheme { .. } => {
             render_main_ui(frame, area, app, &theme);
-            if let Some(theme_list_state) = app.state.theme_list_state_mut() {
-                render_theme_selector(frame, area, theme_list_state, &theme);
-            }
+            render_theme_selector(frame, area, app, &theme);
         }
         AppState::Quit => {
             // Don't render anything when quitting
@@ -219,12 +217,7 @@ fn render_directory_chooser(
 }
 
 /// Render theme selector
-fn render_theme_selector(
-    frame: &mut Frame,
-    area: Rect,
-    theme_list_state: &mut ratatui::widgets::ListState,
-    theme: &Theme,
-) {
+fn render_theme_selector(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
     use crate::ui::themes::THEME_NAMES;
 
     let popup_area = centered_rect(60, 55, area);
@@ -235,18 +228,21 @@ fn render_theme_selector(
     // Get current theme for comparison
     let current_theme = theme.clone();
 
-    // Get preview theme (currently selected theme)
-    let preview_theme = Theme::from_config(
-        theme_list_state
-            .selected()
-            .map(|i| THEME_NAMES[i])
-            .unwrap_or("dark"),
-    );
+    // Get preview theme from app state (stored in SelectingTheme state)
+    let preview_theme = if let Some(preview) = app.state.preview_theme() {
+        preview.clone()
+    } else {
+        // Fallback (shouldn't happen)
+        Theme::dark()
+    };
 
-    // Create and render theme selector component
-    let selected_index = theme_list_state.selected().unwrap_or(0);
-    let selector = ThemeSelector::new(THEME_NAMES, selected_index, &current_theme, preview_theme)
-        .title("🎨 Select Theme");
+    // Get theme list state
+    if let Some(theme_list_state) = app.state.theme_list_state_mut() {
+        let selected_index = theme_list_state.selected().unwrap_or(0);
+        let selector =
+            ThemeSelector::new(THEME_NAMES, selected_index, &current_theme, preview_theme)
+                .title("🎨 Select Theme");
 
-    frame.render_widget(selector, popup_area);
+        frame.render_widget(selector, popup_area);
+    }
 }

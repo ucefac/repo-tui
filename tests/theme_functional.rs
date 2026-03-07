@@ -6,6 +6,7 @@ use repotui::app::state::AppState;
 use repotui::app::update;
 use repotui::config::Config;
 use repotui::runtime::executor::Runtime;
+use repotui::ui::theme::Theme;
 use repotui::ui::themes::{get_theme, THEME_NAMES};
 use tokio::sync::mpsc;
 
@@ -36,11 +37,15 @@ async fn test_theme_navigation_jk_keys() {
 
     app.state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
+        preview_theme: Theme::dark(),
     };
 
     // Navigate down with 'j'
     update::update(AppMsg::ThemeNavDown, &mut app, &runtime);
-    if let AppState::SelectingTheme { theme_list_state } = &app.state {
+    if let AppState::SelectingTheme {
+        theme_list_state, ..
+    } = &app.state
+    {
         assert_eq!(
             theme_list_state.selected(),
             Some(1),
@@ -50,13 +55,19 @@ async fn test_theme_navigation_jk_keys() {
 
     // Navigate down again
     update::update(AppMsg::ThemeNavDown, &mut app, &runtime);
-    if let AppState::SelectingTheme { theme_list_state } = &app.state {
+    if let AppState::SelectingTheme {
+        theme_list_state, ..
+    } = &app.state
+    {
         assert_eq!(theme_list_state.selected(), Some(2));
     }
 
     // Navigate up with 'k'
     update::update(AppMsg::ThemeNavUp, &mut app, &runtime);
-    if let AppState::SelectingTheme { theme_list_state } = &app.state {
+    if let AppState::SelectingTheme {
+        theme_list_state, ..
+    } = &app.state
+    {
         assert_eq!(
             theme_list_state.selected(),
             Some(1),
@@ -74,17 +85,24 @@ async fn test_theme_navigation_arrow_keys() {
 
     app.state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
+        preview_theme: Theme::dark(),
     };
 
     // Navigate down with ↓
     update::update(AppMsg::ThemeNavDown, &mut app, &runtime);
-    if let AppState::SelectingTheme { theme_list_state } = &app.state {
+    if let AppState::SelectingTheme {
+        theme_list_state, ..
+    } = &app.state
+    {
         assert_eq!(theme_list_state.selected(), Some(1));
     }
 
     // Navigate up with ↑
     update::update(AppMsg::ThemeNavUp, &mut app, &runtime);
-    if let AppState::SelectingTheme { theme_list_state } = &app.state {
+    if let AppState::SelectingTheme {
+        theme_list_state, ..
+    } = &app.state
+    {
         assert_eq!(theme_list_state.selected(), Some(0));
     }
 }
@@ -98,6 +116,7 @@ async fn test_theme_selection_with_enter() {
 
     app.state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
+        preview_theme: Theme::dark(),
     };
     app.config = Some(Config::default());
 
@@ -126,6 +145,7 @@ async fn test_config_updated_on_theme_selection() {
 
     app.state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
+        preview_theme: Theme::dark(),
     };
     app.config = Some(Config::default());
 
@@ -148,6 +168,7 @@ async fn test_config_updated_on_theme_selection() {
         // Re-open selector for next test
         app.state = AppState::SelectingTheme {
             theme_list_state: ratatui::widgets::ListState::default(),
+            preview_theme: Theme::dark(),
         };
     }
 }
@@ -181,6 +202,7 @@ async fn test_esc_closes_theme_selector() {
 
     app.state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
+        preview_theme: Theme::dark(),
     };
 
     // Close with Esc
@@ -201,6 +223,7 @@ async fn test_theme_preview_instant_update() {
 
     app.state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
+        preview_theme: Theme::dark(),
     };
     app.config = Some(Config::default());
 
@@ -223,42 +246,50 @@ async fn test_theme_preview_instant_update() {
         // Re-open for next iteration
         app.state = AppState::SelectingTheme {
             theme_list_state: ratatui::widgets::ListState::default(),
+            preview_theme: Theme::dark(),
         };
     }
 }
 
-/// Test 9: Theme navigation boundary (stops at last item)
+/// Test 9: Theme navigation cyclic (wraps around)
 #[tokio::test(flavor = "multi_thread")]
-async fn test_theme_navigation_boundary() {
+async fn test_theme_navigation_cyclic() {
     let (tx, _rx) = mpsc::channel(100);
     let mut app = App::new(tx.clone());
     let runtime = Runtime::new(tx);
 
     app.state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
+        preview_theme: Theme::dark(),
     };
 
     // Navigate to last theme
-    for _ in 0..THEME_NAMES.len() + 5 {
+    for _ in 0..THEME_NAMES.len() - 1 {
         update::update(AppMsg::ThemeNavDown, &mut app, &runtime);
     }
 
-    // Should be at last theme (stops at boundary, no wrap)
-    if let AppState::SelectingTheme { theme_list_state } = &app.state {
+    // Should be at last theme
+    if let AppState::SelectingTheme {
+        theme_list_state, ..
+    } = &app.state
+    {
         assert_eq!(
             theme_list_state.selected(),
             Some(THEME_NAMES.len() - 1),
-            "Should stop at last theme"
+            "Should be at last theme"
         );
     }
 
-    // Navigate down again - should stay at last
+    // Navigate down again - should wrap to first
     update::update(AppMsg::ThemeNavDown, &mut app, &runtime);
-    if let AppState::SelectingTheme { theme_list_state } = &app.state {
+    if let AppState::SelectingTheme {
+        theme_list_state, ..
+    } = &app.state
+    {
         assert_eq!(
             theme_list_state.selected(),
-            Some(THEME_NAMES.len() - 1),
-            "Should stay at last theme"
+            Some(0),
+            "Should wrap to first theme"
         );
     }
 }
@@ -266,7 +297,8 @@ async fn test_theme_navigation_boundary() {
 /// Test 10: All built-in themes are valid
 #[test]
 fn test_all_themes_valid() {
-    for &theme_name in THEME_NAMES {
+    // Skip "🎲 Random (随机)" as it's not a real theme
+    for &theme_name in &THEME_NAMES[1..] {
         let theme = get_theme(theme_name);
         assert!(theme.is_some(), "Theme {} should exist", theme_name);
 
@@ -282,21 +314,29 @@ fn test_all_themes_valid() {
     }
 }
 
-/// Test 11: Theme selector state boundary
+/// Test 11: Theme selector cyclic navigation
 #[tokio::test(flavor = "multi_thread")]
-async fn test_theme_selector_state_boundary() {
+async fn test_theme_selector_cyclic() {
     let (tx, _rx) = mpsc::channel(100);
     let mut app = App::new(tx.clone());
     let runtime = Runtime::new(tx);
 
     app.state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
+        preview_theme: Theme::dark(),
     };
 
-    // Navigate up from first item - should stay at 0
+    // Navigate up from first item - should wrap to last
     update::update(AppMsg::ThemeNavUp, &mut app, &runtime);
-    if let AppState::SelectingTheme { theme_list_state } = &app.state {
-        assert_eq!(theme_list_state.selected(), Some(0));
+    if let AppState::SelectingTheme {
+        theme_list_state, ..
+    } = &app.state
+    {
+        assert_eq!(
+            theme_list_state.selected(),
+            Some(THEME_NAMES.len() - 1),
+            "Should wrap to last theme"
+        );
     }
 }
 

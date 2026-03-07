@@ -55,6 +55,9 @@ futures = "0.3"
 # Clipboard support
 arboard = "3.3"
 
+# Random theme selection
+rand = "0.8"
+
 [dev-dependencies]
 # Testing
 tempfile = "3"

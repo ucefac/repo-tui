@@ -4,7 +4,7 @@ use ratatui::style::{Color, Modifier, Style};
 use serde::{Deserialize, Serialize};
 
 /// RGB color representation for serialization
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ColorRgb {
     pub r: u8,
     pub g: u8,
@@ -18,7 +18,7 @@ impl From<ColorRgb> for Color {
 }
 
 /// Color palette for a theme
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct ColorPalette {
     pub primary: ColorRgb,
     pub secondary: ColorRgb,
@@ -35,7 +35,7 @@ pub struct ColorPalette {
 }
 
 /// UI Theme
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Theme {
     pub name: String,
     pub colors: ColorPalette,
@@ -44,6 +44,11 @@ pub struct Theme {
 impl Theme {
     /// Create theme from name
     pub fn new(name: &str) -> Self {
+        // Handle "🎲 Random (随机)" option
+        if name.contains("Random") || name == "random" {
+            return crate::ui::themes::get_random_theme();
+        }
+
         crate::ui::themes::get_theme(name).unwrap_or_else(Self::dark)
     }
 
@@ -196,19 +201,24 @@ mod tests {
 
     #[test]
     fn test_theme_next() {
+        // First theme is now "🎲 Random (随机)", second is "dark"
         let dark = Theme::new("dark");
         let next = dark.next();
         assert_eq!(next.name, "light");
 
         let last = Theme::new("catppuccin_mocha");
         let wrapped = last.next();
-        assert_eq!(wrapped.name, "dark");
+        // Now wraps to first theme which is random
+        // When Theme::new() is called with "🎲 Random (随机)", it returns a random real theme
+        // So we just check it's not the same as the input
+        assert_ne!(wrapped.name, "catppuccin_mocha");
     }
 
     #[test]
     fn test_available_themes() {
         let themes = Theme::available_themes();
-        assert_eq!(themes.len(), 7);
+        assert_eq!(themes.len(), 8); // Now includes "🎲 Random (随机)"
+        assert!(themes.contains(&"🎲 Random (随机)"));
         assert!(themes.contains(&"dark"));
         assert!(themes.contains(&"nord"));
         assert!(themes.contains(&"catppuccin_mocha"));

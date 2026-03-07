@@ -74,7 +74,7 @@
   │ │   personal_react_playground       feat    ✓ clean       │ │
   │ ╰──────────────────────────────────────────────────────────╯ │
   │                                                               │
-  │ [j/k] Nav  [g/G] Jump  [/] Search  [Enter] Open  [r] Refresh │
+│ [j/k] Cycle  [g/G] Jump  [/] Search  [Enter] Open  [r] Refresh │
   ╰───────────────────────────────────────────────────────────────╯
   ```
 - **交互**:
@@ -100,85 +100,16 @@
 
 #### F4: 列表导航
 - **按键映射**:
-  | 按键 | 功能 | 说明 |
-  |------|------|------|
-  | `j` / `↓` | 下一项 | - |
-  | `k` / `↑` | 上一项 | - |
-  | `g` | 跳转到第一项 | - |
-  | `G` | 跳转到最后一项 | - |
-  | `Ctrl+d` | 向下滚动半屏 | - |
-  | `Ctrl+u` | 向上滚动半屏 | - |
-  | `数字+G` | 跳转到指定行 | 如 `5G` 到第 5 项 |
-- **状态管理**:
-  - 使用 `ListState` 管理选中状态
-  - `selected_index` 明确定义为过滤后列表的索引
-
-### 2.3 仓库操作
-
-#### F5: 操作菜单
-- **触发**: 选中仓库后按 `Enter` 或 `o`
-- **UI 组件**: 居中弹出式操作菜单
-  ```
-  ╭─ Actions: github_facebook_react ─────────────────╮
-  │ [c] cd + cloud (claude)                          │
-  │ [w] Open in WebStorm                             │
-  │ [v] Open in VS Code                              │
-  │ [f] Open in Finder/Explorer                      │
-  │ [q] Cancel                                       │
-  ╰──────────────────────────────────────────────────╯
-  ```
-- **交互**:
-  - 单键选择操作 (`c/w/v/f`)
-  - `q` / `Esc` 取消
-  - 菜单外点击取消
-
-#### F6: 命令执行 (安全实现)
-| 操作 | 按键 | 实现 | 安全验证 |
-|------|------|------|----------|
-| cd + cloud | `c` | `Command::new("claude").current_dir(path)` | 命令存在性检查 |
-| WebStorm | `w` | `Command::new("webstorm").arg(path)` | 白名单 + which 检查 |
-| VS Code | `v` | `Command::new("code").arg(path)` | 白名单 + which 检查 |
-| 文件管理器 | `f` | macOS: `open`, Linux: `xdg-open`, Windows: `explorer` | - |
-| 取消 | `q` / `Esc` | 关闭菜单 | - |
-
-**安全命令执行**:
-```rust
-fn execute_command(action: Action, repo: &Repository) -> Result<(), ActionError> {
-    match action {
-        Action::CdAndCloud => {
-            // 安全检查：命令存在性
-            if which::which("claude").is_err() {
-                return Err(ActionError::CommandNotFound("claude".into()));
-            }
-            // 安全执行：不使用 shell 拼接，直接设置工作目录
-            Command::new("claude")
-                .current_dir(&repo.path)
-                .status()?;
-        }
-        Action::WebStorm => {
-            // 白名单验证
-            validate_editor("webstorm")?;
-            Command::new("webstorm")
-                .arg(&repo.path)
-                .status()?;
-        }
-        // ... 其他操作
-    }
-    Ok(())
-}
-```
-
-### 2.4 全局快捷键
-
-| 按键 | 主界面 | 目录选择 | 操作菜单 | 帮助面板 |
-|------|--------|----------|----------|----------|
-| `q` | 退出确认 | 取消 | 取消 | 关闭 |
-| `Esc` | 清空搜索 | 取消 | 取消 | 关闭 |
-| `Enter` | 打开菜单 | 确认选择 | 执行操作 | - |
-| `/` | 聚焦搜索 | - | - | - |
-| `r` | 刷新列表 | - | - | - |
-| `?` | 打开帮助 | - | - | 关闭 |
-| `Ctrl+C` | 退出确认 | 退出 | 退出 | 退出 |
+  | 按键 | 主界面 | 目录选择 | 操作菜单 | 帮助面板 |
+  |------|--------|----------|----------|----------|
+  | `q` | 退出确认 | 取消 | 取消 | 关闭 |
+  | `Esc` | 清空搜索 | 取消 | 取消 | 关闭 |
+  | `Enter` | 打开菜单 | 确认选择 | 执行操作 | - |
+  | `/` | 聚焦搜索 | - | - | - |
+  | `r` | 刷新列表 | - | - | - |
+  | `?` | 打开帮助 | - | - | - |
+  | `Ctrl+C` | 退出确认 | 退出 | 退出 | 退出 |
+  | `j/k` | 循环导航 | 循环导航 | 导航 | - |
 
 **状态优先级**: `ActionMenu > Help > ChoosingDir > Searching > Running`  
 (高优先级状态拦截所有按键)
@@ -473,8 +404,8 @@ fn view(app: &App, frame: &mut Frame) {
 ```
 ╭─ Keyboard Shortcuts ─────────────────────────────────────────╮
 │ Navigation                                                    │
-│   j/↓     Move down                                          │
-│   k/↑     Move up                                            │
+│   j/↓     Move down (cyclic: last → first)                   │
+│   k/↑     Move up (cyclic: first → last)                     │
 │   g       Go to top                                          │
 │   G       Go to bottom                                       │
 │   Ctrl+d  Scroll down half-page                              │
