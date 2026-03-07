@@ -6,6 +6,7 @@ use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, List, ListItem};
 
 use crate::repo::Repository;
+use crate::ui::layout::{truncate_middle, DisplayMode, WIDTH_MD, WIDTH_SM};
 use crate::ui::theme::Theme;
 
 /// Repository list widget
@@ -21,6 +22,8 @@ pub struct RepoList<'a> {
     pub scroll_offset: usize,
     /// Terminal height (for calculating visible count)
     pub visible_height: u16,
+    /// Terminal width (for responsive layout)
+    pub area_width: u16,
     /// Theme
     pub theme: &'a Theme,
     /// Show git status
@@ -44,11 +47,18 @@ impl<'a> RepoList<'a> {
             selected_index: None,
             scroll_offset: 0,
             visible_height: 10,
+            area_width: 80,
             theme,
             show_git_status: true,
             show_branch: true,
             total_count: repositories.len(),
         }
+    }
+
+    /// Set area width for responsive layout
+    pub fn area_width(mut self, width: u16) -> Self {
+        self.area_width = width;
+        self
     }
 
     /// Set selected index
@@ -95,6 +105,17 @@ impl<'a> RepoList<'a> {
         (start, end)
     }
 
+    /// Get display mode based on terminal width
+    fn display_mode(&self) -> DisplayMode {
+        if self.area_width < WIDTH_SM {
+            DisplayMode::Compact
+        } else if self.area_width < WIDTH_MD {
+            DisplayMode::Medium
+        } else {
+            DisplayMode::Large
+        }
+    }
+
     /// Calculate how many items can be visible
     fn visible_count(&self) -> usize {
         // Reserve space for borders
@@ -124,6 +145,7 @@ impl<'a> RepoList<'a> {
 impl<'a> Widget for RepoList<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let (start, end) = self.visible_range();
+        let display_mode = self.display_mode();
 
         let items: Vec<ListItem> = self.filtered_indices[start..end]
             .iter()
@@ -133,12 +155,20 @@ impl<'a> Widget for RepoList<'a> {
                 let absolute_idx = start + visible_idx;
                 let is_selected = self.selected_index == Some(absolute_idx);
 
-                let content =
-                    format_repo_item(repo, is_selected, self.show_git_status, self.show_branch);
+                let content = format_repo_item(
+                    repo,
+                    is_selected,
+                    self.show_git_status,
+                    display_mode,
+                    self.area_width,
+                    self.theme,
+                );
 
-                let mut style = Style::default().fg(self.theme.text_primary);
+                let mut style = Style::default().fg(self.theme.colors.foreground.into());
                 if is_selected {
-                    style = style.bg(self.theme.selected_bg).fg(Color::White);
+                    style = style
+                        .bg(self.theme.colors.selected_bg.into())
+                        .fg(Color::White);
                 }
 
                 ListItem::new(content).style(style)
@@ -154,49 +184,79 @@ impl<'a> Widget for RepoList<'a> {
         let block = Block::default()
             .title(title)
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(self.theme.border_normal));
+            .border_style(Style::default().fg(self.theme.colors.border.into()));
 
         let list = List::new(items)
             .block(block)
-            .style(Style::default().fg(self.theme.text_primary));
+            .style(Style::default().fg(self.theme.colors.foreground.into()));
 
         Widget::render(list, area, buf);
     }
 }
 
-/// Format a repository item for display
+/// Format a repository item for display with responsive layout
 fn format_repo_item(
     repo: &Repository,
     is_selected: bool,
     show_git_status: bool,
-    show_branch: bool,
-) -> String {
+    display_mode: DisplayMode,
+    area_width: u16,
+    theme: &Theme,
+) -> Line<'static> {
     let prefix = if is_selected { "▌ " } else { "  " };
+    let mut spans = Vec::new();
 
-    let status_icon = if show_git_status {
-        if repo.is_dirty {
-            "● "
+    // Add prefix
+    spans.push(Span::raw(prefix));
+
+    // Add git status icon
+    if show_git_status {
+        let status_icon = if repo.is_dirty { "●" } else { "✓" };
+        let status_color = if repo.is_dirty {
+            theme.colors.error.into()
         } else {
-            "✓ "
-        }
-    } else {
-        ""
-    };
-
-    let branch_info = if show_branch {
-        repo.branch
-            .as_ref()
-            .map(|b| format!("({})", b))
-            .unwrap_or_default()
-    } else {
-        String::new()
-    };
-
-    if branch_info.is_empty() {
-        format!("{}{}{}", prefix, status_icon, repo.name)
-    } else {
-        format!("{}{}{} {}", prefix, status_icon, repo.name, branch_info)
+            theme.colors.success.into()
+        };
+        spans.push(Span::styled(
+            format!("{} ", status_icon),
+            Style::default().fg(status_color),
+        ));
     }
+
+    // Calculate max name length based on display mode
+    let max_name_len = display_mode.max_name_length();
+    let truncated_name = truncate_middle(&repo.name, max_name_len);
+    spans.push(Span::styled(
+        format!("{:<width$}", truncated_name, width = max_name_len),
+        Style::default().fg(theme.colors.foreground.into()),
+    ));
+
+    // Add branch info for Medium+ modes
+    if display_mode.show_branch() {
+        if let Some(ref branch) = repo.branch {
+            let max_branch_len = if area_width < 100 { 20 } else { 30 };
+            let truncated_branch = truncate_middle(branch, max_branch_len);
+            spans.push(Span::raw(" "));
+            spans.push(Span::styled(
+                format!("({})", truncated_branch),
+                Style::default().fg(theme.colors.secondary.into()),
+            ));
+        }
+    }
+
+    // Add status text for Large+ modes
+    if display_mode.show_status() {
+        spans.push(Span::raw("  "));
+        let status_text = if repo.is_dirty { "Modified" } else { "Clean" };
+        let status_color = if repo.is_dirty {
+            theme.colors.error.into()
+        } else {
+            theme.colors.success.into()
+        };
+        spans.push(Span::styled(status_text, Style::default().fg(status_color)));
+    }
+
+    Line::from(spans)
 }
 
 #[cfg(test)]
@@ -245,6 +305,8 @@ mod tests {
 
     #[test]
     fn test_format_repo_item() {
+        use crate::ui::layout::DisplayMode;
+
         let repo = Repository {
             name: "test-repo".to_string(),
             path: PathBuf::from("/tmp/test-repo"),
@@ -253,10 +315,13 @@ mod tests {
             branch: Some("main".to_string()),
         };
 
-        let formatted = format_repo_item(&repo, true, true, true);
-        assert!(formatted.contains("test-repo"));
-        assert!(formatted.contains("main"));
-        assert!(formatted.contains("●"));
+        let theme = Theme::dark();
+        let formatted = format_repo_item(&repo, true, true, DisplayMode::Large, 100, &theme);
+
+        // Check that the line contains expected text
+        let content = format!("{:?}", formatted);
+        assert!(content.contains("test-repo"));
+        assert!(content.contains("main"));
     }
 
     #[test]

@@ -96,7 +96,7 @@ fn render_loading(frame: &mut Frame, area: Rect, message: &str, theme: &Theme) {
     let loading_text = format!("⏳ {}", message);
     let paragraph = Paragraph::new(loading_text)
         .alignment(Alignment::Center)
-        .style(Style::default().fg(theme.primary));
+        .style(Style::default().fg(theme.colors.primary.into()));
 
     frame.render_widget(paragraph, area);
 }
@@ -106,7 +106,7 @@ fn render_error(frame: &mut Frame, area: Rect, message: &str, theme: &Theme) {
     let error_text = format!("❌ Error\n\n{}", message);
     let paragraph = Paragraph::new(error_text)
         .alignment(Alignment::Center)
-        .style(Style::default().fg(theme.error));
+        .style(Style::default().fg(theme.colors.error.into()));
 
     frame.render_widget(paragraph, area);
 }

@@ -121,7 +121,7 @@ fn render_title(area: Rect, buf: &mut Buffer, theme: &Theme) {
         .alignment(Alignment::Center)
         .style(
             Style::default()
-                .fg(theme.primary)
+                .fg(theme.colors.primary.into())
                 .add_modifier(Modifier::BOLD),
         );
     title.render(area, buf);
@@ -134,12 +134,12 @@ fn render_current_path(area: Rect, buf: &mut Buffer, path: &Path, theme: &Theme)
 
     let block = Block::default()
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border_focused));
+        .border_style(Style::default().fg(theme.colors.border_focused.into()));
 
     let paragraph = Paragraph::new(text)
         .block(block)
         .alignment(Alignment::Left)
-        .style(Style::default().fg(theme.text_primary));
+        .style(Style::default().fg(theme.colors.foreground.into()));
 
     paragraph.render(area, buf);
 }
@@ -163,7 +163,7 @@ fn render_stats(
 
     let paragraph = Paragraph::new(stats_text)
         .alignment(Alignment::Center)
-        .style(Style::default().fg(theme.text_secondary));
+        .style(Style::default().fg(theme.colors.text_muted.into()));
 
     paragraph.render(area, buf);
 }
@@ -182,7 +182,7 @@ fn render_directory_list(
         let empty_text = "(empty directory)";
         let paragraph = Paragraph::new(empty_text)
             .alignment(Alignment::Center)
-            .style(Style::default().fg(theme.text_secondary));
+            .style(Style::default().fg(theme.colors.text_muted.into()));
         paragraph.render(area, buf);
         return;
     }
@@ -197,10 +197,10 @@ fn render_directory_list(
         .enumerate()
         .map(|(visible_idx, name)| {
             let absolute_idx = start + visible_idx;
-            let mut style = Style::default().fg(theme.text_primary);
+            let mut style = Style::default().fg(theme.colors.foreground.into());
             if absolute_idx == selected_index {
                 style = style
-                    .bg(theme.selected_bg)
+                    .bg(theme.colors.selected_bg.into())
                     .fg(Color::White)
                     .add_modifier(Modifier::BOLD);
             }
@@ -216,11 +216,11 @@ fn render_directory_list(
     let block = Block::default()
         .title(format!(" Directories ({}/{}) ", end - start, entries.len()))
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border_normal));
+        .border_style(Style::default().fg(theme.colors.border.into()));
 
     let list = List::new(items)
         .block(block)
-        .style(Style::default().fg(theme.text_primary));
+        .style(Style::default().fg(theme.colors.foreground.into()));
 
     Widget::render(list, area, buf);
 }
@@ -231,14 +231,14 @@ fn render_help(area: Rect, buf: &mut Buffer, theme: &Theme) {
 
     let block = Block::default()
         .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border_normal));
+        .border_style(Style::default().fg(theme.colors.border.into()));
 
     let paragraph = Paragraph::new(help_text)
         .block(block)
         .alignment(Alignment::Center)
         .style(
             Style::default()
-                .fg(theme.text_secondary)
+                .fg(theme.colors.text_muted.into())
                 .bg(Color::DarkGray),
         );
 

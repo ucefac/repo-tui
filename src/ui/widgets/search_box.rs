@@ -42,9 +42,9 @@ impl<'a> Widget for SearchBox<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         // Determine border color based on focus
         let border_color = if self.focused {
-            self.theme.border_focused
+            self.theme.colors.border_focused
         } else {
-            self.theme.border_normal
+            self.theme.colors.border
         };
 
         // Create block with title
@@ -57,7 +57,7 @@ impl<'a> Widget for SearchBox<'a> {
         let block = Block::default()
             .title(title)
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(border_color));
+            .border_style(Style::default().fg(border_color.into()));
 
         // Determine text to display
         let display_text = if self.query.is_empty() {
@@ -68,9 +68,9 @@ impl<'a> Widget for SearchBox<'a> {
 
         // Determine text style
         let text_style = if self.query.is_empty() {
-            Style::default().fg(self.theme.text_muted)
+            Style::default().fg(self.theme.colors.text_muted.into())
         } else {
-            Style::default().fg(self.theme.text_primary)
+            Style::default().fg(self.theme.colors.foreground.into())
         };
 
         // Add cursor indicator if focused and has query

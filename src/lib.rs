@@ -23,6 +23,7 @@ pub mod action;
 pub mod app;
 pub mod config;
 pub mod error;
+pub mod git;
 pub mod handler;
 pub mod repo;
 pub mod runtime;

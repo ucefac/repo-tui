@@ -73,7 +73,7 @@ impl<'a> Widget for PathBar<'a> {
 
         let paragraph = Paragraph::new(text).style(
             Style::default()
-                .fg(self.theme.text_secondary)
+                .fg(self.theme.colors.text_muted.into())
                 .bg(Color::DarkGray),
         );
 

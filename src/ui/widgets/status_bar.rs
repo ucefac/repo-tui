@@ -88,7 +88,7 @@ impl<'a> Widget for StatusBar<'a> {
 
         // Render status on top row
         let status_paragraph = Paragraph::new(status_text)
-            .style(Style::default().fg(self.theme.text_secondary))
+            .style(Style::default().fg(self.theme.colors.text_muted.into()))
             .wrap(Wrap { trim: true })
             .alignment(Alignment::Left);
         status_paragraph.render(inner, buf);
@@ -105,7 +105,7 @@ impl<'a> Widget for StatusBar<'a> {
                 );
 
                 let path_paragraph = Paragraph::new(path_text)
-                    .style(Style::default().fg(self.theme.text_secondary))
+                    .style(Style::default().fg(self.theme.colors.text_muted.into()))
                     .alignment(Alignment::Left);
 
                 let path_area = Rect::new(inner.x, inner.y + inner_height - 1, inner.width, 1);

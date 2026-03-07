@@ -86,6 +86,9 @@ pub enum RepoError {
     #[error("Git command failed: {0}")]
     GitCommandFailed(String),
 
+    #[error("Git error: {0}")]
+    GitError(String),
+
     #[error("Path error: {0}")]
     PathError(String),
 }

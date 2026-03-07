@@ -14,8 +14,8 @@ pub const CONFIG_FILE_NAME: &str = "config.toml";
 pub const CONFIG_VERSION: &str = "1.0";
 
 /// Minimum terminal dimensions
-pub const MIN_TERMINAL_WIDTH: u16 = 60;
-pub const MIN_TERMINAL_HEIGHT: u16 = 20;
+pub const MIN_TERMINAL_WIDTH: u16 = 80;
+pub const MIN_TERMINAL_HEIGHT: u16 = 24;
 
 /// Search debounce duration (milliseconds)
 pub const SEARCH_DEBOUNCE_MS: u64 = 100;
@@ -55,8 +55,23 @@ pub const SHELL_SPECIAL_CHARS: &[char] = &[
     '?', '~', '!', '#', '%', '@',
 ];
 
+/// RGB color representation for constants
+#[derive(Debug, Clone, Copy)]
+pub struct ColorRgb {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+}
+
+impl From<ColorRgb> for ratatui::style::Color {
+    fn from(rgb: ColorRgb) -> Self {
+        ratatui::style::Color::Rgb(rgb.r, rgb.g, rgb.b)
+    }
+}
+
 /// Default UI configuration
 pub mod ui {
+
     /// Default theme
     pub const DEFAULT_THEME: &str = "dark";
 
@@ -70,32 +85,108 @@ pub mod ui {
 
     /// Dark theme colors
     pub mod dark {
-        use ratatui::style::Color;
+        use crate::constants::ColorRgb;
 
-        pub const PRIMARY: Color = Color::Rgb(88, 166, 255);
-        pub const SUCCESS: Color = Color::Rgb(63, 185, 80);
-        pub const WARNING: Color = Color::Rgb(210, 153, 34);
-        pub const ERROR: Color = Color::Rgb(248, 81, 73);
-        pub const SELECTED_BG: Color = Color::Rgb(56, 139, 253);
-        pub const BORDER_FOCUSED: Color = Color::Cyan;
-        pub const BORDER_NORMAL: Color = Color::DarkGray;
-        pub const TEXT_PRIMARY: Color = Color::White;
-        pub const TEXT_SECONDARY: Color = Color::Gray;
+        pub const PRIMARY: ColorRgb = ColorRgb {
+            r: 88,
+            g: 166,
+            b: 255,
+        };
+        pub const SUCCESS: ColorRgb = ColorRgb {
+            r: 63,
+            g: 185,
+            b: 80,
+        };
+        pub const WARNING: ColorRgb = ColorRgb {
+            r: 210,
+            g: 153,
+            b: 34,
+        };
+        pub const ERROR: ColorRgb = ColorRgb {
+            r: 248,
+            g: 81,
+            b: 73,
+        };
+        pub const SELECTED_BG: ColorRgb = ColorRgb {
+            r: 56,
+            g: 139,
+            b: 253,
+        };
+        #[allow(dead_code)]
+        pub const BORDER_FOCUSED: ColorRgb = ColorRgb {
+            r: 56,
+            g: 189,
+            b: 248,
+        };
+        #[allow(dead_code)]
+        pub const BORDER_NORMAL: ColorRgb = ColorRgb {
+            r: 107,
+            g: 107,
+            b: 107,
+        };
+        #[allow(dead_code)]
+        pub const TEXT_PRIMARY: ColorRgb = ColorRgb {
+            r: 248,
+            g: 248,
+            b: 242,
+        };
+        #[allow(dead_code)]
+        pub const TEXT_SECONDARY: ColorRgb = ColorRgb {
+            r: 156,
+            g: 163,
+            b: 175,
+        };
     }
 
     /// Light theme colors
     pub mod light {
-        use ratatui::style::Color;
+        use crate::constants::ColorRgb;
 
-        pub const PRIMARY: Color = Color::Rgb(9, 105, 218);
-        pub const SUCCESS: Color = Color::Rgb(26, 127, 55);
-        pub const WARNING: Color = Color::Rgb(154, 103, 0);
-        pub const ERROR: Color = Color::Rgb(209, 36, 47);
-        pub const SELECTED_BG: Color = Color::Rgb(9, 105, 218);
-        pub const BORDER_FOCUSED: Color = Color::Blue;
-        pub const BORDER_NORMAL: Color = Color::DarkGray;
-        pub const TEXT_PRIMARY: Color = Color::Black;
-        pub const TEXT_SECONDARY: Color = Color::Gray;
+        pub const PRIMARY: ColorRgb = ColorRgb {
+            r: 9,
+            g: 105,
+            b: 218,
+        };
+        pub const SUCCESS: ColorRgb = ColorRgb {
+            r: 26,
+            g: 127,
+            b: 55,
+        };
+        pub const WARNING: ColorRgb = ColorRgb {
+            r: 154,
+            g: 103,
+            b: 0,
+        };
+        pub const ERROR: ColorRgb = ColorRgb {
+            r: 209,
+            g: 36,
+            b: 47,
+        };
+        pub const SELECTED_BG: ColorRgb = ColorRgb {
+            r: 9,
+            g: 105,
+            b: 218,
+        };
+        #[allow(dead_code)]
+        pub const BORDER_FOCUSED: ColorRgb = ColorRgb {
+            r: 37,
+            g: 99,
+            b: 235,
+        };
+        #[allow(dead_code)]
+        pub const BORDER_NORMAL: ColorRgb = ColorRgb {
+            r: 209,
+            g: 213,
+            b: 219,
+        };
+        #[allow(dead_code)]
+        pub const TEXT_PRIMARY: ColorRgb = ColorRgb { r: 9, g: 9, b: 11 };
+        #[allow(dead_code)]
+        pub const TEXT_SECONDARY: ColorRgb = ColorRgb {
+            r: 107,
+            g: 107,
+            b: 107,
+        };
     }
 }
 
