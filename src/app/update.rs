@@ -7,6 +7,7 @@ use crate::config;
 use crate::constants;
 use crate::runtime::executor::Runtime;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 /// Update application state based on message
 pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
@@ -121,6 +122,22 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 app.repositories = repos;
                 app.apply_filter();
                 app.state = AppState::Running;
+
+                // Schedule Git status checking in background
+                if let Some(ref scheduler) = app.git_scheduler {
+                    let repos_with_idx: Vec<_> = app
+                        .repositories
+                        .iter()
+                        .enumerate()
+                        .map(|(i, r)| (i, r.clone()))
+                        .collect();
+
+                    // Clone scheduler for async task
+                    let scheduler_clone = Arc::clone(scheduler);
+                    tokio::spawn(async move {
+                        scheduler_clone.schedule_batch(repos_with_idx).await;
+                    });
+                }
             }
             Err(e) => {
                 app.error_message = Some(e.to_string());

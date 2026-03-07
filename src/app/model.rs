@@ -67,7 +67,7 @@ pub struct App {
     pub git_cache: Arc<StatusCache>,
 
     /// Git status scheduler
-    pub git_scheduler: Option<GitStatusScheduler>,
+    pub git_scheduler: Option<Arc<GitStatusScheduler>>,
 
     /// Current UI theme
     pub theme: Theme,
@@ -77,10 +77,8 @@ impl App {
     /// Create a new application instance
     pub fn new(msg_tx: mpsc::Sender<AppMsg>) -> Self {
         let git_cache = Arc::new(StatusCache::default_cache());
-        let git_scheduler = Some(GitStatusScheduler::new(
-            Arc::clone(&git_cache),
-            msg_tx.clone(),
-        ));
+        let scheduler = GitStatusScheduler::new(Arc::clone(&git_cache), msg_tx.clone());
+        let git_scheduler = Some(Arc::new(scheduler));
 
         Self {
             config: None,
