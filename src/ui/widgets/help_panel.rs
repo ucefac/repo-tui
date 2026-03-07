@@ -66,6 +66,7 @@ impl HelpPanel {
                 Style::default().add_modifier(Modifier::BOLD),
             )),
             Line::from(""),
+            self.key_binding("m", "Change main directory"),
             self.key_binding("r", "Refresh list"),
             self.key_binding("?", "Show this help"),
             self.key_binding("q", "Quit"),

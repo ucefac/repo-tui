@@ -119,7 +119,7 @@ fn render_main_ui(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
         .constraints([
             Constraint::Length(3), // Search box
             Constraint::Min(5),    // Repository list
-            Constraint::Length(2), // Status bar (reduced from 4 to 2)
+            Constraint::Length(2), // Status bar (status + path)
         ])
         .split(area);
 

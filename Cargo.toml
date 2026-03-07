@@ -48,6 +48,9 @@ notify = { version = "6", optional = true }
 # Cache for Git status
 lru = "0.12"
 
+# Clipboard support
+arboard = "3.3"
+
 [dev-dependencies]
 # Testing
 tempfile = "3"

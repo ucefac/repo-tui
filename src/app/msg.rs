@@ -127,6 +127,9 @@ pub enum AppMsg {
 
     /// Close error dialog
     CloseError,
+
+    /// Copy path to clipboard
+    CopyPathToClipboard(PathBuf),
 }
 
 impl AppMsg {

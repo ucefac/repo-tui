@@ -175,6 +175,11 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
         }
 
         AppMsg::ShowDirectoryChooser => {
+            // Ignore if search is active (prevent stale messages from opening chooser)
+            if app.search_active {
+                return;
+            }
+
             app.state = AppState::ChoosingDir {
                 path: dirs::home_dir().unwrap_or_default(),
                 entries: Vec::new(),
