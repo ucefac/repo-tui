@@ -129,11 +129,25 @@ fn render_main_ui(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
     frame.render_widget(search_box, chunks[0]);
 
     // Render repository list using component
+    let favorites_set: std::collections::HashSet<usize> = app
+        .favorites
+        .get_all()
+        .iter()
+        .filter_map(|fav_path| {
+            app.repositories
+                .iter()
+                .position(|r| r.path.to_string_lossy() == *fav_path)
+        })
+        .collect();
+
     let repo_list = RepoList::new(&app.repositories, &app.filtered_indices, theme)
         .selected_index(app.selected_index())
         .scroll_offset(app.scroll_offset)
         .visible_height(chunks[1].height)
-        .show_git_status(app.config.as_ref().is_some_and(|c| c.ui.show_git_status));
+        .show_git_status(app.config.as_ref().is_some_and(|c| c.ui.show_git_status))
+        .favorites(favorites_set)
+        .selection_mode(app.selection_mode)
+        .selected(app.selected_indices.clone());
     frame.render_widget(repo_list, chunks[1]);
 
     // Render status bar (with path bar)

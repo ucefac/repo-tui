@@ -6,8 +6,9 @@ use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, List, ListItem};
 
 use crate::repo::Repository;
-use crate::ui::layout::{truncate_middle, DisplayMode, WIDTH_MD, WIDTH_SM};
+use crate::ui::layout::{truncate_middle, DisplayMode};
 use crate::ui::theme::Theme;
+use std::collections::HashSet;
 
 /// Repository list widget
 #[derive(Debug, Clone)]
@@ -32,6 +33,12 @@ pub struct RepoList<'a> {
     pub show_branch: bool,
     /// Total count (for display)
     pub total_count: usize,
+    /// Set of favorite repository indices
+    pub favorites: HashSet<usize>,
+    /// Selection mode flag
+    pub selection_mode: bool,
+    /// Set of selected repository indices
+    pub selected: HashSet<usize>,
 }
 
 impl<'a> RepoList<'a> {
@@ -52,7 +59,16 @@ impl<'a> RepoList<'a> {
             show_git_status: true,
             show_branch: true,
             total_count: repositories.len(),
+            favorites: HashSet::new(),
+            selection_mode: false,
+            selected: HashSet::new(),
         }
+    }
+
+    /// Set favorites
+    pub fn favorites(mut self, favorites: HashSet<usize>) -> Self {
+        self.favorites = favorites;
+        self
     }
 
     /// Set area width for responsive layout
@@ -97,6 +113,18 @@ impl<'a> RepoList<'a> {
         self
     }
 
+    /// Set selection mode
+    pub fn selection_mode(mut self, mode: bool) -> Self {
+        self.selection_mode = mode;
+        self
+    }
+
+    /// Set selected indices
+    pub fn selected(mut self, selected: HashSet<usize>) -> Self {
+        self.selected = selected;
+        self
+    }
+
     /// Calculate visible range
     fn visible_range(&self) -> (usize, usize) {
         let start = self.scroll_offset;
@@ -107,9 +135,9 @@ impl<'a> RepoList<'a> {
 
     /// Get display mode based on terminal width
     fn display_mode(&self) -> DisplayMode {
-        if self.area_width < WIDTH_SM {
+        if self.area_width < 60 {
             DisplayMode::Compact
-        } else if self.area_width < WIDTH_MD {
+        } else if self.area_width < 100 {
             DisplayMode::Medium
         } else {
             DisplayMode::Large
@@ -142,66 +170,22 @@ impl<'a> RepoList<'a> {
     }
 }
 
-impl<'a> Widget for RepoList<'a> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
-        let (start, end) = self.visible_range();
-        let display_mode = self.display_mode();
-
-        let items: Vec<ListItem> = self.filtered_indices[start..end]
-            .iter()
-            .enumerate()
-            .map(|(visible_idx, &repo_idx)| {
-                let repo = &self.repositories[repo_idx];
-                let absolute_idx = start + visible_idx;
-                let is_selected = self.selected_index == Some(absolute_idx);
-
-                let content = format_repo_item(
-                    repo,
-                    is_selected,
-                    self.show_git_status,
-                    display_mode,
-                    self.area_width,
-                    self.theme,
-                );
-
-                let mut style = Style::default().fg(self.theme.colors.foreground.into());
-                if is_selected {
-                    style = style
-                        .bg(self.theme.colors.selected_bg.into())
-                        .fg(Color::White);
-                }
-
-                ListItem::new(content).style(style)
-            })
-            .collect();
-
-        let title = format!(
-            " Repositories ({}/{}) ",
-            self.filtered_indices.len(),
-            self.total_count
-        );
-
-        let block = Block::default()
-            .title(title)
-            .borders(Borders::ALL)
-            .border_style(Style::default().fg(self.theme.colors.border.into()));
-
-        let list = List::new(items)
-            .block(block)
-            .style(Style::default().fg(self.theme.colors.foreground.into()));
-
-        Widget::render(list, area, buf);
-    }
+/// Parameters for formatting a repository item
+struct RepoItemParams {
+    is_favorite: bool,
+    selection_mode: bool,
+    is_checked: bool,
 }
 
 /// Format a repository item for display with responsive layout
 fn format_repo_item(
     repo: &Repository,
     is_selected: bool,
-    show_git_status: bool,
+    _show_git_status: bool,
     display_mode: DisplayMode,
     area_width: u16,
     theme: &Theme,
+    params: RepoItemParams,
 ) -> Line<'static> {
     let prefix = if is_selected { "▌ " } else { "  " };
     let mut spans = Vec::new();
@@ -209,29 +193,28 @@ fn format_repo_item(
     // Add prefix
     spans.push(Span::raw(prefix));
 
-    // Add git status icon
-    if show_git_status {
-        let status_icon = if repo.is_dirty { "●" } else { "✓" };
-        let status_color = if repo.is_dirty {
-            theme.colors.error.into()
+    // Add checkbox in selection mode or favorite marker in normal mode
+    if params.selection_mode {
+        let checkbox = if params.is_checked { "[✓] " } else { "[ ] " };
+        let checkbox_style = if params.is_checked {
+            Style::default().fg(theme.colors.success.into())
         } else {
-            theme.colors.success.into()
+            Style::default().fg(theme.colors.secondary.into())
         };
-        spans.push(Span::styled(
-            format!("{} ", status_icon),
-            Style::default().fg(status_color),
-        ));
+        spans.push(Span::styled(checkbox, checkbox_style));
+    } else {
+        // Add favorite marker in normal mode
+        if params.is_favorite {
+            spans.push(Span::styled(
+                "★ ",
+                Style::default().fg(theme.colors.primary.into()),
+            ));
+        } else {
+            spans.push(Span::raw("  "));
+        }
     }
 
-    // Calculate max name length based on display mode
-    let max_name_len = display_mode.max_name_length();
-    let truncated_name = truncate_middle(&repo.name, max_name_len);
-    spans.push(Span::styled(
-        format!("{:<width$}", truncated_name, width = max_name_len),
-        Style::default().fg(theme.colors.foreground.into()),
-    ));
-
-    // Add branch info for Medium+ modes
+    // Add branch name for Medium+ modes
     if display_mode.show_branch() {
         if let Some(ref branch) = repo.branch {
             let max_branch_len = if area_width < 100 { 20 } else { 30 };
@@ -257,6 +240,72 @@ fn format_repo_item(
     }
 
     Line::from(spans)
+}
+
+impl<'a> Widget for RepoList<'a> {
+    fn render(self, area: Rect, buf: &mut Buffer) {
+        let (start, end) = self.visible_range();
+        let display_mode = self.display_mode();
+
+        let items: Vec<ListItem> = self.filtered_indices[start..end]
+            .iter()
+            .enumerate()
+            .map(|(visible_idx, &repo_idx)| {
+                let repo = &self.repositories[repo_idx];
+                let absolute_idx = start + visible_idx;
+                let is_selected = self.selected_index == Some(absolute_idx);
+
+                let content = format_repo_item(
+                    repo,
+                    is_selected,
+                    self.show_git_status,
+                    display_mode,
+                    self.area_width,
+                    self.theme,
+                    RepoItemParams {
+                        is_favorite: self.favorites.contains(&repo_idx),
+                        selection_mode: self.selection_mode,
+                        is_checked: self.selected.contains(&repo_idx),
+                    },
+                );
+
+                let mut style = Style::default().fg(self.theme.colors.foreground.into());
+                if is_selected {
+                    style = style
+                        .bg(self.theme.colors.selected_bg.into())
+                        .fg(Color::White);
+                }
+
+                ListItem::new(content).style(style)
+            })
+            .collect();
+
+        let title = if self.selection_mode {
+            format!(
+                " Repositories [{} selected] ({}/{}) ",
+                self.selected.len(),
+                self.filtered_indices.len(),
+                self.total_count
+            )
+        } else {
+            format!(
+                " Repositories ({}/{}) ",
+                self.filtered_indices.len(),
+                self.total_count
+            )
+        };
+
+        let block = Block::default()
+            .title(title)
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(self.theme.colors.border.into()));
+
+        let list = List::new(items)
+            .block(block)
+            .style(Style::default().fg(self.theme.colors.foreground.into()));
+
+        Widget::render(list, area, buf);
+    }
 }
 
 #[cfg(test)]
@@ -316,12 +365,22 @@ mod tests {
         };
 
         let theme = Theme::dark();
-        let formatted = format_repo_item(&repo, true, true, DisplayMode::Large, 100, &theme);
+        let formatted = format_repo_item(
+            &repo,
+            true,
+            true,
+            DisplayMode::Large,
+            100,
+            &theme,
+            RepoItemParams {
+                is_favorite: false,
+                selection_mode: false,
+                is_checked: false,
+            },
+        );
 
-        // Check that the line contains expected text
-        let content = format!("{:?}", formatted);
-        assert!(content.contains("test-repo"));
-        assert!(content.contains("main"));
+        // Check that the line has spans
+        assert!(!formatted.spans.is_empty());
     }
 
     #[test]

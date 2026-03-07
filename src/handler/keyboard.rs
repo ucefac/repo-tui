@@ -48,24 +48,36 @@ fn handle_action_menu_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
             let _ = app.msg_tx.try_send(AppMsg::CloseActions);
         }
         KeyCode::Char('c') | KeyCode::Char('1') => {
-            let _ = app
-                .msg_tx
-                .try_send(AppMsg::ExecuteAction(crate::action::Action::CdAndCloud));
+            let action = crate::action::Action::CdAndCloud;
+            if app.selection_mode && app.selected_count() > 0 {
+                let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
+            } else {
+                let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
+            }
         }
         KeyCode::Char('w') | KeyCode::Char('2') => {
-            let _ = app
-                .msg_tx
-                .try_send(AppMsg::ExecuteAction(crate::action::Action::OpenWebStorm));
+            let action = crate::action::Action::OpenWebStorm;
+            if app.selection_mode && app.selected_count() > 0 {
+                let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
+            } else {
+                let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
+            }
         }
         KeyCode::Char('v') | KeyCode::Char('3') => {
-            let _ = app
-                .msg_tx
-                .try_send(AppMsg::ExecuteAction(crate::action::Action::OpenVsCode));
+            let action = crate::action::Action::OpenVsCode;
+            if app.selection_mode && app.selected_count() > 0 {
+                let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
+            } else {
+                let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
+            }
         }
         KeyCode::Char('f') | KeyCode::Char('4') => {
-            let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(
-                crate::action::Action::OpenFileManager,
-            ));
+            let action = crate::action::Action::OpenFileManager;
+            if app.selection_mode && app.selected_count() > 0 {
+                let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
+            } else {
+                let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
+            }
         }
         KeyCode::Char('j') | KeyCode::Down => {
             // Navigate down in menu
@@ -78,7 +90,11 @@ fn handle_action_menu_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
         KeyCode::Enter => {
             // Execute selected action
             if let Some(action) = get_selected_action(app) {
-                let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
+                if app.selection_mode && app.selected_count() > 0 {
+                    let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
+                } else {
+                    let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
+                }
             }
         }
         _ => {}
@@ -385,6 +401,7 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
             }
         }
         KeyCode::Char('f') => {
+            // Open file manager
             if let Some(repo) = app.selected_repository().cloned() {
                 app.selected_repo = Some(repo);
                 let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(
@@ -392,8 +409,29 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
                 ));
             }
         }
+        KeyCode::Char('F') => {
+            // Toggle favorite (Shift+F)
+            let _ = app.msg_tx.try_send(AppMsg::ToggleFavorite);
+        }
 
-        // Global
+        KeyCode::Char('a') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            // Ctrl+A: Select all in selection mode
+            if app.selection_mode {
+                let _ = app.msg_tx.try_send(AppMsg::SelectAll);
+            }
+        }
+
+        KeyCode::Char(' ') => {
+            // Space: Toggle selection for current repo (in selection mode)
+            if app.selection_mode {
+                let _ = app.msg_tx.try_send(AppMsg::ToggleSelection);
+            }
+        }
+
+        // Refresh repository list (r key)
+        KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            let _ = app.msg_tx.try_send(AppMsg::ShowRecent);
+        }
         KeyCode::Char('r') => {
             let _ = app.msg_tx.try_send(AppMsg::Refresh);
         }
@@ -402,6 +440,11 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
         }
         KeyCode::Char('q') => {
             let _ = app.msg_tx.try_send(AppMsg::Quit);
+        }
+
+        KeyCode::Char('V') => {
+            // Toggle selection mode (Shift+V)
+            let _ = app.msg_tx.try_send(AppMsg::ToggleSelectionMode);
         }
 
         _ => {}
