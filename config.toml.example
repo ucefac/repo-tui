@@ -26,3 +26,20 @@ show_branch = true
 allow_symlinks = false
 max_search_depth = 2
 # allowed_commands = []
+
+# Favorites configuration (optional)
+[favorites]
+# List of favorite repository paths
+# repositories = [
+#     "~/Developer/github/facebook/react",
+#     "~/Developer/github/vercel/next.js",
+# ]
+
+# Recent repositories configuration (optional)
+[recent]
+# List of recently opened repositories with timestamps
+# Automatically populated when you open repositories
+# repositories = [
+#     { path = "~/Developer/github/facebook/react", opened_at = "2026-03-07T10:00:00Z" },
+#     { path = "~/Developer/github/vercel/next.js", opened_at = "2026-03-07T09:30:00Z" },
+# ]

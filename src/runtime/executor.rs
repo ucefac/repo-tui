@@ -32,7 +32,7 @@ impl Runtime {
                             ConfigError::PathError(e.to_string())
                         }
                     });
-                    let _ = msg_tx.send(AppMsg::ConfigLoaded(result)).await;
+                    let _ = msg_tx.send(AppMsg::ConfigLoaded(Box::new(result))).await;
                 });
             }
 
@@ -95,6 +95,14 @@ impl Runtime {
                     };
 
                     let _ = msg_tx.send(AppMsg::ActionExecuted(result)).await;
+                });
+            }
+
+            Cmd::ExecuteBatchAction(action, repos) => {
+                tokio::spawn(async move {
+                    // Execute batch action with concurrency limit of 5
+                    let result = action::execute_batch(&action, repos, 5).await;
+                    let _ = msg_tx.send(AppMsg::BatchActionExecuted(result)).await;
                 });
             }
 
