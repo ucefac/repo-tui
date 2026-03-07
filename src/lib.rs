@@ -98,12 +98,20 @@ async fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Resul
 
     loop {
         // Render
-        terminal.draw(|frame| ui::render::render(frame, &app))?;
+        terminal.draw(|frame| ui::render::render(frame, &mut app))?;
 
         // Handle messages
         if event::poll(std::time::Duration::from_millis(50))? {
-            if let Event::Key(key) = event::read()? {
-                handler::handle_key_event(key, &mut app, &runtime);
+            match event::read()? {
+                Event::Key(key) => {
+                    handler::handle_key_event(key, &mut app, &runtime);
+                }
+                Event::Mouse(mouse) => {
+                    if let Some(msg) = handler::handle_mouse_event(mouse, &app) {
+                        app::update::update(msg, &mut app, &runtime);
+                    }
+                }
+                _ => {}
             }
         }
 
