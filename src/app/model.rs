@@ -29,6 +29,9 @@ pub struct App {
     /// Pending search query (for debounce)
     pub pending_search: Option<String>,
 
+    /// Search box focus flag (true when search is active)
+    pub search_active: bool,
+
     /// List state for Ratatui
     pub list_state: ListState,
 
@@ -52,6 +55,9 @@ pub struct App {
 
     /// Message sender for async operations
     pub msg_tx: mpsc::Sender<AppMsg>,
+
+    /// Path bar click area (for mouse events)
+    pub path_bar_area: Option<ratatui::layout::Rect>,
 }
 
 impl App {
@@ -64,6 +70,7 @@ impl App {
             filtered_indices: Vec::new(),
             search_query: String::new(),
             pending_search: None,
+            search_active: false,
             list_state: ListState::default(),
             scroll_offset: 0,
             state: AppState::Loading {
@@ -74,6 +81,7 @@ impl App {
             error_message: None,
             selected_repo: None,
             msg_tx,
+            path_bar_area: None,
         }
     }
 

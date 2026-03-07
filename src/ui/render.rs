@@ -8,10 +8,10 @@ use crate::ui::widgets::{
     RepoList, SearchBox,
 };
 use ratatui::prelude::*;
-use ratatui::widgets::{Block, Borders, Clear, Paragraph};
+use ratatui::widgets::{Clear, Paragraph};
 
 /// Render the application UI
-pub fn render(frame: &mut Frame, app: &App) {
+pub fn render(frame: &mut Frame, app: &mut App) {
     let area = frame.area();
 
     // Check minimum terminal size
@@ -30,17 +30,20 @@ pub fn render(frame: &mut Frame, app: &App) {
             .unwrap_or("dark"),
     );
 
+    // Clone state to avoid borrow conflicts
+    let state = app.state.clone();
+
     // Render based on state
-    match &app.state {
-        AppState::Loading { message } => {
+    match state {
+        AppState::Loading { ref message } => {
             render_loading(frame, area, message, &theme);
         }
-        AppState::Error { message } => {
+        AppState::Error { ref message } => {
             render_error(frame, area, message, &theme);
         }
         AppState::ChoosingDir {
-            path,
-            entries,
+            ref path,
+            ref entries,
             selected_index,
             scroll_offset,
         } => {
@@ -49,15 +52,15 @@ pub fn render(frame: &mut Frame, app: &App) {
                 area,
                 path,
                 entries,
-                *selected_index,
-                *scroll_offset,
+                selected_index,
+                scroll_offset,
                 &theme,
             );
         }
-        AppState::Running | AppState::Searching => {
+        AppState::Running => {
             render_main_ui(frame, area, app, &theme);
         }
-        AppState::ShowingActions { repo } => {
+        AppState::ShowingActions { ref repo } => {
             render_main_ui(frame, area, app, &theme);
             render_action_menu(frame, area, repo, &theme);
         }
@@ -109,19 +112,19 @@ fn render_error(frame: &mut Frame, area: Rect, message: &str, theme: &Theme) {
 }
 
 /// Render main UI
-fn render_main_ui(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+fn render_main_ui(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
     // Create layout
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(3), // Search box
             Constraint::Min(5),    // Repository list
-            Constraint::Length(3), // Status bar
+            Constraint::Length(2), // Status bar (reduced from 4 to 2)
         ])
         .split(area);
 
     // Render search box using component
-    let is_search_focused = matches!(app.state, AppState::Searching);
+    let is_search_focused = app.search_active;
     let search_box = SearchBox::new(&app.search_query, theme, is_search_focused);
     frame.render_widget(search_box, chunks[0]);
 
@@ -133,35 +136,35 @@ fn render_main_ui(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
         .show_git_status(app.config.as_ref().is_some_and(|c| c.ui.show_git_status));
     frame.render_widget(repo_list, chunks[1]);
 
-    // Render status bar
-    render_status_bar(frame, app, chunks[2], theme);
+    // Render status bar (with path bar)
+    render_status_bar_with_path(frame, app, chunks[2], theme);
 }
 
-/// Render status bar
-fn render_status_bar(frame: &mut Frame, app: &App, area: Rect, theme: &Theme) {
+/// Render status bar with path bar
+fn render_status_bar_with_path(frame: &mut Frame, app: &mut App, area: Rect, theme: &Theme) {
+    use crate::ui::widgets::StatusBar;
+
     let status_text = if app.loading {
-        format!(
-            " ⏳ {}",
-            app.loading_message.as_deref().unwrap_or("Loading...")
-        )
+        app.loading_message.as_deref().unwrap_or("Loading...")
     } else if let Some(ref error) = app.error_message {
-        format!(" ⚠️ {}", error)
+        error
     } else {
-        " [j/k] Navigate  [g/G] Jump  [/] Search  [Enter] Open  [r] Refresh  [?] Help  [q] Quit "
-            .to_string()
+        // Optimized spacing: reduce space between keys and description
+        "[j/k]Nav [g/G]Jump [/]Search [Enter]Open [r]Refresh [?]Help [q]Quit [m]ChangeDir"
     };
 
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border_normal));
+    let mut status_bar = StatusBar::new(status_text, theme)
+        .loading(app.loading)
+        .error(app.error_message.is_some());
 
-    let paragraph = Paragraph::new(status_text).block(block).style(
-        Style::default()
-            .fg(theme.text_secondary)
-            .bg(Color::DarkGray),
-    );
+    if let Some(ref main_dir) = app.main_dir {
+        status_bar = status_bar.path(main_dir).repo_count(app.repositories.len());
+    }
 
-    frame.render_widget(paragraph, area);
+    // Store click area for mouse events
+    app.path_bar_area = Some(area);
+
+    frame.render_widget(status_bar, area);
 }
 
 /// Render action menu

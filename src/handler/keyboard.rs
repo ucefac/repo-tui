@@ -25,14 +25,12 @@ pub fn handle_key_event(key: KeyEvent, app: &mut App, runtime: &Runtime) {
         AppState::ChoosingDir { .. } => {
             handle_chooser_keys(key, app, runtime);
         }
-        AppState::Searching => {
-            handle_search_keys(key, app);
-        }
-        AppState::Running => {
-            handle_running_keys(key, app, runtime);
-        }
-        AppState::Loading { .. } | AppState::Error { .. } => {
-            // Ignore input during loading/error states
+        AppState::Running | AppState::Loading { .. } | AppState::Error { .. } => {
+            if app.search_active {
+                handle_search_input(key, app, runtime);
+            } else {
+                handle_running_keys(key, app, runtime);
+            }
         }
         AppState::Quit => {
             // Already quitting
@@ -170,6 +168,26 @@ fn handle_chooser_keys(key: KeyEvent, app: &mut App, runtime: &Runtime) {
     }
 }
 
+/// Handle going back to parent directory
+fn handle_directory_back(app: &mut App, runtime: &Runtime) {
+    if let AppState::ChoosingDir { path, .. } = &app.state {
+        if let Some(parent) = path.parent() {
+            let parent_path = parent.to_path_buf();
+
+            // Scan parent directory
+            runtime.dispatch(crate::app::msg::Cmd::ScanDirectory(parent_path.clone()));
+
+            // Update state
+            app.state = AppState::ChoosingDir {
+                path: parent_path,
+                entries: Vec::new(),
+                selected_index: 0,
+                scroll_offset: 0,
+            };
+        }
+    }
+}
+
 /// Handle entering a directory
 fn handle_directory_enter(app: &mut App, runtime: &Runtime) {
     if let AppState::ChoosingDir {
@@ -197,45 +215,47 @@ fn handle_directory_enter(app: &mut App, runtime: &Runtime) {
     }
 }
 
-/// Handle going back to parent directory
-fn handle_directory_back(app: &mut App, runtime: &Runtime) {
-    if let AppState::ChoosingDir { path, .. } = &app.state {
-        if let Some(parent) = path.parent() {
-            let parent_path = parent.to_path_buf();
-
-            // Scan parent directory
-            runtime.dispatch(crate::app::msg::Cmd::ScanDirectory(parent_path.clone()));
-
-            // Update state
-            app.state = AppState::ChoosingDir {
-                path: parent_path,
-                entries: Vec::new(),
-                selected_index: 0,
-                scroll_offset: 0,
-            };
-        }
-    }
-}
-
-/// Handle keys in search mode
-fn handle_search_keys(key: KeyEvent, app: &mut App) {
+/// Handle search input (when search box is focused)
+///
+/// Core principle: When search is focused, only arrow keys navigate,
+/// all letter keys are for input only (no shortcut functions).
+fn handle_search_input(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
     match key.code {
+        // === Exit/Confirm ===
         KeyCode::Esc => {
-            // Clear search and exit search mode
-            app.search_query.clear();
-            app.apply_filter();
-            app.state = AppState::Running;
+            // Only exit focus, keep query
+            app.search_active = false;
         }
+        KeyCode::Enter => {
+            // Confirm search, exit focus
+            app.search_active = false;
+        }
+
+        // === Edit keys ===
         KeyCode::Backspace => {
             let _ = app.msg_tx.try_send(AppMsg::SearchBackspace);
         }
-        KeyCode::Enter => {
-            // Confirm search - exit search mode but keep query
-            app.state = AppState::Running;
+
+        // === Navigation keys (arrow keys, don't affect search box content) ===
+        KeyCode::Up => {
+            let _ = app.msg_tx.try_send(AppMsg::PreviousRepo);
         }
+        KeyCode::Down => {
+            let _ = app.msg_tx.try_send(AppMsg::NextRepo);
+        }
+        KeyCode::Home => {
+            let _ = app.msg_tx.try_send(AppMsg::JumpToTop);
+        }
+        KeyCode::End => {
+            let _ = app.msg_tx.try_send(AppMsg::JumpToBottom);
+        }
+
+        // === All other characters: input only ===
+        // Including j/k/g/G/m/r/q/? etc. - all function keys are blocked
         KeyCode::Char(c) => {
             let _ = app.msg_tx.try_send(AppMsg::SearchInput(c));
         }
+
         _ => {}
     }
 }
@@ -271,9 +291,14 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
             let _ = app.msg_tx.try_send(AppMsg::JumpToBottom);
         }
 
-        // Search - focus search box
+        // Search - focus search box (only via '/' key)
         KeyCode::Char('/') => {
-            app.state = AppState::Searching;
+            app.search_active = true;
+        }
+
+        // Change main directory
+        KeyCode::Char('m') => {
+            let _ = app.msg_tx.try_send(AppMsg::ShowDirectoryChooser);
         }
 
         // Actions
@@ -326,12 +351,6 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
             let _ = app.msg_tx.try_send(AppMsg::Quit);
         }
 
-        // Search input (single char, no modifiers) - focus search and add char
-        KeyCode::Char(c) if key.modifiers.contains(KeyModifiers::NONE) => {
-            // Direct search input without requiring '/' prefix
-            let _ = app.msg_tx.try_send(AppMsg::SearchInput(c));
-        }
-
         _ => {}
     }
 }
@@ -368,9 +387,9 @@ mod tests {
         let runtime = Runtime::new(tx);
 
         // Test '/' key enters search mode
-        assert!(!matches!(app.state, AppState::Searching));
+        assert!(!app.search_active);
         handle_running_keys(create_test_key(KeyCode::Char('/')), &mut app, &runtime);
-        assert!(matches!(app.state, AppState::Searching));
+        assert!(app.search_active);
     }
 
     #[test]
@@ -430,21 +449,29 @@ mod tests {
     }
 
     #[test]
-    fn test_handle_search_keys() {
+    fn test_handle_search_input() {
         let (tx, _rx) = tokio::sync::mpsc::channel(100);
         let mut app = App::new(tx.clone());
-        app.state = AppState::Searching;
+        app.search_active = true;
         app.search_query = "test".to_string();
 
-        // Test esc - clears search and exits search mode
-        handle_search_keys(create_test_key(KeyCode::Esc), &mut app);
-        assert!(app.search_query.is_empty());
-        assert_eq!(app.state, AppState::Running);
+        // Test esc - exits search focus but keeps query
+        handle_search_input(
+            create_test_key(KeyCode::Esc),
+            &mut app,
+            &Runtime::new(tx.clone()),
+        );
+        assert_eq!(app.search_query, "test"); // Query is preserved
+        assert!(!app.search_active);
 
         // Test backspace - sends message (doesn't directly modify)
+        app.search_active = true;
         app.search_query = "hello".to_string();
-        app.state = AppState::Searching;
-        handle_search_keys(create_test_key(KeyCode::Backspace), &mut app);
+        handle_search_input(
+            create_test_key(KeyCode::Backspace),
+            &mut app,
+            &Runtime::new(tx.clone()),
+        );
         // Backspace sends a message, doesn't directly modify
     }
 

@@ -25,9 +25,6 @@ pub enum AppState {
         scroll_offset: usize,
     },
 
-    /// Search box focused
-    Searching,
-
     /// Showing action menu
     ShowingActions {
         /// Selected repository
@@ -62,7 +59,6 @@ impl AppState {
             AppState::ShowingActions { .. } => 5,
             AppState::ShowingHelp => 4,
             AppState::ChoosingDir { .. } => 3,
-            AppState::Searching => 2,
             AppState::Running => 1,
             AppState::Loading { .. } | AppState::Error { .. } => 0,
             AppState::Quit => 0,
@@ -79,7 +75,7 @@ impl AppState {
 
     /// Check if application is running normally
     pub fn is_running(&self) -> bool {
-        matches!(self, AppState::Running | AppState::Searching)
+        matches!(self, AppState::Running)
     }
 
     /// Check if application is in a loading/error state
@@ -122,7 +118,6 @@ mod tests {
     #[test]
     fn test_is_running() {
         assert!(AppState::Running.is_running());
-        assert!(AppState::Searching.is_running());
         assert!(!AppState::ShowingHelp.is_running());
     }
 }

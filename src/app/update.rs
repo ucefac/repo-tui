@@ -13,40 +13,33 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
     match msg {
         // === Search Input ===
         AppMsg::SearchInput(c) => {
-            if matches!(app.state, AppState::Searching | AppState::Running) {
-                // Switch to searching state if not already
-                if matches!(app.state, AppState::Running) {
-                    app.state = AppState::Searching;
-                }
+            // Always accept search input
+            app.search_query.push(c);
+            app.search_active = true; // Ensure focus
+            app.pending_search = Some(app.search_query.clone());
 
-                app.search_query.push(c);
+            // Schedule debounce
+            runtime.dispatch_after(
+                crate::app::msg::AppMsg::Tick,
+                std::time::Duration::from_millis(constants::SEARCH_DEBOUNCE_MS),
+            );
+        }
+
+        AppMsg::SearchBackspace => {
+            app.search_query.pop();
+
+            // Exit search focus if query is empty
+            if app.search_query.is_empty() {
+                app.search_active = false;
+                app.pending_search = None;
+                app.apply_filter();
+            } else {
                 app.pending_search = Some(app.search_query.clone());
 
-                // Schedule debounce
                 runtime.dispatch_after(
                     crate::app::msg::AppMsg::Tick,
                     std::time::Duration::from_millis(constants::SEARCH_DEBOUNCE_MS),
                 );
-            }
-        }
-
-        AppMsg::SearchBackspace => {
-            if matches!(app.state, AppState::Searching | AppState::Running) {
-                app.search_query.pop();
-
-                // Exit search mode if query is empty
-                if app.search_query.is_empty() {
-                    app.state = AppState::Running;
-                    app.pending_search = None;
-                    app.apply_filter();
-                } else {
-                    app.pending_search = Some(app.search_query.clone());
-
-                    runtime.dispatch_after(
-                        crate::app::msg::AppMsg::Tick,
-                        std::time::Duration::from_millis(constants::SEARCH_DEBOUNCE_MS),
-                    );
-                }
             }
         }
 
@@ -203,10 +196,10 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                     // Update state
                     app.config = Some(config.clone());
                     app.main_dir = Some(config.main_directory.clone());
-                    
+
                     // Clear any previous error messages
                     app.error_message = None;
-                    
+
                     // Set state to Loading while repositories are being discovered
                     app.state = AppState::Loading {
                         message: "Discovering repositories...".to_string(),
@@ -313,10 +306,13 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
             AppState::ShowingHelp => {
                 app.state = AppState::Running;
             }
-            AppState::Searching => {
-                app.state = AppState::Running;
-                app.search_query.clear();
-                app.apply_filter();
+            AppState::Running => {
+                // Cancel from search focus
+                if app.search_active {
+                    app.search_active = false;
+                    app.search_query.clear();
+                    app.apply_filter();
+                }
             }
             _ => {}
         },
@@ -340,6 +336,20 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
         AppMsg::CloseError => {
             if matches!(app.state, AppState::Error { .. }) {
                 app.state = AppState::Running;
+            }
+        }
+
+        AppMsg::CopyPathToClipboard(path) => {
+            use arboard::Clipboard;
+
+            match Clipboard::new().and_then(|mut c| c.set_text(path.to_string_lossy().to_string()))
+            {
+                Ok(()) => {
+                    app.loading_message = Some("✅ Path copied to clipboard".to_string());
+                }
+                Err(e) => {
+                    app.error_message = Some(format!("Failed to copy path: {}", e));
+                }
             }
         }
     }
@@ -464,7 +474,7 @@ mod tests {
 
         update(AppMsg::SearchInput('t'), &mut app, &runtime);
         assert_eq!(app.search_query, "t");
-        assert!(matches!(app.state, AppState::Searching));
+        assert!(app.search_active);
 
         update(AppMsg::SearchInput('e'), &mut app, &runtime);
         assert_eq!(app.search_query, "te");
@@ -476,7 +486,7 @@ mod tests {
         let mut app = App::new(tx.clone());
         let runtime = Runtime::new(tx);
 
-        app.state = AppState::Searching;
+        app.search_active = true;
         app.search_query = "test".to_string();
 
         update(AppMsg::SearchBackspace, &mut app, &runtime);
@@ -576,12 +586,12 @@ mod tests {
         assert!(matches!(app.state, AppState::Running));
         assert!(app.selected_repo.is_none());
 
-        // Cancel from Searching
-        app.state = AppState::Searching;
+        // Cancel from search focus
+        app.search_active = true;
         app.search_query = "test".to_string();
 
         update(AppMsg::Cancel, &mut app, &runtime);
-        assert!(matches!(app.state, AppState::Running));
+        assert!(!app.search_active);
         assert!(app.search_query.is_empty());
     }
 
