@@ -242,7 +242,7 @@ main_directory = "/home/username/projects"
 │ Current: /home/username/projects                             │
 │ Found: 42 Git repositories                                    │
 │                                                               │
-│ [j/k] Navigate  [Enter] Select  [q] Cancel                   │
+│ [↑/↓] Navigate  [→] Select  [Esc] Cancel                   │
 ╰───────────────────────────────────────────────────────────────╯
 ```
 

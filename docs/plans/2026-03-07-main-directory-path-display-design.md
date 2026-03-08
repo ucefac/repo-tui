@@ -272,7 +272,7 @@ fn render_status_bar_with_path(frame: &mut Frame, app: &App, area: Rect, theme: 
     } else if let Some(ref error) = app.error_message {
         format!(" ⚠️ {}", error)
     } else {
-        " [j/k] Navigate  [g/G] Jump  [/] Search  [Enter] Open  [r] Refresh  [?] Help  [q] Quit ".to_string()
+        " [↑/↓] Navigate  [Home/End] Jump  [/] Search  [Enter] Open  [r] Refresh  [?] Help  [Ctrl+C] Quit ".to_string()
     };
 
     let block = Block::default()

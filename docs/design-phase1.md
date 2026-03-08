@@ -137,7 +137,7 @@ fn create_main_layout(area: Rect) -> Vec<Rect> {
 │ │                                                                  │ │
 │ ╰──────────────────────────────────────────────────────────────────╯ │
 ├──────────────────────────────────────────────────────────────────────┤
-│ [j/k] Navigate  [Enter] Select  [←] Back  [q] Cancel                 │  1 row
+│ [↑/↓] Navigate  [→] Select  [←] Back  [Esc] Cancel                 │  1 row
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -171,7 +171,7 @@ fn create_dir_chooser_layout(area: Rect) -> Vec<Rect> {
 │ [w] Open in WebStorm                       │
 │ [v] Open in VS Code                        │
 │ [f] Open in Finder/Explorer                │
-│ [q] Cancel                                 │
+│ [Esc] Cancel                                 │
 └────────────────────────────────────────────┘
 ```
 
@@ -373,7 +373,7 @@ fn render_repo_item(
 **Structure:**
 ```
 ┌─ Status ──────────────────────────────────────────────────────┐
-│ [j/k] Nav  [g/G] Jump  [/] Search  [Enter] Open  [?] Help [q] │
+│ [↑/↓] Nav  [Home/End] Jump  [/] Search  [Enter] Open  [?] Help [Ctrl+C] │
 └────────────────────────────────────────────────────────────────┘
 ```
 
@@ -388,7 +388,7 @@ fn render_status_bar(
     let status_text = match &app.state {
         AppState::Loading => format!(" ⏳ {}", app.loading_message),
         AppState::Error => format!(" ⚠️ {}", app.error_message),
-        _ => " [j/k] Nav  [g/G] Jump  [/] Search  [Enter] Open  [?] Help  [q] Quit ".to_string(),
+        _ => " [↑/↓] Nav  [Home/End] Jump  [/] Search  [Enter] Open  [?] Help  [Ctrl+C] Quit ".to_string(),
     };
 
     let style = Style::default()

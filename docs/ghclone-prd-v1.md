@@ -25,9 +25,9 @@
 - **UI 组件**: 目录选择对话框
 - **交互**:
   - 显示当前路径
-  - 支持 `j/k` 或 `↑/↓` 浏览目录
-  - 支持 `Enter` 确认选择
-  - 支持 `q` 或 `Ctrl+C` 退出
+  - 支持 `↑/↓` 浏览目录
+  - 支持 `→` 进入目录，`Space` 确认选择
+  - 支持 `Esc` 返回，`Ctrl+C` 退出
 - **输出**: 将主目录路径保存到配置文件
 
 #### F2: 主界面加载
@@ -84,7 +84,7 @@
 │ [w] Open in WebStorm                     │
 │ [v] Open in VS Code                      │
 │ [f] Open in Finder/Explorer              │
-│ [q] Cancel                               │
+│ [Esc] Cancel                               │
 ╰──────────────────────────────────────────╯
 ```
 
@@ -95,13 +95,13 @@
 | WebStorm | `w` | `webstorm <absolute_path>` |
 | VS Code | `v` | `code <absolute_path>` |
 | 文件管理器 | `f` | macOS: `open <path>`, Linux: `xdg-open`, Windows: `explorer` |
-| 取消 | `q` / `Esc` | 关闭菜单 |
+| 取消 | `Esc` | 关闭菜单 |
 
 ### 2.4 全局快捷键
 
 | 按键 | 功能 |
 |------|------|
-| `q` / `Ctrl+C` | 退出程序 |
+| `Ctrl+C` | 退出程序 |
 | `r` | 刷新仓库列表 |
 | `?` | 显示帮助面板 |
 | `/` | 聚焦搜索框 |
@@ -213,7 +213,7 @@ fn view(app: &App) -> Text {
 │ │                                                       │ │
 │ ╰───────────────────────────────────────────────────────╯ │
 │                                                           │
-│ [j/k] Navigate  [Enter] Open  [r] Refresh  [q] Quit      │
+│ [↑/↓] Navigate  [Enter] Open  [r] Refresh  [Ctrl+C] Quit      │
 ╰───────────────────────────────────────────────────────────╯
 ```
 
@@ -230,7 +230,7 @@ fn view(app: &App) -> Text {
 │                                                           │
 │ Current: /home/username/projects                         │
 │                                                           │
-│ [j/k] Navigate  [Enter] Select  [q] Cancel               │
+│ [↑/↓] Navigate  [→] Select  [Esc] Cancel               │
 ╰───────────────────────────────────────────────────────────╯
 ```
 

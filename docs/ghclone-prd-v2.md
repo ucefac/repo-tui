@@ -42,9 +42,9 @@
 - **UI 组件**: 目录选择对话框
 - **交互**:
   - 显示当前路径
-  - 支持 `j/k` 或 `↑/↓` 浏览目录
-  - 支持 `Enter` 确认选择
-  - 支持 `q` 或 `Ctrl+C` 退出
+  - 支持 `↑/↓` 浏览目录
+  - 支持 `→` 进入目录，`Space` 确认选择
+  - 支持 `Esc` 返回，`Ctrl+C` 退出
 - **安全验证**:
   - 路径必须在用户主目录内
   - 路径必须是目录而非文件
@@ -435,7 +435,7 @@ fn view(app: &App, frame: &mut Frame) {
 │ [2] Open in WebStorm                             │
 │ [3] Open in VS Code                              │
 │ [4] Open in Finder/Explorer                      │
-│ [q] Cancel                                       │
+│ [Esc] Cancel                                       │
 ╰──────────────────────────────────────────────────╯
 ```
 
