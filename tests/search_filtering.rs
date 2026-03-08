@@ -1,7 +1,7 @@
 //! Search filtering integration tests
 
 use repotui::app::model::App;
-use repotui::repo::Repository;
+use repotui::repo::{RepoSource, Repository};
 use std::path::PathBuf;
 use tokio::sync::mpsc;
 
@@ -17,6 +17,7 @@ fn test_filter_case_insensitive() {
             is_dirty: false,
             branch: None,
             is_git_repo: true,
+            source: RepoSource::Standalone,
         },
         Repository {
             name: "ANOTHER-REPO".to_string(),
@@ -25,6 +26,7 @@ fn test_filter_case_insensitive() {
             is_dirty: false,
             branch: None,
             is_git_repo: true,
+            source: RepoSource::Standalone,
         },
     ];
     app.search_query = "my".to_string();
@@ -45,6 +47,7 @@ fn test_filter_empty_query() {
             is_dirty: false,
             branch: None,
             is_git_repo: true,
+            source: RepoSource::Standalone,
         },
         Repository {
             name: "repo2".to_string(),
@@ -53,6 +56,7 @@ fn test_filter_empty_query() {
             is_dirty: false,
             branch: None,
             is_git_repo: true,
+            source: RepoSource::Standalone,
         },
     ];
     app.search_query = "".to_string();

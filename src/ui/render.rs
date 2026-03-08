@@ -4,8 +4,9 @@ use crate::app::model::App;
 use crate::app::state::AppState;
 use crate::ui::theme::Theme;
 use crate::ui::widgets::{
-    centered_help_popup, centered_popup, centered_rect, ActionMenu, DirChooser, HelpPanel,
-    RepoList, SearchBox, ThemeSelector, TitleBar,
+    centered_help_popup, centered_popup, centered_rect, main_dir_centered_rect, ActionMenu,
+    DirectoryChooser, DirectoryChooserState, HelpPanel, MainDirManager, RepoList, SearchBox,
+    ThemeSelector, TitleBar,
 };
 use ratatui::prelude::*;
 use ratatui::widgets::{Clear, Paragraph};
@@ -42,6 +43,7 @@ pub fn render(frame: &mut Frame, app: &mut App) {
             ref entries,
             selected_index,
             scroll_offset,
+            ref mode,
         } => {
             render_directory_chooser(
                 frame,
@@ -50,8 +52,13 @@ pub fn render(frame: &mut Frame, app: &mut App) {
                 entries,
                 selected_index,
                 scroll_offset,
+                mode,
                 &theme,
             );
+        }
+        AppState::ManagingDirs { .. } => {
+            render_main_ui(frame, area, app, &theme);
+            render_main_dir_manager(frame, area, app, &theme);
         }
         AppState::Running => {
             render_main_ui(frame, area, app, &theme);
@@ -217,6 +224,7 @@ fn render_help(frame: &mut Frame, area: Rect, scroll_offset: usize, _theme: &The
 }
 
 /// Render directory chooser using component
+#[allow(clippy::too_many_arguments)]
 fn render_directory_chooser(
     frame: &mut Frame,
     area: Rect,
@@ -224,6 +232,7 @@ fn render_directory_chooser(
     entries: &[String],
     selected_index: usize,
     scroll_offset: usize,
+    mode: &crate::app::state::DirectoryChooserMode,
     theme: &Theme,
 ) {
     let popup_area = centered_rect(80, 80, area);
@@ -231,10 +240,46 @@ fn render_directory_chooser(
     // Clear background for modal
     frame.render_widget(Clear, popup_area);
 
-    // Use DirChooser component with scroll support
-    let chooser = DirChooser::new(path, entries, selected_index, scroll_offset, theme)
-        .visible_height(popup_area.height.saturating_sub(8)); // Reserve space for title, path, stats, help (reduced due to single-line help)
+    // Create state for the chooser
+    let state = DirectoryChooserState {
+        current_path: path.to_path_buf(),
+        entries: entries.to_vec(),
+        selected_index,
+        scroll_offset,
+        mode: mode.clone(),
+    };
+
+    // Use DirectoryChooser component with scroll support
+    let chooser =
+        DirectoryChooser::new(&state, theme).visible_height(popup_area.height.saturating_sub(10));
+
     frame.render_widget(chooser, popup_area);
+}
+
+/// Render main directory manager
+fn render_main_dir_manager(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
+    let popup_area = main_dir_centered_rect(60, 70, area);
+
+    // Clear background for modal
+    frame.render_widget(Clear, popup_area);
+
+    if let AppState::ManagingDirs {
+        selected_dir_index,
+        editing,
+        ..
+    } = &app.state
+    {
+        let manager = MainDirManager::new(&app.main_directories, *selected_dir_index, theme);
+
+        // If editing, add editing state
+        let manager = if let Some(edit) = editing {
+            manager.editing(edit.index.unwrap_or(0), &edit.display_name)
+        } else {
+            manager
+        };
+
+        frame.render_widget(manager, popup_area);
+    }
 }
 
 /// Render theme selector

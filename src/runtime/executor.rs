@@ -135,6 +135,39 @@ impl Runtime {
                     let _ = msg_tx.send(msg).await;
                 });
             }
+
+            Cmd::LoadRepositoriesMulti(_dirs) => {
+                // TODO: Implement multi-directory loading
+                tokio::spawn(async move {
+                    let _ = msg_tx
+                        .send(AppMsg::ShowError(
+                            "Multi-directory loading not yet implemented".to_string(),
+                        ))
+                        .await;
+                });
+            }
+
+            Cmd::SaveConfig(_config) => {
+                // TODO: Implement config saving
+                tokio::spawn(async move {
+                    let _ = msg_tx
+                        .send(AppMsg::ShowError(
+                            "Config saving not yet implemented".to_string(),
+                        ))
+                        .await;
+                });
+            }
+
+            Cmd::ValidateDirectory(_path) => {
+                // TODO: Implement directory validation
+                tokio::spawn(async move {
+                    let _ = msg_tx
+                        .send(AppMsg::ShowError(
+                            "Directory validation not yet implemented".to_string(),
+                        ))
+                        .await;
+                });
+            }
         }
     }
 

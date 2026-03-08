@@ -93,7 +93,40 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
         AppMsg::ConfigLoaded(result) => {
             match *result {
                 Ok(config) => {
-                    app.main_dir = Some(config.main_directory.clone());
+                    // Load main directories info from config
+                    app.main_directories = config
+                        .main_directories
+                        .iter()
+                        .map(|d| {
+                            crate::app::model::MainDirectoryInfo {
+                                path: d.path.clone(),
+                                display_name: d.display_name.clone().unwrap_or_else(|| {
+                                    d.path
+                                        .file_name()
+                                        .and_then(|n| n.to_str())
+                                        .unwrap_or("unknown")
+                                        .to_string()
+                                }),
+                                enabled: d.enabled,
+                                repo_count: 0, // Will be updated later
+                            }
+                        })
+                        .collect();
+
+                    // Load standalone repositories
+                    app.single_repositories = config
+                        .single_repositories
+                        .iter()
+                        .map(|r| r.path.clone())
+                        .collect();
+
+                    // Keep backward compatibility with old main_directory field
+                    if let Some(ref old_dir) = config.main_directory {
+                        if !old_dir.as_os_str().is_empty() {
+                            app.main_dir = Some(old_dir.clone());
+                        }
+                    }
+
                     app.config = Some(config.clone());
 
                     // Load favorites from config
@@ -102,28 +135,49 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                     // Load recent repositories from config
                     app.recent = config.recent.to_store();
 
-                    // 处理 random 配置 - 启动时随机选择一个主题
+                    // Handle random theme configuration
                     app.theme = if config.ui.theme == "random" {
                         crate::ui::themes::get_random_theme()
                     } else {
                         Theme::new(&config.ui.theme)
                     };
 
-                    // Start loading repositories
-                    runtime.dispatch(crate::app::msg::Cmd::LoadRepositories(
-                        config.main_directory,
-                    ));
+                    // Load repositories from multiple main directories
+                    let main_dirs: Vec<_> = config
+                        .enabled_main_dirs_with_meta()
+                        .into_iter()
+                        .map(|(_, path, max_depth)| (path.clone(), max_depth))
+                        .collect();
+
+                    if !main_dirs.is_empty() || !app.single_repositories.is_empty() {
+                        runtime.dispatch(crate::app::msg::Cmd::LoadRepositoriesMulti(main_dirs));
+                    } else if let Some(ref main_dir) = app.main_dir {
+                        // Fallback to legacy single directory loading
+                        runtime.dispatch(crate::app::msg::Cmd::LoadRepositories(main_dir.clone()));
+                    } else {
+                        // No directories configured, show directory chooser
+                        app.state = AppState::ChoosingDir {
+                            path: dirs::home_dir().unwrap_or_default(),
+                            entries: Vec::new(),
+                            selected_index: 0,
+                            scroll_offset: 0,
+                            mode: crate::app::state::DirectoryChooserMode::default(),
+                        };
+                        runtime.dispatch(crate::app::msg::Cmd::ScanDirectory(
+                            dirs::home_dir().unwrap_or_default(),
+                        ));
+                    }
                 }
                 Err(e) => {
                     app.error_message = Some(e.user_message());
 
                     // All configuration errors trigger directory chooser
-                    // This handles: NotFound, empty path, invalid path, etc.
                     app.state = AppState::ChoosingDir {
                         path: dirs::home_dir().unwrap_or_default(),
                         entries: Vec::new(),
                         selected_index: 0,
                         scroll_offset: 0,
+                        mode: crate::app::state::DirectoryChooserMode::default(),
                     };
                     runtime.dispatch(crate::app::msg::Cmd::ScanDirectory(
                         dirs::home_dir().unwrap_or_default(),
@@ -231,6 +285,10 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 entries: Vec::new(),
                 selected_index: 0,
                 scroll_offset: 0,
+                mode: crate::app::state::DirectoryChooserMode::SelectMainDirectory {
+                    allow_multiple: false,
+                    edit_mode: false,
+                },
             };
             runtime.dispatch(crate::app::msg::Cmd::ScanDirectory(
                 dirs::home_dir().unwrap_or_default(),
@@ -238,34 +296,75 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
         }
 
         AppMsg::DirectorySelected(path) => {
-            // Save configuration
-            let mut config = app.config.clone().unwrap_or_default();
-            config.main_directory = PathBuf::from(path);
+            let path_buf = PathBuf::from(&path);
 
-            match config::save_config(&config) {
-                Ok(()) => {
-                    // Update state
-                    app.config = Some(config.clone());
-                    app.main_dir = Some(config.main_directory.clone());
-
-                    // Clear any previous error messages
-                    app.error_message = None;
-
-                    // Set state to Loading while repositories are being discovered
-                    app.state = AppState::Loading {
-                        message: "Discovering repositories...".to_string(),
-                    };
-
-                    // Load repositories
-                    runtime.dispatch(crate::app::msg::Cmd::LoadRepositories(
-                        config.main_directory,
-                    ));
+            // Get current chooser mode
+            let mode = if let AppState::ChoosingDir { mode, .. } = &app.state {
+                mode.clone()
+            } else {
+                crate::app::state::DirectoryChooserMode::SelectMainDirectory {
+                    allow_multiple: false,
+                    edit_mode: false,
                 }
-                Err(e) => {
-                    app.error_message = Some(format!("Failed to save config: {}", e));
-                    app.state = AppState::Error {
-                        message: format!("Failed to save configuration: {}", e),
-                    };
+            };
+
+            match mode {
+                crate::app::state::DirectoryChooserMode::AddSingleRepository => {
+                    // Validate it's a git repository
+                    if !path_buf.join(".git").exists() {
+                        app.error_message =
+                            Some("Selected directory is not a Git repository".to_string());
+                        return;
+                    }
+
+                    // Add as standalone repository
+                    if let Some(ref mut config) = app.config {
+                        if let Err(e) = config.add_single_repository(path_buf.clone()) {
+                            app.error_message = Some(format!("Failed to add repository: {}", e));
+                        } else {
+                            app.single_repositories.push(path_buf);
+                            let _ = config::save_config(config);
+                            runtime.dispatch(crate::app::msg::Cmd::LoadConfig);
+                            app.state = AppState::Running;
+                        }
+                    }
+                }
+                crate::app::state::DirectoryChooserMode::SelectMainDirectory {
+                    edit_mode, ..
+                } => {
+                    if edit_mode {
+                        // Update existing main directory
+                        if let Some(ref mut config) = app.config {
+                            config.main_directory = Some(path_buf.clone());
+                            let _ = config::save_config(config);
+                            app.main_dir = Some(path_buf);
+                            runtime.dispatch(crate::app::msg::Cmd::LoadConfig);
+                        }
+                    } else {
+                        // Add as new main directory
+                        if let Some(ref mut config) = app.config {
+                            if let Err(e) = config.add_main_directory(path_buf.clone()) {
+                                app.error_message =
+                                    Some(format!("Failed to add main directory: {}", e));
+                            } else {
+                                let display_name = path_buf
+                                    .file_name()
+                                    .and_then(|n| n.to_str())
+                                    .map(|s| s.to_string());
+                                app.main_directories
+                                    .push(crate::app::model::MainDirectoryInfo {
+                                        path: path_buf.clone(),
+                                        display_name: display_name
+                                            .unwrap_or_else(|| "unknown".to_string()),
+                                        enabled: true,
+                                        repo_count: 0,
+                                    });
+                                let _ = config::save_config(config);
+                                runtime.dispatch(crate::app::msg::Cmd::LoadConfig);
+                            }
+                        }
+                    }
+                    app.state = AppState::Running;
                 }
             }
         }
@@ -293,10 +392,11 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
 
         AppMsg::DirectoryNavDown => {
             if let AppState::ChoosingDir {
+                path: _,
                 entries,
                 selected_index,
                 scroll_offset,
-                ..
+                mode: _,
             } = &mut app.state
             {
                 if !entries.is_empty() {
@@ -312,10 +412,11 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
 
         AppMsg::DirectoryNavUp => {
             if let AppState::ChoosingDir {
+                path: _,
                 entries,
                 selected_index,
                 scroll_offset,
-                ..
+                mode: _,
             } = &mut app.state
             {
                 if !entries.is_empty() {
@@ -621,6 +722,223 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 ));
             }
         }
+
+        // === Main Directory Management ===
+        AppMsg::ShowMainDirectoryManager => {
+            let mut list_state = ratatui::widgets::ListState::default();
+            list_state.select(Some(0));
+            app.state = AppState::ManagingDirs {
+                list_state,
+                selected_dir_index: 0,
+                editing: None,
+            };
+        }
+
+        AppMsg::CloseMainDirectoryManager => {
+            app.state = AppState::Running;
+        }
+
+        AppMsg::AddMainDirectory(path) => {
+            if let Some(ref mut config) = app.config {
+                if let Err(e) = config.add_main_directory(path.clone()) {
+                    app.error_message = Some(format!("Failed to add main directory: {}", e));
+                } else {
+                    let display_name = path
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .map(|s| s.to_string());
+                    app.main_directories
+                        .push(crate::app::model::MainDirectoryInfo {
+                            path: path.clone(),
+                            display_name: display_name.unwrap_or_else(|| "unknown".to_string()),
+                            enabled: true,
+                            repo_count: 0,
+                        });
+                    let _ = config::save_config(config);
+                    runtime.dispatch(crate::app::msg::Cmd::LoadConfig);
+                }
+            }
+        }
+
+        AppMsg::RemoveMainDirectory(index) => {
+            if let Some(ref mut config) = app.config {
+                if let Err(e) = config.remove_main_directory(index) {
+                    app.error_message = Some(format!("Failed to remove main directory: {}", e));
+                } else {
+                    if index < app.main_directories.len() {
+                        app.main_directories.remove(index);
+                    }
+                    let _ = config::save_config(config);
+                    runtime.dispatch(crate::app::msg::Cmd::LoadConfig);
+                }
+            }
+        }
+
+        AppMsg::ToggleMainDirectoryEnabled(index) => {
+            if let Some(ref mut config) = app.config {
+                match config.toggle_main_directory(index) {
+                    Ok(enabled) => {
+                        if let Some(dir) = app.main_directories.get_mut(index) {
+                            dir.enabled = enabled;
+                        }
+                        let _ = config::save_config(config);
+                        runtime.dispatch(crate::app::msg::Cmd::LoadConfig);
+                    }
+                    Err(e) => {
+                        app.error_message = Some(format!("Failed to toggle main directory: {}", e));
+                    }
+                }
+            }
+        }
+
+        AppMsg::UpdateMainDirectoryName(index, name) => {
+            if let Some(ref mut config) = app.config {
+                if let Some(dir_config) = config.main_directories.get_mut(index) {
+                    dir_config.display_name = Some(name.clone());
+                    if let Some(dir) = app.main_directories.get_mut(index) {
+                        dir.display_name = name;
+                    }
+                    let _ = config::save_config(config);
+                }
+            }
+        }
+
+        AppMsg::MainDirNavUp => {
+            if let AppState::ManagingDirs {
+                selected_dir_index,
+                list_state,
+                ..
+            } = &mut app.state
+            {
+                if !app.main_directories.is_empty() {
+                    *selected_dir_index = if *selected_dir_index == 0 {
+                        app.main_directories.len() - 1
+                    } else {
+                        *selected_dir_index - 1
+                    };
+                    list_state.select(Some(*selected_dir_index));
+                }
+            }
+        }
+
+        AppMsg::MainDirNavDown => {
+            if let AppState::ManagingDirs {
+                selected_dir_index,
+                list_state,
+                ..
+            } = &mut app.state
+            {
+                if !app.main_directories.is_empty() {
+                    *selected_dir_index = (*selected_dir_index + 1) % app.main_directories.len();
+                    list_state.select(Some(*selected_dir_index));
+                }
+            }
+        }
+
+        AppMsg::EditMainDirectory(index) => {
+            if let AppState::ManagingDirs { editing, .. } = &mut app.state {
+                if let Some(dir) = app.main_directories.get(index) {
+                    *editing = Some(crate::app::state::MainDirEdit {
+                        index: Some(index),
+                        path: dir.path.clone(),
+                        display_name: dir.display_name.clone(),
+                        enabled: dir.enabled,
+                    });
+                }
+            }
+        }
+
+        AppMsg::ConfirmEditMainDirectory => {
+            if let AppState::ManagingDirs { editing, .. } = &mut app.state {
+                if let Some(ref edit) = editing {
+                    if let Some(ref mut config) = app.config {
+                        if let Some(dir_config) =
+                            config.main_directories.get_mut(edit.index.unwrap_or(0))
+                        {
+                            dir_config.display_name = Some(edit.display_name.clone());
+                            if let Some(dir) = app.main_directories.get_mut(edit.index.unwrap_or(0))
+                            {
+                                dir.display_name = edit.display_name.clone();
+                            }
+                            let _ = config::save_config(config);
+                        }
+                    }
+                }
+                *editing = None;
+            }
+        }
+
+        AppMsg::CancelEditMainDirectory => {
+            if let AppState::ManagingDirs { editing, .. } = &mut app.state {
+                *editing = None;
+            }
+        }
+
+        // === Single Repository Management ===
+        AppMsg::ShowAddSingleRepoChooser => {
+            app.state = AppState::ChoosingDir {
+                path: dirs::home_dir().unwrap_or_default(),
+                entries: Vec::new(),
+                selected_index: 0,
+                scroll_offset: 0,
+                mode: crate::app::state::DirectoryChooserMode::AddSingleRepository,
+            };
+            runtime.dispatch(crate::app::msg::Cmd::ScanDirectory(
+                dirs::home_dir().unwrap_or_default(),
+            ));
+        }
+
+        AppMsg::AddSingleRepository(path) => {
+            if let Some(ref mut config) = app.config {
+                if let Err(e) = config.add_single_repository(path.clone()) {
+                    app.error_message = Some(format!("Failed to add repository: {}", e));
+                } else {
+                    app.single_repositories.push(path.clone());
+                    let _ = config::save_config(config);
+                    runtime.dispatch(crate::app::msg::Cmd::LoadConfig);
+                }
+            }
+        }
+
+        AppMsg::RemoveSingleRepository(path) => {
+            if let Some(ref mut config) = app.config {
+                if let Err(e) = config.remove_single_repository(&path) {
+                    app.error_message = Some(format!("Failed to remove repository: {}", e));
+                } else {
+                    app.single_repositories.retain(|p| p != &path);
+                    let _ = config::save_config(config);
+                    runtime.dispatch(crate::app::msg::Cmd::LoadConfig);
+                }
+            }
+        }
+
+        // === Directory Chooser Enhanced ===
+        AppMsg::ShowDirectoryChooserWithMode(mode) => {
+            app.state = AppState::ChoosingDir {
+                path: dirs::home_dir().unwrap_or_default(),
+                entries: Vec::new(),
+                selected_index: 0,
+                scroll_offset: 0,
+                mode,
+            };
+            runtime.dispatch(crate::app::msg::Cmd::ScanDirectory(
+                dirs::home_dir().unwrap_or_default(),
+            ));
+        }
+
+        AppMsg::DirectoriesSelected(paths) => {
+            for path in paths {
+                if let Some(ref mut config) = app.config {
+                    let path_buf = PathBuf::from(&path);
+                    let _ = config.add_main_directory(path_buf);
+                }
+            }
+            if let Some(ref config) = app.config {
+                let _ = config::save_config(config);
+            }
+            runtime.dispatch(crate::app::msg::Cmd::LoadConfig);
+            app.state = AppState::Running;
+        }
     }
 }
 
@@ -642,6 +960,7 @@ mod tests {
             entries: vec!["dir1".to_string(), "dir2".to_string(), "dir3".to_string()],
             selected_index: 0,
             scroll_offset: 0,
+            mode: crate::app::state::DirectoryChooserMode::default(),
         };
 
         update(AppMsg::DirectoryNavDown, &mut app, &runtime);
@@ -664,6 +983,7 @@ mod tests {
             entries: vec!["dir1".to_string(), "dir2".to_string(), "dir3".to_string()],
             selected_index: 2,
             scroll_offset: 0,
+            mode: crate::app::state::DirectoryChooserMode::default(),
         };
 
         update(AppMsg::DirectoryNavDown, &mut app, &runtime);
@@ -686,6 +1006,7 @@ mod tests {
             entries: vec!["dir1".to_string(), "dir2".to_string(), "dir3".to_string()],
             selected_index: 2,
             scroll_offset: 0,
+            mode: crate::app::state::DirectoryChooserMode::default(),
         };
 
         update(AppMsg::DirectoryNavUp, &mut app, &runtime);
@@ -708,6 +1029,7 @@ mod tests {
             entries: vec!["dir1".to_string(), "dir2".to_string(), "dir3".to_string()],
             selected_index: 0,
             scroll_offset: 0,
+            mode: crate::app::state::DirectoryChooserMode::default(),
         };
 
         update(AppMsg::DirectoryNavUp, &mut app, &runtime);

@@ -16,6 +16,19 @@ use crate::repo::Repository;
 use crate::ui::Theme;
 use std::sync::Arc;
 
+/// Main directory info for UI
+#[derive(Debug, Clone)]
+pub struct MainDirectoryInfo {
+    /// Directory path
+    pub path: PathBuf,
+    /// Display name
+    pub display_name: String,
+    /// Enabled state
+    pub enabled: bool,
+    /// Repository count
+    pub repo_count: usize,
+}
+
 /// Application model
 pub struct App {
     /// Application configuration
@@ -89,6 +102,15 @@ pub struct App {
 
     /// Selected repository indices (for batch operations)
     pub selected_indices: HashSet<usize>,
+
+    /// Main directories list
+    pub main_directories: Vec<MainDirectoryInfo>,
+
+    /// Single repositories list
+    pub single_repositories: Vec<PathBuf>,
+
+    /// Active main directory index
+    pub active_main_dir_index: Option<usize>,
 }
 
 impl App {
@@ -125,6 +147,9 @@ impl App {
             view_mode: ViewMode::All,
             selection_mode: false,
             selected_indices: HashSet::new(),
+            main_directories: Vec::new(),
+            single_repositories: Vec::new(),
+            active_main_dir_index: None,
         }
     }
 
@@ -387,6 +412,7 @@ mod favorites_tests {
             is_dirty: false,
             branch: Some("main".to_string()),
             is_git_repo: true,
+            source: crate::repo::source::RepoSource::Standalone,
         };
         let repo2 = Repository {
             name: "repo2".to_string(),
@@ -395,6 +421,7 @@ mod favorites_tests {
             is_dirty: true,
             branch: Some("feature".to_string()),
             is_git_repo: true,
+            source: crate::repo::source::RepoSource::Standalone,
         };
         app.repositories = vec![repo1, repo2];
         app.filtered_indices = vec![0, 1];
@@ -542,6 +569,7 @@ mod tests {
             is_dirty: false,
             branch: Some("main".to_string()),
             is_git_repo: true,
+            source: crate::repo::source::RepoSource::Standalone,
         };
         let repo2 = Repository {
             name: "repo2".to_string(),
@@ -550,6 +578,7 @@ mod tests {
             is_dirty: true,
             branch: Some("feature".to_string()),
             is_git_repo: true,
+            source: crate::repo::source::RepoSource::Standalone,
         };
         app.repositories = vec![repo1, repo2];
         app.filtered_indices = vec![0, 1];
@@ -652,6 +681,7 @@ mod tests {
             is_dirty: false,
             branch: Some("main".to_string()),
             is_git_repo: true,
+            source: crate::repo::source::RepoSource::Standalone,
         });
         app.apply_filter();
 

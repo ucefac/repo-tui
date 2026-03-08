@@ -1,58 +1,105 @@
-//! Directory chooser widget
+//! Generic directory chooser widget
 //!
-//! Provides a file browser for selecting the main directory.
+//! Supports two modes:
+//! 1. SelectMainDirectory - Select main directories (any directory)
+//! 2. AddSingleRepository - Select single Git repository (validates .git exists)
 
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
-use std::path::Path;
+use std::path::PathBuf;
 
+use crate::app::state::DirectoryChooserMode;
 use crate::ui::theme::Theme;
 
-/// Directory chooser widget state
+/// Directory chooser state
 #[derive(Debug, Clone)]
-pub struct DirChooser<'a> {
-    /// Current directory path
-    pub current_path: &'a Path,
-    /// Directory entries (names only)
-    pub entries: &'a [String],
+pub struct DirectoryChooserState {
+    /// Current path
+    pub current_path: PathBuf,
+    /// Directory entries
+    pub entries: Vec<String>,
     /// Selected index
     pub selected_index: usize,
-    /// Scroll offset for viewport tracking
+    /// Scroll offset
     pub scroll_offset: usize,
-    /// Visible height (for calculating visible count)
-    pub visible_height: u16,
-    /// Theme
-    pub theme: &'a Theme,
-    /// Title
-    pub title: &'a str,
-    /// Git repo count in current directory (optional)
-    pub git_repo_count: Option<usize>,
+    /// Chooser mode
+    pub mode: DirectoryChooserMode,
 }
 
-impl<'a> DirChooser<'a> {
-    /// Create a new directory chooser
-    pub fn new(
-        current_path: &'a Path,
-        entries: &'a [String],
-        selected_index: usize,
-        scroll_offset: usize,
-        theme: &'a Theme,
-    ) -> Self {
+impl DirectoryChooserState {
+    /// Create new state
+    pub fn new(initial_path: PathBuf, mode: DirectoryChooserMode) -> Self {
         Self {
-            current_path,
-            entries,
-            selected_index,
-            scroll_offset,
-            visible_height: 10,
-            theme,
-            title: "Select Main Directory",
-            git_repo_count: None,
+            current_path: initial_path,
+            entries: Vec::new(),
+            selected_index: 0,
+            scroll_offset: 0,
+            mode,
         }
     }
 
-    /// Set the title
-    pub fn title(mut self, title: &'a str) -> Self {
-        self.title = title;
+    /// Get title based on mode
+    pub fn title(&self) -> &'static str {
+        match &self.mode {
+            DirectoryChooserMode::SelectMainDirectory { .. } => "Select Main Directory",
+            DirectoryChooserMode::AddSingleRepository => "Add Single Repository",
+        }
+    }
+
+    /// Get icon based on mode
+    pub fn icon(&self) -> &'static str {
+        match &self.mode {
+            DirectoryChooserMode::SelectMainDirectory { .. } => "📁",
+            DirectoryChooserMode::AddSingleRepository => "📦",
+        }
+    }
+
+    /// Get help text based on mode
+    pub fn help_text(&self) -> &'static str {
+        match &self.mode {
+            DirectoryChooserMode::SelectMainDirectory { allow_multiple, .. } => {
+                if *allow_multiple {
+                    "↑↓ navigate   ← back   → enter   SPACE toggle   Enter confirm   Esc cancel"
+                } else {
+                    "↑↓ navigate   ← back   → enter   SPACE select   Esc cancel"
+                }
+            }
+            DirectoryChooserMode::AddSingleRepository => {
+                "↑↓ navigate   ← back   → enter   SPACE select repo   Esc cancel"
+            }
+        }
+    }
+}
+
+/// Directory chooser widget
+pub struct DirectoryChooser<'a> {
+    /// State
+    pub state: &'a DirectoryChooserState,
+    /// Theme
+    pub theme: &'a Theme,
+    /// Visible height
+    pub visible_height: u16,
+    /// Git repo count (optional)
+    pub git_repo_count: Option<usize>,
+    /// Selected paths (for multi-select mode)
+    pub selected_paths: Option<&'a std::collections::HashSet<PathBuf>>,
+}
+
+impl<'a> DirectoryChooser<'a> {
+    /// Create new chooser
+    pub fn new(state: &'a DirectoryChooserState, theme: &'a Theme) -> Self {
+        Self {
+            state,
+            theme,
+            visible_height: 10,
+            git_repo_count: None,
+            selected_paths: None,
+        }
+    }
+
+    /// Set visible height
+    pub fn visible_height(mut self, height: u16) -> Self {
+        self.visible_height = height;
         self
     }
 
@@ -62,16 +109,23 @@ impl<'a> DirChooser<'a> {
         self
     }
 
-    /// Set visible height
-    pub fn visible_height(mut self, height: u16) -> Self {
-        self.visible_height = height;
+    /// Set selected paths (for multi-select)
+    pub fn selected_paths(mut self, paths: &'a std::collections::HashSet<PathBuf>) -> Self {
+        self.selected_paths = Some(paths);
         self
     }
 }
 
-impl<'a> Widget for DirChooser<'a> {
+impl<'a> Widget for DirectoryChooser<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        // Create vertical layout
+        let show_selection_indicator = matches!(
+            self.state.mode,
+            DirectoryChooserMode::SelectMainDirectory {
+                allow_multiple: true,
+                ..
+            }
+        );
+
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
@@ -80,149 +134,143 @@ impl<'a> Widget for DirChooser<'a> {
                 Constraint::Length(2), // Stats
                 Constraint::Min(5),    // Directory list
                 Constraint::Length(1), // Spacer
-                Constraint::Length(1), // Help text (single line, no border)
+                Constraint::Length(1), // Help
             ])
             .split(area);
 
-        // Render title
-        render_title(chunks[0], buf, self.theme);
-
-        // Render current path
-        render_current_path(chunks[1], buf, self.current_path, self.theme);
-
-        // Render stats
-        render_stats(
-            chunks[2],
-            buf,
-            self.entries.len(),
-            self.git_repo_count,
-            self.theme,
-        );
-
-        // Render directory list
-        render_directory_list(
-            chunks[3],
-            buf,
-            self.entries,
-            self.selected_index,
-            self.scroll_offset,
-            chunks[3].height,
-            self.theme,
-        );
-
-        // Render help text
-        render_help(chunks[5], buf, self.theme);
+        self.render_title(chunks[0], buf);
+        self.render_current_path(chunks[1], buf);
+        self.render_stats(chunks[2], buf);
+        self.render_directory_list(chunks[3], buf, show_selection_indicator);
+        self.render_help(chunks[5], buf);
     }
 }
 
-/// Render title section
-fn render_title(area: Rect, buf: &mut Buffer, theme: &Theme) {
-    let title = Paragraph::new("📁 Select Main Directory")
-        .alignment(Alignment::Center)
-        .style(
+impl<'a> DirectoryChooser<'a> {
+    fn render_title(&self, area: Rect, buf: &mut Buffer) {
+        let text = format!("{} {}", self.state.icon(), self.state.title());
+
+        let title = Paragraph::new(text).alignment(Alignment::Center).style(
             Style::default()
-                .fg(theme.colors.primary.into())
+                .fg(self.theme.colors.primary.into())
                 .add_modifier(Modifier::BOLD),
         );
-    title.render(area, buf);
-}
-
-/// Render current path section
-fn render_current_path(area: Rect, buf: &mut Buffer, path: &Path, theme: &Theme) {
-    let path_str = path.display().to_string();
-    let text = format!("📂 {}", path_str);
-
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.colors.border_focused.into()));
-
-    let paragraph = Paragraph::new(text)
-        .block(block)
-        .alignment(Alignment::Left)
-        .style(Style::default().fg(theme.colors.foreground.into()));
-
-    paragraph.render(area, buf);
-}
-
-/// Render statistics
-fn render_stats(
-    area: Rect,
-    buf: &mut Buffer,
-    dir_count: usize,
-    git_count: Option<usize>,
-    theme: &Theme,
-) {
-    let stats_text = if let Some(git) = git_count {
-        format!(
-            "📊 {} subdirectories | 🗂️ {} Git repositories",
-            dir_count, git
-        )
-    } else {
-        format!("📊 {} subdirectories", dir_count)
-    };
-
-    let paragraph = Paragraph::new(stats_text)
-        .alignment(Alignment::Center)
-        .style(Style::default().fg(theme.colors.text_muted.into()));
-
-    paragraph.render(area, buf);
-}
-
-/// Render directory list
-fn render_directory_list(
-    area: Rect,
-    buf: &mut Buffer,
-    entries: &[String],
-    selected_index: usize,
-    scroll_offset: usize,
-    visible_height: u16,
-    theme: &Theme,
-) {
-    if entries.is_empty() {
-        let empty_text = "(empty directory)";
-        let paragraph = Paragraph::new(empty_text)
-            .alignment(Alignment::Center)
-            .style(Style::default().fg(theme.colors.text_muted.into()));
-        paragraph.render(area, buf);
-        return;
+        title.render(area, buf);
     }
 
-    // Calculate visible range
-    let visible_count = visible_height.saturating_sub(2) as usize;
-    let start = scroll_offset;
-    let end = (start + visible_count).min(entries.len());
+    fn render_current_path(&self, area: Rect, buf: &mut Buffer) {
+        let path_str = self.state.current_path.display().to_string();
+        let text = format!("📂 {}", path_str);
 
-    let items: Vec<ListItem> = entries[start..end]
-        .iter()
-        .enumerate()
-        .map(|(visible_idx, name)| {
-            let absolute_idx = start + visible_idx;
-            let mut style = Style::default().fg(theme.colors.foreground.into());
-            if absolute_idx == selected_index {
-                style = style
-                    .bg(theme.colors.selected_bg.into())
-                    .fg(Color::White)
-                    .add_modifier(Modifier::BOLD);
-            }
-            let prefix = if absolute_idx == selected_index {
-                "▌ 📁 "
-            } else {
-                "  📁 "
+        let block = Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(self.theme.colors.border_focused.into()));
+
+        let paragraph = Paragraph::new(text)
+            .block(block)
+            .alignment(Alignment::Left)
+            .style(Style::default().fg(self.theme.colors.foreground.into()));
+
+        paragraph.render(area, buf);
+    }
+
+    fn render_stats(&self, area: Rect, buf: &mut Buffer) {
+        let stats_text = if let Some(git) = self.git_repo_count {
+            format!(
+                "📊 {} subdirectories | 🗂️ {} Git repositories",
+                self.state.entries.len(),
+                git
+            )
+        } else {
+            format!("📊 {} subdirectories", self.state.entries.len())
+        };
+
+        let paragraph = Paragraph::new(stats_text)
+            .alignment(Alignment::Center)
+            .style(Style::default().fg(self.theme.colors.text_muted.into()));
+
+        paragraph.render(area, buf);
+    }
+
+    fn render_directory_list(&self, area: Rect, buf: &mut Buffer, show_selection: bool) {
+        if self.state.entries.is_empty() {
+            let empty_text = match &self.state.mode {
+                DirectoryChooserMode::SelectMainDirectory { .. } => "(empty directory)",
+                DirectoryChooserMode::AddSingleRepository => "(no Git repositories found)",
             };
-            ListItem::new(format!("{}{}", prefix, name)).style(style)
-        })
-        .collect();
+            let paragraph = Paragraph::new(empty_text)
+                .alignment(Alignment::Center)
+                .style(Style::default().fg(self.theme.colors.text_muted.into()));
+            paragraph.render(area, buf);
+            return;
+        }
 
-    let block = Block::default()
-        .title(format!(" Directories ({}/{}) ", end - start, entries.len()))
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.colors.border.into()));
+        // Calculate visible range
+        let visible_count = area.height.saturating_sub(2) as usize;
+        let start = self.state.scroll_offset;
+        let end = (start + visible_count).min(self.state.entries.len());
 
-    let list = List::new(items)
-        .block(block)
-        .style(Style::default().fg(theme.colors.foreground.into()));
+        let items: Vec<ListItem> = self.state.entries[start..end]
+            .iter()
+            .enumerate()
+            .map(|(visible_idx, name)| {
+                let absolute_idx = start + visible_idx;
+                let is_selected = absolute_idx == self.state.selected_index;
 
-    Widget::render(list, area, buf);
+                let mut style = Style::default().fg(self.theme.colors.foreground.into());
+                if is_selected {
+                    style = style
+                        .bg(self.theme.colors.selected_bg.into())
+                        .fg(Color::White)
+                        .add_modifier(Modifier::BOLD);
+                }
+
+                let prefix = if is_selected { "▌ " } else { "  " };
+                let selection_marker = if show_selection {
+                    let entry_path = self.state.current_path.join(name);
+                    let is_marked = self
+                        .selected_paths
+                        .map(|paths| paths.contains(&entry_path))
+                        .unwrap_or(false);
+                    if is_marked {
+                        "[✓] "
+                    } else {
+                        "[ ] "
+                    }
+                } else {
+                    ""
+                };
+
+                ListItem::new(format!("{}{}📁 {}", prefix, selection_marker, name)).style(style)
+            })
+            .collect();
+
+        let block = Block::default()
+            .title(format!(
+                " Directories ({}/{}) ",
+                end - start,
+                self.state.entries.len()
+            ))
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(self.theme.colors.border.into()));
+
+        let list = List::new(items)
+            .block(block)
+            .style(Style::default().fg(self.theme.colors.foreground.into()));
+
+        Widget::render(list, area, buf);
+    }
+
+    fn render_help(&self, area: Rect, buf: &mut Buffer) {
+        let help_text = self.state.help_text();
+        let spans = parse_help_message(help_text, self.theme);
+
+        let paragraph = Paragraph::new(Line::from(spans))
+            .alignment(Alignment::Left)
+            .style(Style::default().fg(self.theme.colors.text_muted.into()));
+
+        paragraph.render(area, buf);
+    }
 }
 
 /// Parse help message and apply theme color highlight to key hints
@@ -252,21 +300,6 @@ fn parse_help_message<'a>(message: &'a str, theme: &'a Theme) -> Vec<Span<'a>> {
     spans
 }
 
-/// Render help text
-fn render_help(area: Rect, buf: &mut Buffer, theme: &Theme) {
-    // Updated help text with direction keys only
-    let help_text = "↑↓ navigate   ← back   → enter   SPACE select   Esc cancel";
-
-    // Parse and apply theme color highlight to key hints
-    let spans = parse_help_message(help_text, theme);
-
-    let paragraph = Paragraph::new(Line::from(spans))
-        .alignment(Alignment::Left)
-        .style(Style::default().fg(theme.colors.text_muted.into()));
-
-    paragraph.render(area, buf);
-}
-
 /// Create centered rectangle for popup
 pub fn centered_rect(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
     let popup_layout = Layout::default()
@@ -294,15 +327,43 @@ mod tests {
     use ratatui::backend::TestBackend;
 
     #[test]
-    fn test_dir_chooser_empty() {
+    fn test_dir_chooser_empty_main_dir_mode() {
         let backend = TestBackend::new(80, 24);
         let mut terminal = Terminal::new(backend).unwrap();
         let theme = Theme::dark();
 
+        let state = DirectoryChooserState::new(
+            PathBuf::from("/tmp"),
+            DirectoryChooserMode::SelectMainDirectory {
+                allow_multiple: false,
+                edit_mode: false,
+            },
+        );
+
         terminal
             .draw(|f| {
                 let area = f.area();
-                let chooser = DirChooser::new(Path::new("/tmp"), &[], 0, 0, &theme);
+                let chooser = DirectoryChooser::new(&state, &theme);
+                f.render_widget(chooser, area);
+            })
+            .unwrap();
+    }
+
+    #[test]
+    fn test_dir_chooser_single_repo_mode() {
+        let backend = TestBackend::new(80, 24);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let theme = Theme::dark();
+
+        let state = DirectoryChooserState::new(
+            PathBuf::from("/home/user"),
+            DirectoryChooserMode::AddSingleRepository,
+        );
+
+        terminal
+            .draw(|f| {
+                let area = f.area();
+                let chooser = DirectoryChooser::new(&state, &theme);
                 f.render_widget(chooser, area);
             })
             .unwrap();
@@ -314,19 +375,93 @@ mod tests {
         let mut terminal = Terminal::new(backend).unwrap();
         let theme = Theme::dark();
 
-        let entries = vec![
+        let mut state = DirectoryChooserState::new(
+            PathBuf::from("/home/user"),
+            DirectoryChooserMode::SelectMainDirectory {
+                allow_multiple: false,
+                edit_mode: false,
+            },
+        );
+        state.entries = vec![
+            "Documents".to_string(),
+            "Projects".to_string(),
+            "Downloads".to_string(),
+        ];
+        state.selected_index = 1;
+
+        terminal
+            .draw(|f| {
+                let area = f.area();
+                let chooser = DirectoryChooser::new(&state, &theme).git_repo_count(5);
+                f.render_widget(chooser, area);
+            })
+            .unwrap();
+    }
+
+    #[test]
+    fn test_dir_chooser_multi_select() {
+        let backend = TestBackend::new(80, 24);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let theme = Theme::dark();
+
+        let mut state = DirectoryChooserState::new(
+            PathBuf::from("/home/user"),
+            DirectoryChooserMode::SelectMainDirectory {
+                allow_multiple: true,
+                edit_mode: false,
+            },
+        );
+        state.entries = vec![
             "Documents".to_string(),
             "Projects".to_string(),
             "Downloads".to_string(),
         ];
 
+        let mut selected = std::collections::HashSet::new();
+        selected.insert(PathBuf::from("/home/user/Projects"));
+
         terminal
             .draw(|f| {
                 let area = f.area();
-                let chooser = DirChooser::new(Path::new("/home/user"), &entries, 1, 0, &theme)
-                    .git_repo_count(5);
+                let chooser = DirectoryChooser::new(&state, &theme).selected_paths(&selected);
                 f.render_widget(chooser, area);
             })
             .unwrap();
+    }
+
+    #[test]
+    fn test_state_title() {
+        let state = DirectoryChooserState::new(
+            PathBuf::from("/tmp"),
+            DirectoryChooserMode::SelectMainDirectory {
+                allow_multiple: false,
+                edit_mode: false,
+            },
+        );
+        assert_eq!(state.title(), "Select Main Directory");
+
+        let state2 = DirectoryChooserState::new(
+            PathBuf::from("/tmp"),
+            DirectoryChooserMode::AddSingleRepository,
+        );
+        assert_eq!(state2.title(), "Add Single Repository");
+    }
+
+    #[test]
+    fn test_state_icon() {
+        let state = DirectoryChooserState::new(
+            PathBuf::from("/tmp"),
+            DirectoryChooserMode::SelectMainDirectory {
+                allow_multiple: false,
+                edit_mode: false,
+            },
+        );
+        assert_eq!(state.icon(), "📁");
+
+        let state2 = DirectoryChooserState::new(
+            PathBuf::from("/tmp"),
+            DirectoryChooserMode::AddSingleRepository,
+        );
+        assert_eq!(state2.icon(), "📦");
     }
 }

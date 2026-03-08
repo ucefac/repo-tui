@@ -11,7 +11,14 @@ pub const CONFIG_DIR_NAME: &str = "repotui";
 pub const CONFIG_FILE_NAME: &str = "config.toml";
 
 /// Configuration version
-pub const CONFIG_VERSION: &str = "1.0";
+pub const CONFIG_VERSION: &str = "2.0";
+
+/// Maximum supported config version
+pub const MAX_SUPPORTED_VERSION: &str = "2.0";
+
+/// Minimum supported config version (for future use)
+#[allow(dead_code)]
+pub const MIN_SUPPORTED_VERSION: &str = "1.0";
 
 /// Minimum terminal dimensions
 pub const MIN_TERMINAL_WIDTH: u16 = 80;

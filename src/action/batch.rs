@@ -125,6 +125,7 @@ mod tests {
             is_dirty: false,
             branch: Some("main".to_string()),
             is_git_repo: true,
+            source: crate::repo::source::RepoSource::Standalone,
         }
     }
 

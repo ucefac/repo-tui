@@ -47,7 +47,9 @@ impl MockTerminal {
     /// Check if the buffer contains a string
     pub fn contains(&self, text: &str) -> bool {
         let buffer = self.buffer();
-        let content = buffer.content.chunks(buffer.area.width as usize)
+        let content = buffer
+            .content
+            .chunks(buffer.area.width as usize)
             .map(|row| {
                 row.iter()
                     .map(|cell| cell.symbol())
@@ -103,7 +105,9 @@ impl MockTerminal {
     /// Get the entire buffer as a string (for debugging)
     pub fn to_string(&self) -> String {
         let buffer = self.buffer();
-        buffer.content.chunks(buffer.area.width as usize)
+        buffer
+            .content
+            .chunks(buffer.area.width as usize)
             .map(|row| {
                 row.iter()
                     .map(|cell| cell.symbol())
@@ -122,7 +126,9 @@ impl MockTerminal {
 
     /// Resize the terminal
     pub fn resize(&mut self, width: u16, height: u16) {
-        self.terminal.resize(Rect::new(0, 0, width, height)).unwrap();
+        self.terminal
+            .resize(Rect::new(0, 0, width, height))
+            .unwrap();
     }
 
     /// Draw a widget to the terminal
@@ -191,9 +197,7 @@ mod tests {
         let mut term = MockTerminal::new(40, 10);
 
         term.draw(|f| {
-            let block = Block::default()
-                .title("Test Title")
-                .borders(Borders::ALL);
+            let block = Block::default().title("Test Title").borders(Borders::ALL);
             f.render_widget(block, f.area());
         });
 

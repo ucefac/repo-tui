@@ -4,9 +4,13 @@
 //! - Mock filesystem for creating test repositories
 //! - Mock terminal for UI testing
 //! - App builders for test scenarios
+//! - Configuration test helpers
+//! - UI assertions
 
+pub mod config_helper;
 pub mod mock_fs;
 pub mod mock_terminal;
+pub mod ui_assertions;
 
 use crate::app::model::App;
 use crate::app::msg::AppMsg;

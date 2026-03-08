@@ -40,6 +40,18 @@ pub enum ConfigError {
     #[error("Configuration serialize error: {0}")]
     SerializeError(String),
 
+    #[error(
+        "Configuration version too new: {current} (max supported: {max_supported}). {message}"
+    )]
+    VersionTooNew {
+        current: String,
+        max_supported: String,
+        message: String,
+    },
+
+    #[error("Unsupported configuration version: {0}")]
+    UnsupportedVersion(String),
+
     #[error("Main directory not found: {0}")]
     DirectoryNotFound(PathBuf),
 

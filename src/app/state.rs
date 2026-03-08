@@ -4,6 +4,29 @@ use std::path::PathBuf;
 
 use crate::repo::Repository;
 
+/// Directory chooser mode
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DirectoryChooserMode {
+    /// Select main directory (allows adding/updating main directories)
+    SelectMainDirectory {
+        /// Allow multiple selection
+        allow_multiple: bool,
+        /// Edit mode (replace existing or add new)
+        edit_mode: bool,
+    },
+    /// Add single repository (validates .git exists)
+    AddSingleRepository,
+}
+
+impl Default for DirectoryChooserMode {
+    fn default() -> Self {
+        DirectoryChooserMode::SelectMainDirectory {
+            allow_multiple: false,
+            edit_mode: false,
+        }
+    }
+}
+
 /// Application state
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AppState {
@@ -23,6 +46,19 @@ pub enum AppState {
 
         /// Scroll offset for viewport tracking
         scroll_offset: usize,
+
+        /// Chooser mode
+        mode: DirectoryChooserMode,
+    },
+
+    /// Managing main directories
+    ManagingDirs {
+        /// List state for main directories
+        list_state: ratatui::widgets::ListState,
+        /// Selected directory index
+        selected_dir_index: usize,
+        /// Editing state
+        editing: Option<MainDirEdit>,
     },
 
     /// Showing action menu
@@ -61,6 +97,19 @@ pub enum AppState {
     },
 }
 
+/// Main directory edit state
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MainDirEdit {
+    /// Directory index being edited (None for new)
+    pub index: Option<usize>,
+    /// Current path
+    pub path: std::path::PathBuf,
+    /// Display name
+    pub display_name: String,
+    /// Enabled state
+    pub enabled: bool,
+}
+
 /// View mode for repository list
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ViewMode {
@@ -80,6 +129,7 @@ impl AppState {
         match self {
             AppState::ShowingActions { .. } => 5,
             AppState::ShowingHelp { .. } => 4,
+            AppState::ManagingDirs { .. } => 4,
             AppState::ChoosingDir { .. } => 3,
             AppState::SelectingTheme { .. } => 3,
             AppState::Running => 1,
@@ -96,6 +146,7 @@ impl AppState {
                 | AppState::ShowingHelp { .. }
                 | AppState::ChoosingDir { .. }
                 | AppState::SelectingTheme { .. }
+                | AppState::ManagingDirs { .. }
         )
     }
 

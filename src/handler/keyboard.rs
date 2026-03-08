@@ -22,8 +22,16 @@ pub fn handle_key_event(key: KeyEvent, app: &mut App, runtime: &Runtime) {
         AppState::ShowingHelp { .. } => {
             handle_help_keys(key, app);
         }
-        AppState::ChoosingDir { .. } => {
-            handle_chooser_keys(key, app, runtime);
+        AppState::ChoosingDir { mode, .. } => {
+            let mode = mode.clone();
+            handle_chooser_keys(key, app, runtime, mode);
+        }
+        AppState::ManagingDirs { editing, .. } => {
+            if editing.is_some() {
+                handle_main_dir_edit_keys(key, app);
+            } else {
+                handle_main_dir_manager_keys(key, app, runtime);
+            }
         }
         AppState::SelectingTheme { .. } => {
             handle_theme_selector_keys(key, app);
@@ -185,18 +193,23 @@ fn get_selected_theme_name(app: &App) -> Option<String> {
 }
 
 /// Handle keys in directory chooser
-fn handle_chooser_keys(key: KeyEvent, app: &mut App, runtime: &Runtime) {
+fn handle_chooser_keys(
+    key: KeyEvent,
+    app: &mut App,
+    runtime: &Runtime,
+    mode: crate::app::state::DirectoryChooserMode,
+) {
     match key.code {
         KeyCode::Esc => {
             let _ = app.msg_tx.try_send(AppMsg::Quit);
         }
         KeyCode::Left => {
             // Go to parent directory
-            handle_directory_back(app, runtime);
+            handle_directory_back(app, runtime, mode);
         }
         KeyCode::Right => {
             // Enter selected directory
-            handle_directory_enter(app, runtime);
+            handle_directory_enter(app, runtime, mode);
         }
         KeyCode::Char(' ') => {
             // Space to select current directory and confirm
@@ -250,7 +263,11 @@ fn handle_chooser_keys(key: KeyEvent, app: &mut App, runtime: &Runtime) {
 }
 
 /// Handle going back to parent directory
-fn handle_directory_back(app: &mut App, runtime: &Runtime) {
+fn handle_directory_back(
+    app: &mut App,
+    runtime: &Runtime,
+    mode: crate::app::state::DirectoryChooserMode,
+) {
     if let AppState::ChoosingDir { path, .. } = &app.state {
         if let Some(parent) = path.parent() {
             let parent_path = parent.to_path_buf();
@@ -264,13 +281,18 @@ fn handle_directory_back(app: &mut App, runtime: &Runtime) {
                 entries: Vec::new(),
                 selected_index: 0,
                 scroll_offset: 0,
+                mode,
             };
         }
     }
 }
 
 /// Handle entering a directory
-fn handle_directory_enter(app: &mut App, runtime: &Runtime) {
+fn handle_directory_enter(
+    app: &mut App,
+    runtime: &Runtime,
+    mode: crate::app::state::DirectoryChooserMode,
+) {
     if let AppState::ChoosingDir {
         path,
         entries,
@@ -291,6 +313,7 @@ fn handle_directory_enter(app: &mut App, runtime: &Runtime) {
                 entries: Vec::new(), // Will be populated by async scan
                 selected_index: 0,
                 scroll_offset: 0,
+                mode,
             };
         }
     }
@@ -436,6 +459,103 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
             let _ = app.msg_tx.try_send(AppMsg::ToggleSelectionMode);
         }
 
+        _ => {}
+    }
+}
+
+// Main directory management functions
+fn handle_main_dir_manager_keys(key: KeyEvent, app: &mut App, runtime: &Runtime) {
+    match key.code {
+        KeyCode::Esc | KeyCode::Char('q') => {
+            let _ = app.msg_tx.try_send(AppMsg::CloseMainDirectoryManager);
+        }
+        KeyCode::Char('a') => {
+            // Add new main directory - open chooser
+            app.state = AppState::ChoosingDir {
+                path: dirs::home_dir().unwrap_or_default(),
+                entries: Vec::new(),
+                selected_index: 0,
+                scroll_offset: 0,
+                mode: crate::app::state::DirectoryChooserMode::SelectMainDirectory {
+                    allow_multiple: false,
+                    edit_mode: false,
+                },
+            };
+            runtime.dispatch(crate::app::msg::Cmd::ScanDirectory(
+                dirs::home_dir().unwrap_or_default(),
+            ));
+        }
+        KeyCode::Char('d') => {
+            // Remove selected main directory
+            if let AppState::ManagingDirs {
+                selected_dir_index, ..
+            } = &app.state
+            {
+                let _ = app
+                    .msg_tx
+                    .try_send(AppMsg::RemoveMainDirectory(*selected_dir_index));
+            }
+        }
+        KeyCode::Char('e') => {
+            // Edit selected main directory
+            if let AppState::ManagingDirs {
+                selected_dir_index, ..
+            } = &app.state
+            {
+                let _ = app
+                    .msg_tx
+                    .try_send(AppMsg::EditMainDirectory(*selected_dir_index));
+            }
+        }
+        KeyCode::Char(' ') => {
+            // Toggle enabled state
+            if let AppState::ManagingDirs {
+                selected_dir_index, ..
+            } = &app.state
+            {
+                let _ = app
+                    .msg_tx
+                    .try_send(AppMsg::ToggleMainDirectoryEnabled(*selected_dir_index));
+            }
+        }
+        KeyCode::Up => {
+            let _ = app.msg_tx.try_send(AppMsg::MainDirNavUp);
+        }
+        KeyCode::Down => {
+            let _ = app.msg_tx.try_send(AppMsg::MainDirNavDown);
+        }
+        _ => {}
+    }
+}
+
+fn handle_main_dir_edit_keys(key: KeyEvent, app: &mut App) {
+    match key.code {
+        KeyCode::Esc => {
+            let _ = app.msg_tx.try_send(AppMsg::CancelEditMainDirectory);
+        }
+        KeyCode::Enter => {
+            let _ = app.msg_tx.try_send(AppMsg::ConfirmEditMainDirectory);
+        }
+        KeyCode::Char(c) => {
+            // Add character to editing name
+            if let AppState::ManagingDirs {
+                editing: Some(ref mut edit),
+                ..
+            } = &mut app.state
+            {
+                edit.display_name.push(c);
+            }
+        }
+        KeyCode::Backspace => {
+            // Remove last character from editing name
+            if let AppState::ManagingDirs {
+                editing: Some(ref mut edit),
+                ..
+            } = &mut app.state
+            {
+                edit.display_name.pop();
+            }
+        }
         _ => {}
     }
 }

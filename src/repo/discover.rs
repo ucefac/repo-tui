@@ -1,9 +1,29 @@
 //! Repository discovery
 
-use crate::error::{RepoError, Result};
-use crate::repo::Repository;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+
+use crate::error::{RepoError, Result};
+use crate::repo::source::RepoSource;
+use crate::repo::Repository;
+
+/// Configuration for repository scanning
+#[derive(Debug, Clone)]
+pub struct ScanConfig {
+    /// Maximum search depth
+    pub max_depth: usize,
+    /// Whether to follow symlinks
+    pub follow_symlinks: bool,
+}
+
+impl Default for ScanConfig {
+    fn default() -> Self {
+        Self {
+            max_depth: crate::constants::security::DEFAULT_MAX_SEARCH_DEPTH,
+            follow_symlinks: crate::constants::security::DEFAULT_ALLOW_SYMLINKS,
+        }
+    }
+}
 
 /// Discover git repositories in a directory
 ///
@@ -39,6 +59,102 @@ pub fn discover_repositories(main_dir: &Path) -> Result<Vec<Repository>> {
 
     // Sort by name
     repos.sort_by(|a, b| a.name.cmp(&b.name));
+
+    Ok(repos)
+}
+
+/// Discover repositories from multiple main directories
+///
+/// Scans all enabled main directories and adds standalone repositories.
+/// Removes duplicates based on path.
+pub fn discover_repositories_multi(
+    main_dirs: &[(usize, &Path, Option<usize>)],
+    single_repos: &[PathBuf],
+    config: &ScanConfig,
+) -> Result<Vec<Repository>> {
+    let mut all_repos = Vec::new();
+    let mut seen_paths = std::collections::HashSet::new();
+
+    // Scan main directories
+    for (dir_index, dir_path, max_depth) in main_dirs {
+        let depth = max_depth.unwrap_or(config.max_depth);
+        let repos = discover_in_directory(dir_path, depth, config)?;
+
+        for repo_path in repos {
+            if seen_paths.insert(repo_path.clone()) {
+                let source = RepoSource::MainDirectory {
+                    dir_index: *dir_index,
+                    dir_path: (*dir_path).to_path_buf(),
+                };
+                all_repos.push(Repository::from_path_with_source(repo_path, source));
+            }
+        }
+    }
+
+    // Add standalone repositories
+    for repo_path in single_repos {
+        if seen_paths.insert(repo_path.clone()) && repo_path.exists() {
+            let source = RepoSource::Standalone;
+            all_repos.push(Repository::from_path_with_source(repo_path.clone(), source));
+        }
+    }
+
+    // Sort by last modified time (newest first)
+    all_repos.sort_by(|a, b| {
+        b.last_modified
+            .cmp(&a.last_modified)
+            .then_with(|| a.name.cmp(&b.name))
+    });
+
+    Ok(all_repos)
+}
+
+/// Discover repositories in a directory with depth limit
+fn discover_in_directory(
+    dir: &Path,
+    max_depth: usize,
+    config: &ScanConfig,
+) -> Result<Vec<PathBuf>> {
+    let mut repos = Vec::new();
+    let mut to_visit = vec![(dir.to_path_buf(), 0usize)];
+
+    while let Some((current_dir, depth)) = to_visit.pop() {
+        if depth > max_depth {
+            continue;
+        }
+
+        let entries = match fs::read_dir(&current_dir) {
+            Ok(entries) => entries,
+            Err(_) => continue, // Skip directories we can't read
+        };
+
+        for entry in entries {
+            let entry = match entry {
+                Ok(e) => e,
+                Err(_) => continue,
+            };
+
+            let path = entry.path();
+
+            // Handle symlinks
+            if path.is_symlink() && !config.follow_symlinks {
+                continue;
+            }
+
+            // Skip if not a directory
+            if !path.is_dir() {
+                continue;
+            }
+
+            // Check if it's a git repository
+            if is_git_repository(&path) {
+                repos.push(path);
+            } else if depth < max_depth {
+                // Add to visit list for deeper scan
+                to_visit.push((path, depth + 1));
+            }
+        }
+    }
 
     Ok(repos)
 }

@@ -2,7 +2,7 @@
 
 use crate::config::types::Config;
 use crate::config::validators::validate_config;
-use crate::constants::{CONFIG_DIR_NAME, CONFIG_FILE_NAME};
+use crate::constants::{CONFIG_DIR_NAME, CONFIG_FILE_NAME, MAX_SUPPORTED_VERSION};
 use crate::error::{AppError, AppResult, ConfigError};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -51,6 +51,61 @@ pub fn load_config() -> AppResult<Config> {
     Ok(config)
 }
 
+/// Check if version is supported
+fn is_version_supported(version: &str) -> bool {
+    // Parse version numbers
+    let parts: Vec<&str> = version.split('.').collect();
+    if parts.is_empty() {
+        return false;
+    }
+
+    let major: u32 = parts[0].parse().unwrap_or(0);
+    let max_parts: Vec<&str> = MAX_SUPPORTED_VERSION.split('.').collect();
+    let max_major: u32 = max_parts[0].parse().unwrap_or(0);
+
+    // Support same major version
+    major == max_major
+}
+
+/// Check if version is newer than supported (downgrade scenario)
+fn is_version_newer_than_supported(version: &str) -> bool {
+    let parts: Vec<&str> = version.split('.').collect();
+    let max_parts: Vec<&str> = MAX_SUPPORTED_VERSION.split('.').collect();
+
+    if parts.is_empty() || max_parts.is_empty() {
+        return false;
+    }
+
+    let major: u32 = parts[0].parse().unwrap_or(0);
+    let max_major: u32 = max_parts[0].parse().unwrap_or(0);
+
+    major > max_major
+}
+
+/// Load configuration with version check and auto-migration
+pub fn load_config_with_version_check() -> AppResult<Config> {
+    let mut config = load_config()?;
+
+    // Check version compatibility
+    if !is_version_supported(&config.version) && is_version_newer_than_supported(&config.version) {
+        return Err(ConfigError::VersionTooNew {
+            current: config.version,
+            max_supported: MAX_SUPPORTED_VERSION.to_string(),
+            message: "Please upgrade repotui or delete the configuration file".to_string(),
+        }
+        .into());
+    }
+
+    // Auto-migrate if needed
+    if config.needs_migration() {
+        tracing::info!("Auto-migrating config from version {}", config.version);
+        config.migrate();
+        save_config(&config)?;
+    }
+
+    Ok(config)
+}
+
 /// Load configuration or return error for directory chooser
 pub fn load_or_create_config() -> AppResult<Config> {
     let config_path = get_config_path()?;
@@ -60,11 +115,21 @@ pub fn load_or_create_config() -> AppResult<Config> {
         return Err(AppError::Config(ConfigError::NotFound(config_path)));
     }
 
-    match load_config() {
+    match load_config_with_version_check() {
         Ok(config) => {
-            // Check if main_directory is empty - if so, trigger directory chooser
-            if config.main_directory.as_os_str().is_empty() {
-                return Err(AppError::Config(ConfigError::NotFound(config_path)));
+            // Check if we have at least one main directory or standalone repo
+            if config.main_directories.is_empty() && config.single_repositories.is_empty() {
+                // Also check old main_directory field for backward compatibility
+                if config.main_directory.is_none()
+                    || config
+                        .main_directory
+                        .as_ref()
+                        .unwrap()
+                        .as_os_str()
+                        .is_empty()
+                {
+                    return Err(AppError::Config(ConfigError::NotFound(config_path)));
+                }
             }
             Ok(config)
         }

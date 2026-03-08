@@ -5,6 +5,7 @@
 pub mod action_menu;
 pub mod dir_chooser;
 pub mod help_panel;
+pub mod main_dir_manager;
 pub mod path_bar;
 pub mod repo_list;
 pub mod search_box;
@@ -13,8 +14,9 @@ pub mod theme_selector;
 pub mod title_bar;
 
 pub use action_menu::{centered_popup, ActionMenu};
-pub use dir_chooser::{centered_rect, DirChooser};
+pub use dir_chooser::{centered_rect, DirectoryChooser, DirectoryChooserState};
 pub use help_panel::{centered_help_popup, HelpPanel};
+pub use main_dir_manager::{centered_rect as main_dir_centered_rect, MainDirManager};
 pub use path_bar::PathBar;
 pub use repo_list::RepoList;
 pub use search_box::SearchBox;

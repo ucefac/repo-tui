@@ -8,12 +8,16 @@ use std::path::PathBuf;
 
 /// Commands for async execution
 #[derive(Debug, Clone)]
+#[allow(clippy::large_enum_variant)]
 pub enum Cmd {
     /// Load configuration
     LoadConfig,
 
-    /// Load repositories from directory
+    /// Load repositories from directory (legacy)
     LoadRepositories(PathBuf),
+
+    /// Load repositories from multiple main directories
+    LoadRepositoriesMulti(Vec<(PathBuf, Option<usize>)>),
 
     /// Check git status for a repository
     CheckGitStatus(usize, PathBuf),
@@ -26,6 +30,12 @@ pub enum Cmd {
 
     /// Scan a directory (for directory chooser)
     ScanDirectory(PathBuf),
+
+    /// Save configuration
+    SaveConfig(Config),
+
+    /// Validate directory path
+    ValidateDirectory(PathBuf),
 }
 
 /// Application messages
@@ -181,6 +191,57 @@ pub enum AppMsg {
 
     /// Batch action completed
     BatchActionExecuted(crate::action::batch::BatchResult),
+
+    // === Main Directory Management ===
+    /// Show main directory manager
+    ShowMainDirectoryManager,
+
+    /// Close main directory manager
+    CloseMainDirectoryManager,
+
+    /// Add main directory
+    AddMainDirectory(PathBuf),
+
+    /// Remove main directory
+    RemoveMainDirectory(usize),
+
+    /// Toggle main directory enabled
+    ToggleMainDirectoryEnabled(usize),
+
+    /// Update main directory display name
+    UpdateMainDirectoryName(usize, String),
+
+    /// Navigate up in main directory manager
+    MainDirNavUp,
+
+    /// Navigate down in main directory manager
+    MainDirNavDown,
+
+    /// Edit main directory
+    EditMainDirectory(usize),
+
+    /// Confirm main directory edit
+    ConfirmEditMainDirectory,
+
+    /// Cancel main directory edit
+    CancelEditMainDirectory,
+
+    // === Single Repository Management ===
+    /// Show add single repo chooser
+    ShowAddSingleRepoChooser,
+
+    /// Add single repository
+    AddSingleRepository(PathBuf),
+
+    /// Remove single repository
+    RemoveSingleRepository(PathBuf),
+
+    // === Directory Chooser Enhanced ===
+    /// Show directory chooser with mode
+    ShowDirectoryChooserWithMode(crate::app::state::DirectoryChooserMode),
+
+    /// Directories selected (multi-select)
+    DirectoriesSelected(Vec<String>),
 }
 
 impl AppMsg {

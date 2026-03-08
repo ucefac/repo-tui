@@ -2,7 +2,7 @@
 
 use ratatui::backend::TestBackend;
 use ratatui::Terminal;
-use repotui::repo::Repository;
+use repotui::repo::{RepoSource, Repository};
 use repotui::ui::theme::Theme;
 use repotui::ui::widgets::RepoList;
 use std::path::PathBuf;
@@ -16,6 +16,7 @@ fn test_repository_display_format() {
         is_dirty: false,
         branch: Some("main".to_string()),
         is_git_repo: true,
+        source: RepoSource::Standalone,
     };
     assert_eq!(repo.name, "test-repo");
     assert_eq!(repo.branch, Some("main".to_string()));
@@ -31,6 +32,7 @@ fn test_repository_sorting() {
             is_dirty: false,
             branch: None,
             is_git_repo: false,
+            source: RepoSource::Standalone,
         },
         Repository {
             name: "alpha".to_string(),
@@ -39,6 +41,7 @@ fn test_repository_sorting() {
             is_dirty: false,
             branch: None,
             is_git_repo: true,
+            source: RepoSource::Standalone,
         },
     ];
     repos.sort_by(|a, b| a.name.cmp(&b.name));
@@ -55,6 +58,7 @@ fn test_repo_list_respects_area_width() {
         is_dirty: true,
         branch: Some("main".to_string()),
         is_git_repo: true,
+        source: RepoSource::Standalone,
     }];
     let filtered: Vec<usize> = vec![0];
     let theme = Theme::dark();
@@ -104,6 +108,7 @@ fn test_repo_list_with_git_status_enabled() {
             is_dirty: true,
             branch: Some("main".to_string()),
             is_git_repo: true,
+            source: RepoSource::Standalone,
         },
         Repository {
             name: "clean-repo".to_string(),
@@ -112,6 +117,7 @@ fn test_repo_list_with_git_status_enabled() {
             is_dirty: false,
             branch: Some("feature".to_string()),
             is_git_repo: true,
+            source: RepoSource::Standalone,
         },
     ];
     let filtered: Vec<usize> = vec![0, 1];

@@ -1,14 +1,28 @@
 //! Configuration validators
 
-use crate::config::types::Config;
+use crate::config::types::{Config, MainDirectoryConfig, SingleRepoConfig};
 use crate::error::{AppError, AppResult, ConfigError};
 use path_absolutize::Absolutize;
 use std::path::{Path, PathBuf};
 
 /// Validate configuration
 pub fn validate_config(config: &Config) -> AppResult<()> {
-    // Validate main directory
-    validate_directory(&config.main_directory)?;
+    // Validate main directories (new v2.0 format)
+    for (index, dir_config) in config.main_directories.iter().enumerate() {
+        validate_main_directory(dir_config, index)?;
+    }
+
+    // Validate standalone repositories
+    for (index, repo_config) in config.single_repositories.iter().enumerate() {
+        validate_single_repository(repo_config, index)?;
+    }
+
+    // Validate old main_directory if present (backward compatibility)
+    if let Some(ref main_dir) = config.main_directory {
+        if !main_dir.as_os_str().is_empty() {
+            validate_directory(main_dir)?;
+        }
+    }
 
     // Validate editor commands
     if let Some(ref webstorm) = config.editors.webstorm {
@@ -24,6 +38,63 @@ pub fn validate_config(config: &Config) -> AppResult<()> {
     }
 
     Ok(())
+}
+
+/// Validate main directory configuration
+pub fn validate_main_directory(
+    dir_config: &MainDirectoryConfig,
+    _index: usize,
+) -> AppResult<PathBuf> {
+    validate_directory(&dir_config.path)
+}
+
+/// Validate single repository configuration
+pub fn validate_single_repository(
+    repo_config: &SingleRepoConfig,
+    _index: usize,
+) -> AppResult<PathBuf> {
+    let path = &repo_config.path;
+
+    // 0. Check for empty path
+    if path.as_os_str().is_empty() {
+        return Err(AppError::Config(ConfigError::PathError(
+            "Repository path cannot be empty".to_string(),
+        )));
+    }
+
+    // 1. Normalize to absolute path
+    let abs_path = path
+        .absolutize()
+        .map_err(|e| ConfigError::PathError(e.to_string()))?
+        .to_path_buf();
+
+    // 2. Check existence
+    if !abs_path.exists() {
+        return Err(AppError::Config(ConfigError::DirectoryNotFound(abs_path)));
+    }
+
+    // 3. Check is directory
+    if !abs_path.is_dir() {
+        return Err(AppError::Config(ConfigError::NotADirectory(abs_path)));
+    }
+
+    // 4. Check within home directory (security constraint)
+    let home = dirs::home_dir().ok_or(ConfigError::HomeNotFound)?;
+    let home = home
+        .absolutize()
+        .map_err(|e| ConfigError::PathError(format!("Failed to resolve home directory: {}", e)))?;
+
+    if !abs_path.starts_with(home.as_ref()) {
+        return Err(AppError::Config(ConfigError::DirectoryOutsideHome(
+            abs_path,
+        )));
+    }
+
+    // 5. Check if it's a git repository (optional validation)
+    // Note: We don't require standalone repos to be git repos at config level
+    // They will be validated when added through the UI
+
+    Ok(abs_path)
 }
 
 /// Validate directory path

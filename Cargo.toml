@@ -34,7 +34,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Time Handling
-chrono = { version = "0.4", default-features = false, features = ["clock"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
 
 # Optional: Git2 for Phase 3
 git2 = { version = "0.19", default-features = false, features = ["vendored-libgit2"], optional = true }

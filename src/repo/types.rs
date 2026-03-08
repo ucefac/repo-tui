@@ -1,5 +1,6 @@
 //! Repository types
 
+use crate::repo::source::RepoSource;
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
@@ -23,6 +24,9 @@ pub struct Repository {
 
     /// Is a git repository
     pub is_git_repo: bool,
+
+    /// Repository source (main directory or standalone)
+    pub source: RepoSource,
 }
 
 impl Repository {
@@ -35,6 +39,7 @@ impl Repository {
             .to_string();
 
         let last_modified = path.metadata().ok().and_then(|m| m.modified().ok());
+        let is_git_repo = path.join(".git").exists();
 
         Self {
             name,
@@ -42,7 +47,30 @@ impl Repository {
             last_modified,
             is_dirty: false,
             branch: None,
-            is_git_repo: false,
+            is_git_repo,
+            source: RepoSource::Standalone,
+        }
+    }
+
+    /// Create a new repository from path with source
+    pub fn from_path_with_source(path: PathBuf, source: RepoSource) -> Self {
+        let name = path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("unknown")
+            .to_string();
+
+        let last_modified = path.metadata().ok().and_then(|m| m.modified().ok());
+        let is_git_repo = path.join(".git").exists();
+
+        Self {
+            name,
+            path,
+            last_modified,
+            is_dirty: false,
+            branch: None,
+            is_git_repo,
+            source,
         }
     }
 
@@ -64,6 +92,29 @@ impl Repository {
             is_dirty: false,
             branch: None,
             is_git_repo,
+            source: RepoSource::Standalone,
+        }
+    }
+
+    /// Generate display name: @scope/repo-name
+    pub fn display_name(&self) -> String {
+        format!("@{}/{}", self.source.scope(), self.name)
+    }
+
+    /// Get full display info
+    pub fn display_info(&self) -> String {
+        if self.is_git_repo {
+            match &self.branch {
+                Some(branch) => format!(
+                    "{} [{}]{}",
+                    self.display_name(),
+                    branch,
+                    if self.is_dirty { " *" } else { "" }
+                ),
+                None => self.display_name(),
+            }
+        } else {
+            format!("{} (not git)", self.display_name())
         }
     }
 
@@ -77,6 +128,7 @@ impl Repository {
             is_dirty: false,
             branch: Some("main".to_string()),
             is_git_repo: true,
+            source: RepoSource::Standalone,
         }
     }
 
@@ -90,6 +142,7 @@ impl Repository {
             is_dirty: false,
             branch: None,
             is_git_repo: false,
+            source: RepoSource::Standalone,
         }
     }
 }
