@@ -222,7 +222,7 @@ fn render_directory_chooser(
 
     // Use DirChooser component with scroll support
     let chooser = DirChooser::new(path, entries, selected_index, scroll_offset, theme)
-        .visible_height(popup_area.height.saturating_sub(10)); // Reserve space for title, path, stats, help
+        .visible_height(popup_area.height.saturating_sub(8)); // Reserve space for title, path, stats, help (reduced due to single-line help)
     frame.render_widget(chooser, popup_area);
 }
 

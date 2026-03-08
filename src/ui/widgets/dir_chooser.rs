@@ -80,7 +80,7 @@ impl<'a> Widget for DirChooser<'a> {
                 Constraint::Length(2), // Stats
                 Constraint::Min(5),    // Directory list
                 Constraint::Length(1), // Spacer
-                Constraint::Length(3), // Help text
+                Constraint::Length(1), // Help text (single line, no border)
             ])
             .split(area);
 
@@ -225,22 +225,47 @@ fn render_directory_list(
     Widget::render(list, area, buf);
 }
 
+/// Parse help message and apply theme color highlight to key hints
+fn parse_help_message<'a>(message: &'a str, theme: &'a Theme) -> Vec<Span<'a>> {
+    let mut spans = Vec::new();
+    let segments: Vec<&'a str> = message.split("   ").collect();
+
+    for (i, segment) in segments.iter().enumerate() {
+        if i > 0 {
+            spans.push(Span::raw("   "));
+        }
+
+        if let Some(space_pos) = segment.find(' ') {
+            let keys: String = segment[..space_pos].to_string();
+            let desc: String = segment[space_pos..].to_string();
+
+            spans.push(Span::styled(
+                keys,
+                Style::default().fg(theme.colors.primary.into()),
+            ));
+            spans.push(Span::raw(desc));
+        } else {
+            spans.push(Span::raw(segment.to_string()));
+        }
+    }
+
+    spans
+}
+
 /// Render help text
 fn render_help(area: Rect, buf: &mut Buffer, theme: &Theme) {
-    let help_text = "↑↓ navigate   SPACE select   ENTER open   ← back   q cancel";
+    // Fill background (no border, similar to StatusBar)
+    buf.set_style(area, Style::default().bg(Color::DarkGray));
 
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.colors.border.into()));
+    // Updated help text with merged key bindings
+    let help_text = "↑↓ navigate   ←/→ back/enter   SPACE select   q cancel";
 
-    let paragraph = Paragraph::new(help_text)
-        .block(block)
+    // Parse and apply theme color highlight to key hints
+    let spans = parse_help_message(help_text, theme);
+
+    let paragraph = Paragraph::new(Line::from(spans))
         .alignment(Alignment::Center)
-        .style(
-            Style::default()
-                .fg(theme.colors.text_muted.into())
-                .bg(Color::DarkGray),
-        );
+        .style(Style::default().fg(theme.colors.text_muted.into()));
 
     paragraph.render(area, buf);
 }
