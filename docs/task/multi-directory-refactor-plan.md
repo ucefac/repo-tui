@@ -103,6 +103,9 @@
 
 ```rust
 /// 仓库来源类型
+/// 
+/// ⚠️ **注意**: 此类型在 `src/repo/source.rs` 中已定义，这里仅作为参考。
+/// 实际实现时请在 `config/types.rs` 中使用 `pub use crate::repo::source::RepoSource;` 导入。
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum RepoSource {
@@ -199,16 +202,26 @@ impl Config {
 
     /// 执行配置迁移
     pub fn migrate(&mut self) {
+        // 处理旧版 main_directory 字段
         if let Some(old_dir) = self.main_directory.take() {
             if !old_dir.as_os_str().is_empty() {
-                self.main_directories.push(MainDirectoryConfig {
-                    path: old_dir,
-                    display_name: None,
-                    max_depth: None,
-                    enabled: true,
-                });
+                // 检查是否已存在 main_directories 中（避免重复）
+                let exists = self.main_directories.iter()
+                    .any(|d| d.path == old_dir);
+                
+                if !exists {
+                    // 将旧主目录添加到列表首位
+                    self.main_directories.insert(0, MainDirectoryConfig {
+                        path: old_dir,
+                        display_name: None,
+                        max_depth: None,
+                        enabled: true,
+                    });
+                }
             }
         }
+        
+        // 更新版本号
         self.version = crate::constants::CONFIG_VERSION.to_string();
     }
 }
@@ -243,94 +256,42 @@ pub fn load_or_create_config() -> AppResult<Config> {
 
     Ok(config)
 }
-```
 
-#### 2.1.3 新增文件: `src/config/migration.rs`
-
-```rust
-//! Configuration migration utilities
-
-use crate::config::types::{Config, MainDirectoryConfig, SingleRepoConfig};
-use crate::error::AppResult;
-use std::path::PathBuf;
-
-/// 配置版本历史
-pub const VERSION_HISTORY: &[&str] = &["1.0", "1.1", "2.0"];
-
-/// 迁移配置到最新版本
-pub fn migrate_config(config: &mut Config) -> AppResult<()> {
-    match config.version.as_str() {
-        "1.0" | "1.1" => migrate_v1_to_v2(config),
-        _ => Ok(()), // 已经是最新版本
-    }
+/// 检查版本是否太新（降级场景）
+fn is_version_newer_than_supported(version: &str) -> bool {
+    // 简单版本比较：假设版本格式为 "x.y"
+    version.parse::<f32>().unwrap_or(0.0) > 
+        MAX_SUPPORTED_VERSION.parse::<f32>().unwrap_or(0.0)
 }
 
-/// 从 v1.x 迁移到 v2.0
-fn migrate_v1_to_v2(config: &mut Config) -> AppResult<()> {
-    // 迁移旧的主目录字段
-    if let Some(old_dir) = config.main_directory.take() {
-        if !old_dir.as_os_str().is_empty() {
-            config.main_directories.push(MainDirectoryConfig {
-                path: old_dir,
-                display_name: None,
-                max_depth: None,
-                enabled: true,
-            });
+/// 降级场景处理
+pub fn load_config_with_version_check() -> AppResult<Config> {
+    let config = load_raw_config()?;
+    
+    // 检查版本兼容性
+    if !is_version_supported(&config.version) {
+        // 如果版本太新（降级场景），提供友好的错误信息
+        if is_version_newer_than_supported(&config.version) {
+            return Err(ConfigError::VersionTooNew {
+                current: config.version,
+                max_supported: MAX_SUPPORTED_VERSION.to_string(),
+                message: "请升级 repotui 或删除配置文件重新配置".to_string(),
+            }.into());
         }
+        return Err(ConfigError::UnsupportedVersion(config.version).into());
     }
-
-    // 从 favorites 迁移独立仓库
-    for fav_path in &config.favorites.repositories {
-        let path = PathBuf::from(fav_path);
-        // 检查是否已经在主目录中
-        let in_main_dir = config.main_directories.iter().any(|d| {
-            path.starts_with(&d.path)
-        });
-        
-        if !in_main_dir {
-            config.single_repositories.push(SingleRepoConfig {
-                path,
-                display_name: None,
-                added_at: Some(chrono::Local::now()),
-            });
-        }
+    
+    // 自动迁移
+    if config.needs_migration() {
+        log::info!("Auto-migrating config from version {}", config.version);
+        let mut config = config;
+        config.migrate();
+        crate::config::save_config(&config)?;
     }
-
-    config.version = "2.0".to_string();
-    Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_migrate_v1_to_v2() {
-        let mut config = Config {
-            version: "1.0".to_string(),
-            main_directory: Some(PathBuf::from("/home/user/projects")),
-            main_directories: vec![],
-            single_repositories: vec![],
-            // ... 其他字段
-        };
-
-        migrate_v1_to_v2(&mut config).unwrap();
-
-        assert_eq!(config.version, "2.0");
-        assert_eq!(config.main_directories.len(), 1);
-        assert!(config.main_directory.is_none());
-    }
+    
+    Ok(config)
 }
 ```
-
-**测试要求:**
-- 测试旧配置自动迁移
-- 测试空配置处理
-- 测试多版本兼容
-
-**风险点:**
-- 配置迁移失败可能导致数据丢失 → 迁移前自动备份
-- 旧版本用户无法读取新配置 → 保持向后兼容读取
 
 ---
 
@@ -892,7 +853,7 @@ AppMsg::AddMainDirectory(path) => {
         });
         
         // 保存配置并刷新
-        let _ = config::save_config(config);
+        let _ = crate::config::save_config(config);
         runtime.dispatch(crate::app::msg::Cmd::LoadConfig);
     }
 }
@@ -924,7 +885,7 @@ AppMsg::AddSingleRepository(path) => {
                 added_at: Some(chrono::Local::now()),
             });
             
-            let _ = config::save_config(config);
+            let _ = crate::config::save_config(config);
             runtime.dispatch(crate::app::msg::Cmd::LoadConfig);
         }
     }
@@ -1672,7 +1633,7 @@ main_directory = ""
 |------|----------|
 | 只有 `main_directory` | 迁移为单个主目录 |
 | 已有 `main_directories` | 跳过迁移 |
-| 两者都存在 | 合并去重 |
+| 两者都存在 | 将 `main_directory` 添加到 `main_directories` 列表首位（如果不存在），并清空 `main_directory` |
 | `favorites` 中有独立仓库 | 迁移到 `single_repositories` |
 | 配置损坏 | 创建新配置，提示用户 |
 
