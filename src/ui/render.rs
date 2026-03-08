@@ -60,9 +60,9 @@ pub fn render(frame: &mut Frame, app: &mut App) {
             render_main_ui(frame, area, app, &theme);
             render_action_menu(frame, area, repo, &theme);
         }
-        AppState::ShowingHelp => {
+        AppState::ShowingHelp { scroll_offset } => {
             render_main_ui(frame, area, app, &theme);
-            render_help(frame, area, &theme);
+            render_help(frame, area, scroll_offset, &theme);
         }
         AppState::SelectingTheme { .. } => {
             render_main_ui(frame, area, app, &theme);
@@ -164,7 +164,7 @@ fn render_status_bar_with_path(frame: &mut Frame, app: &mut App, area: Rect, the
     } else if let Some(ref error) = app.error_message {
         error
     } else {
-        "↑↓ navigate   g/G jump   / search   ENTER open   r refresh   ? help   q quit"
+        "↑↓ navigate   / search   ENTER open   r refresh   ? help   Ctrl+C quit"
     };
 
     let mut status_bar = StatusBar::new(status_text, theme)
@@ -197,11 +197,12 @@ fn render_action_menu(
 }
 
 /// Render help panel
-fn render_help(frame: &mut Frame, area: Rect, _theme: &Theme) {
+fn render_help(frame: &mut Frame, area: Rect, scroll_offset: usize, _theme: &Theme) {
     let popup_area = centered_help_popup(area);
 
     // Render help panel widget (includes Clear widget internally)
-    let panel = HelpPanel::new();
+    let mut panel = HelpPanel::new();
+    panel.scroll_offset = scroll_offset;
     panel.render(frame, popup_area);
 }
 

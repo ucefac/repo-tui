@@ -19,7 +19,7 @@ pub fn handle_key_event(key: KeyEvent, app: &mut App, runtime: &Runtime) {
         AppState::ShowingActions { .. } => {
             handle_action_menu_keys(key, app, runtime);
         }
-        AppState::ShowingHelp => {
+        AppState::ShowingHelp { .. } => {
             handle_help_keys(key, app);
         }
         AppState::ChoosingDir { .. } => {
@@ -108,10 +108,31 @@ fn get_selected_action(_app: &App) -> Option<crate::action::Action> {
     Some(crate::action::Action::CdAndCloud)
 }
 
+/// Maximum scroll offset for help panel (total lines - visible lines)
+const HELP_MAX_SCROLL: usize = 32;
+
 /// Handle keys in help panel
 fn handle_help_keys(key: KeyEvent, app: &mut App) {
     match key.code {
-        KeyCode::Esc | KeyCode::Char('q') | KeyCode::Char('?') => {
+        KeyCode::Up => {
+            if let AppState::ShowingHelp { scroll_offset, .. } = &mut app.state {
+                if *scroll_offset > 0 {
+                    *scroll_offset -= 1;
+                } else {
+                    *scroll_offset = HELP_MAX_SCROLL;
+                }
+            }
+        }
+        KeyCode::Down => {
+            if let AppState::ShowingHelp { scroll_offset, .. } = &mut app.state {
+                if *scroll_offset < HELP_MAX_SCROLL {
+                    *scroll_offset += 1;
+                } else {
+                    *scroll_offset = 0;
+                }
+            }
+        }
+        KeyCode::Esc => {
             let _ = app.msg_tx.try_send(AppMsg::CloseHelp);
         }
         _ => {}
@@ -334,14 +355,6 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
         KeyCode::Up => {
             let _ = app.msg_tx.try_send(AppMsg::PreviousRepo);
         }
-        KeyCode::Char('g') => {
-            if key.modifiers.contains(KeyModifiers::NONE) {
-                let _ = app.msg_tx.try_send(AppMsg::JumpToTop);
-            }
-        }
-        KeyCode::Char('G') => {
-            let _ = app.msg_tx.try_send(AppMsg::JumpToBottom);
-        }
         KeyCode::Char('d') if key.modifiers.contains(KeyModifiers::CONTROL) => {
             let _ = app.msg_tx.try_send(AppMsg::ScrollDown);
         }
@@ -420,9 +433,6 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
         }
         KeyCode::Char('?') => {
             let _ = app.msg_tx.try_send(AppMsg::ShowHelp);
-        }
-        KeyCode::Char('q') => {
-            let _ = app.msg_tx.try_send(AppMsg::Quit);
         }
 
         KeyCode::Char('v') => {

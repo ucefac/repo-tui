@@ -32,7 +32,10 @@ pub enum AppState {
     },
 
     /// Showing help panel
-    ShowingHelp,
+    ShowingHelp {
+        /// Scroll offset for viewport
+        scroll_offset: usize,
+    },
 
     /// Loading state
     Loading {
@@ -76,7 +79,7 @@ impl AppState {
     pub fn priority(&self) -> u8 {
         match self {
             AppState::ShowingActions { .. } => 5,
-            AppState::ShowingHelp => 4,
+            AppState::ShowingHelp { .. } => 4,
             AppState::ChoosingDir { .. } => 3,
             AppState::SelectingTheme { .. } => 3,
             AppState::Running => 1,
@@ -90,7 +93,7 @@ impl AppState {
         matches!(
             self,
             AppState::ShowingActions { .. }
-                | AppState::ShowingHelp
+                | AppState::ShowingHelp { .. }
                 | AppState::ChoosingDir { .. }
                 | AppState::SelectingTheme { .. }
         )
@@ -149,20 +152,20 @@ mod tests {
             .priority(),
             5
         );
-        assert_eq!(AppState::ShowingHelp.priority(), 4);
+        assert_eq!(AppState::ShowingHelp { scroll_offset: 0 }.priority(), 4);
         assert_eq!(AppState::Running.priority(), 1);
     }
 
     #[test]
     fn test_is_modal() {
-        assert!(AppState::ShowingHelp.is_modal());
+        assert!(AppState::ShowingHelp { scroll_offset: 0 }.is_modal());
         assert!(!AppState::Running.is_modal());
     }
 
     #[test]
     fn test_is_running() {
         assert!(AppState::Running.is_running());
-        assert!(!AppState::ShowingHelp.is_running());
+        assert!(!AppState::ShowingHelp { scroll_offset: 0 }.is_running());
     }
 
     #[test]

@@ -210,7 +210,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
         }
 
         AppMsg::ShowHelp => {
-            app.state = AppState::ShowingHelp;
+            app.state = AppState::ShowingHelp { scroll_offset: 0 };
         }
 
         AppMsg::CloseHelp => {
@@ -356,7 +356,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 app.state = AppState::Running;
                 app.selected_repo = None;
             }
-            AppState::ShowingHelp => {
+            AppState::ShowingHelp { .. } => {
                 app.state = AppState::Running;
             }
             AppState::Running => {
@@ -901,7 +901,7 @@ mod tests {
         app.state = AppState::Running;
 
         update(AppMsg::ShowHelp, &mut app, &runtime);
-        assert!(matches!(app.state, AppState::ShowingHelp));
+        assert!(matches!(app.state, AppState::ShowingHelp { .. }));
 
         update(AppMsg::CloseHelp, &mut app, &runtime);
         assert!(matches!(app.state, AppState::Running));

@@ -11,73 +11,108 @@ use ratatui::{
 };
 
 /// Help panel widget
-pub struct HelpPanel;
+pub struct HelpPanel {
+    pub scroll_offset: usize,
+}
 
 impl HelpPanel {
     /// Create a new help panel
     pub fn new() -> Self {
-        Self
+        Self { scroll_offset: 0 }
     }
 
-    /// Render the help panel
+    /// Render the help panel with scroll support
     pub fn render(&self, frame: &mut Frame, area: Rect) {
         // Clear the area behind the popup
         frame.render_widget(Clear, area);
 
         // Create help content
         let help_text = vec![
-            Line::from(""),
             Line::from(Span::styled(
                 "Navigation",
                 Style::default().add_modifier(Modifier::BOLD),
             )),
-            Line::from(""),
-            self.key_binding("↓", "Move down"),
-            self.key_binding("↑", "Move up"),
-            self.key_binding("g", "Go to top"),
-            self.key_binding("G", "Go to bottom"),
-            self.key_binding("Ctrl+d", "Scroll down half-page"),
-            self.key_binding("Ctrl+u", "Scroll up half-page"),
-            self.key_binding("Home/End", "Go to first/last"),
+            Line::from("  ↓/↑         - Move down/up (cyclic)"),
+            Line::from("  Home/End    - Go to first/last"),
             Line::from(""),
             Line::from(Span::styled(
                 "Search",
                 Style::default().add_modifier(Modifier::BOLD),
             )),
-            Line::from(""),
-            self.key_binding("/", "Focus search"),
-            self.key_binding("Esc", "Clear search / Close panel"),
-            self.key_binding("[char]", "Add to search query"),
-            self.key_binding("Backspace", "Delete character"),
+            Line::from("  /           - Focus search"),
+            Line::from("  Esc         - Exit search / Close panel"),
+            Line::from("  [char]      - Add to query"),
+            Line::from("  Backspace   - Delete"),
             Line::from(""),
             Line::from(Span::styled(
                 "Actions",
                 Style::default().add_modifier(Modifier::BOLD),
             )),
+            Line::from("  Enter       - Open action menu"),
+            Line::from("  1           - Claude Code"),
+            Line::from("  2           - WebStorm"),
+            Line::from("  3           - VS Code"),
+            Line::from("  4           - Finder/Explorer"),
             Line::from(""),
-            self.key_binding("Enter", "Open action menu"),
-            self.key_binding("1", "Open in Claude Code"),
-            self.key_binding("2", "Open in WebStorm"),
-            self.key_binding("3", "Open in VS Code"),
-            self.key_binding("4", "Open in Finder/Explorer"),
+            Line::from(Span::styled(
+                "Selection",
+                Style::default().add_modifier(Modifier::BOLD),
+            )),
+            Line::from("  v           - Toggle selection mode"),
+            Line::from("  SPACE       - Toggle selection"),
+            Line::from("  Ctrl+A      - Select all"),
+            Line::from(""),
+            Line::from(Span::styled(
+                "Favorites",
+                Style::default().add_modifier(Modifier::BOLD),
+            )),
+            Line::from("  f           - Toggle favorite"),
+            Line::from("  Ctrl+F      - Toggle favorites view"),
+            Line::from(""),
+            Line::from(Span::styled(
+                "View Modes",
+                Style::default().add_modifier(Modifier::BOLD),
+            )),
+            Line::from("  Ctrl+F      - Toggle favorites view"),
+            Line::from("  Ctrl+R      - Toggle recent view"),
             Line::from(""),
             Line::from(Span::styled(
                 "Global",
                 Style::default().add_modifier(Modifier::BOLD),
             )),
-            Line::from(""),
-            self.key_binding("m", "Change main directory"),
-            self.key_binding("Shift+F", "Toggle favorite"),
-            self.key_binding("r", "Refresh list"),
-            self.key_binding("Ctrl+r", "Show recent repositories"),
-            self.key_binding("t", "Open theme selector"),
-            self.key_binding("?", "Show this help"),
-            self.key_binding("q", "Quit"),
-            self.key_binding("Ctrl+c", "Force quit"),
+            Line::from("  m           - Change main directory"),
+            Line::from("  r           - Refresh list"),
+            Line::from("  t           - Theme selector"),
+            Line::from("  ?           - Show this help"),
+            Line::from("  Ctrl+C      - Force quit"),
             Line::from(""),
         ];
 
-        let paragraph = Paragraph::new(help_text)
+        let total_lines = help_text.len();
+        let visible_height = area.height.saturating_sub(2) as usize;
+        let max_scroll = total_lines.saturating_sub(visible_height);
+
+        let scroll_offset = self.scroll_offset.min(max_scroll);
+        let visible_end = (scroll_offset + visible_height).min(total_lines);
+
+        let visible_text: Vec<Line> = help_text[scroll_offset..visible_end].to_vec();
+
+        let mut final_text = visible_text;
+
+        if scroll_offset > 0 {
+            final_text.insert(
+                0,
+                Line::from(Span::styled("▲", Style::default().fg(Color::Gray))),
+            );
+        }
+        if visible_end < total_lines {
+            final_text.push(Line::from(Span::styled(
+                "▼",
+                Style::default().fg(Color::Gray),
+            )));
+        }
+
+        let paragraph = Paragraph::new(final_text)
             .block(
                 Block::default()
                     .title(" Keyboard Shortcuts ")
@@ -91,14 +126,6 @@ impl HelpPanel {
             .alignment(Alignment::Left);
 
         frame.render_widget(paragraph, area);
-    }
-
-    /// Create a key binding line
-    fn key_binding<'a>(&self, key: &'a str, desc: &'a str) -> Line<'a> {
-        Line::from(vec![
-            Span::styled(format!(" {:<12} ", key), Style::default().fg(Color::Yellow)),
-            Span::raw(desc),
-        ])
     }
 }
 
