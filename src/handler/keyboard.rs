@@ -2,7 +2,7 @@
 
 use crate::app::model::App;
 use crate::app::msg::AppMsg;
-use crate::app::state::AppState;
+use crate::app::state::{AppState, ViewMode};
 use crate::runtime::executor::Runtime;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
@@ -374,8 +374,19 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
         KeyCode::Enter => {
             let _ = app.msg_tx.try_send(AppMsg::OpenActions);
         }
-        KeyCode::Char('F') => {
-            // Toggle favorite (Shift+F)
+        KeyCode::Char('f') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            // Ctrl+f: Toggle favorites view
+            if app.view_mode == ViewMode::Favorites {
+                app.view_mode = ViewMode::All;
+                app.filter_by_view_mode();
+            } else {
+                app.view_mode = ViewMode::Favorites;
+                app.filter_by_view_mode();
+            }
+        }
+
+        KeyCode::Char('f') => {
+            // f: Toggle favorite for current repo
             let _ = app.msg_tx.try_send(AppMsg::ToggleFavorite);
         }
 
@@ -395,7 +406,14 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
 
         // Refresh repository list (r key)
         KeyCode::Char('r') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-            let _ = app.msg_tx.try_send(AppMsg::ShowRecent);
+            // Ctrl+r: Toggle recent view
+            if app.view_mode == ViewMode::Recent {
+                app.view_mode = ViewMode::All;
+                app.filter_by_view_mode();
+            } else {
+                app.view_mode = ViewMode::Recent;
+                app.filter_by_view_mode();
+            }
         }
         KeyCode::Char('r') => {
             let _ = app.msg_tx.try_send(AppMsg::Refresh);
@@ -407,8 +425,8 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
             let _ = app.msg_tx.try_send(AppMsg::Quit);
         }
 
-        KeyCode::Char('V') => {
-            // Toggle selection mode (Shift+V)
+        KeyCode::Char('v') => {
+            // v: Toggle selection mode
             let _ = app.msg_tx.try_send(AppMsg::ToggleSelectionMode);
         }
 
@@ -620,5 +638,113 @@ mod tests {
 
         // Test 't' key opens theme selector
         handle_running_keys(create_test_key(KeyCode::Char('t')), &mut app, &runtime);
+    }
+
+    #[test]
+    fn test_f_key_toggles_favorite() {
+        use crate::repo::Repository;
+        let (tx, mut rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        app.repositories = vec![Repository::test_repo()];
+        app.filtered_indices = vec![0];
+        app.set_selected_index(Some(0));
+
+        // Test 'f' key sends ToggleFavorite message
+        handle_running_keys(create_test_key(KeyCode::Char('f')), &mut app, &runtime);
+
+        // Check that a message was sent (we can't test the actual toggle here as it's async)
+        // The actual toggle happens in update.rs when processing ToggleFavorite
+        assert!(rx.try_recv().is_ok()); // Should have received a message
+    }
+
+    #[test]
+    fn test_v_key_toggles_selection_mode() {
+        let (tx, mut rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        assert!(!app.selection_mode);
+
+        // Test 'v' key toggles selection mode
+        handle_running_keys(create_test_key(KeyCode::Char('v')), &mut app, &runtime);
+
+        // Check that ToggleSelectionMode message was sent
+        assert!(rx.try_recv().is_ok());
+    }
+
+    #[test]
+    fn test_f_key_sends_toggle_favorite() {
+        use crate::repo::Repository;
+        let (tx, mut rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        app.repositories = vec![Repository::test_repo()];
+        app.filtered_indices = vec![0];
+        app.set_selected_index(Some(0));
+
+        // Test 'f' key sends ToggleFavorite
+        handle_running_keys(create_test_key(KeyCode::Char('f')), &mut app, &runtime);
+
+        // Verify message was sent (actual toggle is async)
+        assert!(rx.try_recv().is_ok());
+    }
+
+    #[test]
+    fn test_ctrl_f_toggles_favorites_view() {
+        use crate::app::state::ViewMode;
+        use crate::repo::Repository;
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        app.repositories = vec![Repository::test_repo()];
+        app.filtered_indices = vec![0];
+        app.set_selected_index(Some(0));
+        app.view_mode = ViewMode::All;
+
+        // Test Ctrl+f switches to Favorites view
+        let ctrl_f = KeyEvent {
+            code: KeyCode::Char('f'),
+            modifiers: KeyModifiers::CONTROL,
+            kind: KeyEventKind::Press,
+            state: crossterm::event::KeyEventState::NONE,
+        };
+        handle_running_keys(ctrl_f, &mut app, &runtime);
+        assert_eq!(app.view_mode, ViewMode::Favorites);
+
+        // Test Ctrl+f again switches back to All
+        handle_running_keys(ctrl_f, &mut app, &runtime);
+        assert_eq!(app.view_mode, ViewMode::All);
+    }
+
+    #[test]
+    fn test_ctrl_r_toggles_recent_view() {
+        use crate::app::state::ViewMode;
+        use crate::repo::Repository;
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        app.repositories = vec![Repository::test_repo()];
+        app.filtered_indices = vec![0];
+        app.set_selected_index(Some(0));
+        app.view_mode = ViewMode::All;
+
+        // Test Ctrl+r switches to Recent view
+        let ctrl_r = KeyEvent {
+            code: KeyCode::Char('r'),
+            modifiers: KeyModifiers::CONTROL,
+            kind: KeyEventKind::Press,
+            state: crossterm::event::KeyEventState::NONE,
+        };
+        handle_running_keys(ctrl_r, &mut app, &runtime);
+        assert_eq!(app.view_mode, ViewMode::Recent);
+
+        // Test Ctrl+r again switches back to All
+        handle_running_keys(ctrl_r, &mut app, &runtime);
+        assert_eq!(app.view_mode, ViewMode::All);
     }
 }
