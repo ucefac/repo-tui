@@ -104,13 +104,16 @@
   |------|--------|----------|----------|----------|
   | `q` | 退出确认 | 取消 | 取消 | 关闭 |
   | `Esc` | 清空搜索 | 取消 | 取消 | 关闭 |
-  | `Enter` | 打开菜单 | 确认选择 | 执行操作 | - |
+  | `Enter` | 打开菜单 | - | 执行操作 | - |
+  | `→` | - | 进入目录 | - | - |
+  | `←` | - | 返回上级 | - | - |
   | `/` | 聚焦搜索 | - | - | - |
   | `r` | 刷新列表 | - | - | - |
   | `?` | 打开帮助 | - | - | - |
   | `Ctrl+C` | 退出确认 | 退出 | 退出 | 退出 |
   | `↑/↓` | 循环导航 | 循环导航 | 导航 | - |
   | `1/2/3/4` | - | - | 执行操作 | - |
+  | `SPACE` | 多选切换 | 确认选择 | - | - |
 
 **状态优先级**: `ActionMenu > Help > ChoosingDir > Searching > Running`  
 (高优先级状态拦截所有按键)
@@ -407,7 +410,7 @@ fn view(app: &App, frame: &mut Frame) {
 │ Current: /home/username/projects                             │
 │ Found: 42 Git repositories                                    │
 │                                                               │
-│ ↑↓ navigate   SPACE select   ENTER open   ← back   q cancel       │
+│ ↑↓ navigate   ←/→ back/enter   SPACE select   q cancel       │
 ╰───────────────────────────────────────────────────────────────╯
 ```
 
