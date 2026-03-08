@@ -262,6 +262,35 @@ ActionMenu (5) > Help (4) > ChoosingDir (3) > Searching (2) > Running (1)
 
 **详见**: [docs/TITLE_BAR_DESIGN.md](./docs/TITLE_BAR_DESIGN.md)
 
+### 底部组件 UI 规范
+
+**适用组件**: `StatusBar`、`DirChooser` 帮助区
+
+**布局**: 位于界面底部，高度 1-2 行
+
+**设计规范**:
+| 属性 | 规范 | 说明 |
+|------|------|------|
+| 背景色 | **无** | 移除硬编码背景色，依赖主题配色 |
+| 对齐方式 | **左对齐** | 内容从左上角开始排列 |
+| 边距 | **无** | 移除 padding，内容紧贴边界 |
+| 文本颜色 | `text_muted` | 使用主题定义的柔和文本色 |
+
+**设计理由**:
+1. **主题一致性**: 各主题的 `text_muted` 颜色已针对主题背景优化对比度
+2. **视觉简洁**: 消除固定背景色块，减少视觉干扰
+3. **空间效率**: 移除 padding 后内容更紧凑
+
+**示例**:
+```
+↑↓ navigate   ENTER open          ← 无背景，左对齐
+📂 /home/user (5 repos)           ← 无背景，左对齐
+```
+
+**相关组件**:
+- `src/ui/widgets/status_bar.rs` - 状态栏组件
+- `src/ui/widgets/dir_chooser.rs` - 目录选择器帮助区
+
 ### 键盘交互规范
 
 | 按键       | 用途      | 说明               |
