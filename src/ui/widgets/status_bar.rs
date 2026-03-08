@@ -213,7 +213,7 @@ mod tests {
 
         terminal
             .draw(|f| {
-                let long_message = "[j/k]Nav [g/G]Jump [/]Search [Enter]Open [r]Refresh [?]Help [q]Quit [m]ChangeDir";
+                let long_message = "[↑/↓]Nav [g/G]Jump [/]Search [Enter]Open [r]Refresh [?]Help [Ctrl+C]Quit [m]ChangeDir";
                 let status_bar = StatusBar::new(long_message, &theme)
                     .path(Path::new("/very/long/path/that/might/wrap"));
                 f.render_widget(status_bar, f.area());

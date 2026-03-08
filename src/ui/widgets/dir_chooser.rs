@@ -257,8 +257,8 @@ fn render_help(area: Rect, buf: &mut Buffer, theme: &Theme) {
     // Fill background (no border, similar to StatusBar)
     buf.set_style(area, Style::default().bg(Color::DarkGray));
 
-    // Updated help text with merged key bindings
-    let help_text = "↑↓ navigate   ←/→ back/enter   SPACE select   q cancel";
+    // Updated help text with direction keys only
+    let help_text = "↑↓ navigate   ← back   → enter   SPACE select   Esc cancel";
 
     // Parse and apply theme color highlight to key hints
     let spans = parse_help_message(help_text, theme);

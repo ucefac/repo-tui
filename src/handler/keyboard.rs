@@ -187,18 +187,14 @@ fn get_selected_theme_name(app: &App) -> Option<String> {
 /// Handle keys in directory chooser
 fn handle_chooser_keys(key: KeyEvent, app: &mut App, runtime: &Runtime) {
     match key.code {
-        KeyCode::Char('q') | KeyCode::Esc => {
+        KeyCode::Esc => {
             let _ = app.msg_tx.try_send(AppMsg::Quit);
         }
-        KeyCode::Enter => {
-            // Enter selected directory or confirm selection
-            handle_directory_enter(app, runtime);
-        }
-        KeyCode::Left | KeyCode::Char('h') => {
+        KeyCode::Left => {
             // Go to parent directory
             handle_directory_back(app, runtime);
         }
-        KeyCode::Right | KeyCode::Char('l') => {
+        KeyCode::Right => {
             // Enter selected directory
             handle_directory_enter(app, runtime);
         }
@@ -224,10 +220,10 @@ fn handle_chooser_keys(key: KeyEvent, app: &mut App, runtime: &Runtime) {
                 }
             }
         }
-        KeyCode::Char('j') | KeyCode::Down => {
+        KeyCode::Down => {
             let _ = app.msg_tx.try_send(AppMsg::DirectoryNavDown);
         }
-        KeyCode::Char('k') | KeyCode::Up => {
+        KeyCode::Up => {
             let _ = app.msg_tx.try_send(AppMsg::DirectoryNavUp);
         }
         KeyCode::Home => {
@@ -336,7 +332,7 @@ fn handle_search_input(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
         }
 
         // === All other characters: input only ===
-        // Including j/k/g/G/m/r/q/? etc. - all function keys are blocked
+        // Including g/G/m/r/? etc. - all function keys are blocked
         KeyCode::Char(c) => {
             let _ = app.msg_tx.try_send(AppMsg::SearchInput(c));
         }
@@ -580,8 +576,6 @@ mod tests {
         };
 
         // Test navigation
-        handle_chooser_keys(create_test_key(KeyCode::Char('j')), &mut app, &runtime);
-        handle_chooser_keys(create_test_key(KeyCode::Char('k')), &mut app, &runtime);
         handle_chooser_keys(create_test_key(KeyCode::Down), &mut app, &runtime);
         handle_chooser_keys(create_test_key(KeyCode::Up), &mut app, &runtime);
 
@@ -590,7 +584,7 @@ mod tests {
         handle_chooser_keys(create_test_key(KeyCode::End), &mut app, &runtime);
 
         // Test quit
-        handle_chooser_keys(create_test_key(KeyCode::Char('q')), &mut app, &runtime);
+        handle_chooser_keys(create_test_key(KeyCode::Esc), &mut app, &runtime);
     }
 
     #[tokio::test(flavor = "multi_thread")]
@@ -606,10 +600,9 @@ mod tests {
             scroll_offset: 0,
         };
 
-        // Test h/l navigation
-        handle_chooser_keys(create_test_key(KeyCode::Char('h')), &mut app, &runtime);
-        handle_chooser_keys(create_test_key(KeyCode::Char('l')), &mut app, &runtime);
+        // Test ←/→ navigation
         handle_chooser_keys(create_test_key(KeyCode::Left), &mut app, &runtime);
+        handle_chooser_keys(create_test_key(KeyCode::Right), &mut app, &runtime);
         handle_chooser_keys(create_test_key(KeyCode::Right), &mut app, &runtime);
     }
 
