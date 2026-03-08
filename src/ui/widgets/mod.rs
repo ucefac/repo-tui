@@ -10,6 +10,7 @@ pub mod repo_list;
 pub mod search_box;
 pub mod status_bar;
 pub mod theme_selector;
+pub mod title_bar;
 
 pub use action_menu::{centered_popup, ActionMenu};
 pub use dir_chooser::{centered_rect, DirChooser};
@@ -19,3 +20,4 @@ pub use repo_list::RepoList;
 pub use search_box::SearchBox;
 pub use status_bar::StatusBar;
 pub use theme_selector::ThemeSelector;
+pub use title_bar::TitleBar;

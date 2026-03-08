@@ -11,24 +11,25 @@ pub const WIDTH_LG: u16 = 120; // Large: full info
 
 /// Minimum terminal dimensions
 pub const MIN_WIDTH: u16 = 80;
-pub const MIN_HEIGHT: u16 = 24;
+pub const MIN_HEIGHT: u16 = 25;
 
 /// Calculate main layout chunks
 ///
-/// Returns (search_box, repo_list, status_bar)
-pub fn calculate_main_layout(area: Rect) -> (Rect, Rect, Rect) {
+/// Returns (title_bar, search_box, repo_list, status_bar)
+pub fn calculate_main_layout(area: Rect) -> (Rect, Rect, Rect, Rect) {
     use ratatui::layout::{Direction, Layout};
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
+            Constraint::Length(1), // Title bar
             Constraint::Length(3), // Search box
             Constraint::Min(10),   // Repository list
             Constraint::Length(4), // Status bar (status + path)
         ])
         .split(area);
 
-    (chunks[0], chunks[1], chunks[2])
+    (chunks[0], chunks[1], chunks[2], chunks[3])
 }
 
 /// Calculate repository list row constraints based on terminal width

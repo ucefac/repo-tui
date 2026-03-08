@@ -66,6 +66,16 @@ pub fn dracula_theme() -> Theme {
                 g: 147,
                 b: 249,
             },
+            title_fg: ColorRgb {
+                r: 248,
+                g: 248,
+                b: 242,
+            },
+            title_bg: ColorRgb {
+                r: 40,
+                g: 42,
+                b: 54,
+            },
         },
     }
 }

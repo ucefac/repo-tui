@@ -60,6 +60,12 @@ pub fn light_theme() -> Theme {
                 g: 99,
                 b: 235,
             },
+            title_fg: ColorRgb { r: 9, g: 9, b: 11 },
+            title_bg: ColorRgb {
+                r: 255,
+                g: 255,
+                b: 255,
+            },
         },
     }
 }

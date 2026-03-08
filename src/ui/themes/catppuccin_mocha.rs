@@ -66,6 +66,16 @@ pub fn catppuccin_mocha_theme() -> Theme {
                 g: 180,
                 b: 250,
             },
+            title_fg: ColorRgb {
+                r: 205,
+                g: 214,
+                b: 244,
+            },
+            title_bg: ColorRgb {
+                r: 30,
+                g: 30,
+                b: 46,
+            },
         },
     }
 }

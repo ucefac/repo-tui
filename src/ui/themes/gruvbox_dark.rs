@@ -66,6 +66,16 @@ pub fn gruvbox_dark_theme() -> Theme {
                 g: 128,
                 b: 25,
             },
+            title_fg: ColorRgb {
+                r: 235,
+                g: 219,
+                b: 178,
+            },
+            title_bg: ColorRgb {
+                r: 40,
+                g: 40,
+                b: 40,
+            },
         },
     }
 }

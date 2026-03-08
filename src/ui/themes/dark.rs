@@ -60,6 +60,12 @@ pub fn dark_theme() -> Theme {
                 g: 189,
                 b: 248,
             },
+            title_fg: ColorRgb {
+                r: 248,
+                g: 248,
+                b: 242,
+            },
+            title_bg: ColorRgb { r: 9, g: 9, b: 11 },
         },
     }
 }

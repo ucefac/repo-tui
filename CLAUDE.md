@@ -24,6 +24,8 @@
 |------|---------|
 | [docs/README.md](./docs/README.md) | 开发文档总索引 |
 | [docs/DEVELOPMENT_GUIDE.md](./docs/DEVELOPMENT_GUIDE.md) | 开发清单    |
+| [docs/TITLE_BAR_DESIGN.md](./docs/TITLE_BAR_DESIGN.md) | 标题栏 UI 设计 |
+| [docs/THEME_SYSTEM_PLAN.md](./docs/THEME_SYSTEM_PLAN.md) | 主题系统设计 |
 | [docs/PHASE0_COMPLETE.md](./docs/PHASE0_COMPLETE.md) | Phase 0 完成报告 |
 | [docs/PHASE0_STATUS.md](./docs/PHASE0_STATUS.md) | 详细实施状态 |
 | [docs/FIX_PROGRESS.md](./docs/FIX_PROGRESS.md) | 修复进度记录 |
@@ -61,6 +63,11 @@ cargo clippy -- -D warnings
 # 基准测试
 cargo bench
 ```
+
+### 最小终端尺寸
+
+**宽度**: 80 列  
+**高度**: 25 行（包含标题栏 1 行）
 
 ### 项目结构
 
@@ -237,6 +244,24 @@ ActionMenu (5) > Help (4) > ChoosingDir (3) > Searching (2) > Running (1)
 
 **例外**: 方向键 `↑/↓` 作为标准导航键。
 
+### 标题栏设计规范
+
+**布局**: 位于界面顶部，高度 1 行
+
+**内容格式**: `repotui — [视图名称]`
+
+**视图显示**:
+| 视图模式 | 显示文本 | 快捷键 |
+|----------|----------|--------|
+| `ViewMode::All` | `全部视图` | - |
+| `ViewMode::Favorites` | `收藏夹` | `Ctrl+f` |
+| `ViewMode::Recent` | `最近视图` | `Ctrl+r` |
+| 多选模式 | `多选模式 (已选 n 个)` | `v` 进入 |
+
+**主题差异化**: 每个主题使用专用的 `title_fg` 和 `title_bg` 颜色
+
+**详见**: [docs/TITLE_BAR_DESIGN.md](./docs/TITLE_BAR_DESIGN.md)
+
 ### 键盘交互规范
 
 | 按键       | 用途      | 说明               |
@@ -245,6 +270,9 @@ ActionMenu (5) > Help (4) > ChoosingDir (3) > Searching (2) > Running (1)
 | `Ctrl+c` | 退出      | 关闭程序             |
 | `Esc`    | 返回/关闭   | 关闭弹窗、退出搜索焦点      |
 | `Enter`  | 确认/执行   | 打开菜单、执行操作        |
+| `Ctrl+f` | 视图切换   | 切换到收藏夹视图         |
+| `Ctrl+r` | 视图切换   | 切换到最近视图           |
+| `v`      | 多选模式   | 进入/退出多选模式        |
 
 **循环滚动**: 从底部继续向下回到顶部，从顶部继续向上回到底部。
 
@@ -301,6 +329,31 @@ fuzzy = ["dep:nucleo-matcher"] # 模糊搜索 (Phase 3)
 watcher = ["dep:notify"]       # 文件监听 (Phase 3)
 ```
 
+### 主题集成
+
+**标题颜色**: 在 `ColorPalette` 中添加 `title_fg` 和 `title_bg` 字段
+
+```rust
+pub struct ColorPalette {
+    // ... 现有字段 ...
+    pub title_fg: ColorRgb,   // 标题前景色
+    pub title_bg: ColorRgb,   // 标题背景色
+}
+```
+
+**样式方法**:
+
+```rust
+impl Theme {
+    pub fn title_style(&self) -> Style {
+        Style::default()
+            .fg(self.colors.title_fg.into())
+            .bg(self.colors.title_bg.into())
+            .add_modifier(Modifier::BOLD)
+    }
+}
+```
+
 ## 🔗 相关资源
 
 - [Ratatui 文档](https://ratatui.rs/)
@@ -310,5 +363,5 @@ watcher = ["dep:notify"]       # 文件监听 (Phase 3)
 
 ---
 
-**最后更新**: 2026-03-06
+**最后更新**: 2026-03-08  
 **维护者**: repotui Team

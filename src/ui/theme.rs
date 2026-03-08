@@ -32,6 +32,8 @@ pub struct ColorPalette {
     pub selected_fg: ColorRgb,
     pub text_muted: ColorRgb,
     pub border_focused: ColorRgb,
+    pub title_fg: ColorRgb,
+    pub title_bg: ColorRgb,
 }
 
 /// UI Theme
@@ -140,6 +142,14 @@ impl Theme {
     /// Get error color style
     pub fn error_style(&self) -> Style {
         Style::default().fg(self.colors.error.into())
+    }
+
+    /// Get title style
+    pub fn title_style(&self) -> Style {
+        Style::default()
+            .fg(self.colors.title_fg.into())
+            .bg(self.colors.title_bg.into())
+            .add_modifier(Modifier::BOLD)
     }
 }
 

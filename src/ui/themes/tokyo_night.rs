@@ -66,6 +66,16 @@ pub fn tokyo_night_theme() -> Theme {
                 g: 162,
                 b: 247,
             },
+            title_fg: ColorRgb {
+                r: 192,
+                g: 202,
+                b: 245,
+            },
+            title_bg: ColorRgb {
+                r: 26,
+                g: 27,
+                b: 38,
+            },
         },
     }
 }

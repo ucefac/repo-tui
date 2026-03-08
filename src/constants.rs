@@ -15,7 +15,7 @@ pub const CONFIG_VERSION: &str = "1.0";
 
 /// Minimum terminal dimensions
 pub const MIN_TERMINAL_WIDTH: u16 = 80;
-pub const MIN_TERMINAL_HEIGHT: u16 = 24;
+pub const MIN_TERMINAL_HEIGHT: u16 = 25;
 
 /// Search debounce duration (milliseconds)
 pub const SEARCH_DEBOUNCE_MS: u64 = 100;

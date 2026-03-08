@@ -5,7 +5,7 @@ use crate::app::state::AppState;
 use crate::ui::theme::Theme;
 use crate::ui::widgets::{
     centered_help_popup, centered_popup, centered_rect, ActionMenu, DirChooser, HelpPanel,
-    RepoList, SearchBox, ThemeSelector,
+    RepoList, SearchBox, ThemeSelector, TitleBar,
 };
 use ratatui::prelude::*;
 use ratatui::widgets::{Clear, Paragraph};
@@ -113,20 +113,30 @@ fn render_error(frame: &mut Frame, area: Rect, message: &str, theme: &Theme) {
 
 /// Render main UI
 fn render_main_ui(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
-    // Create layout
+    // Create layout with title bar
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
+            Constraint::Length(1), // Title bar (新增)
             Constraint::Length(3), // Search box
             Constraint::Min(5),    // Repository list
             Constraint::Length(2), // Status bar (status + path)
         ])
         .split(area);
 
+    // Render title bar
+    let title_bar = TitleBar::new(&app.view_mode, theme);
+    let title_bar = if app.selection_mode {
+        title_bar.selection_info(app.selected_count())
+    } else {
+        title_bar
+    };
+    frame.render_widget(title_bar, chunks[0]);
+
     // Render search box using component
     let is_search_focused = app.search_active;
     let search_box = SearchBox::new(&app.search_query, theme, is_search_focused);
-    frame.render_widget(search_box, chunks[0]);
+    frame.render_widget(search_box, chunks[1]);
 
     // Render repository list using component
     let favorites_set: std::collections::HashSet<usize> = app
@@ -143,16 +153,16 @@ fn render_main_ui(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
     let repo_list = RepoList::new(&app.repositories, &app.filtered_indices, theme)
         .selected_index(app.selected_index())
         .scroll_offset(app.scroll_offset)
-        .visible_height(chunks[1].height)
+        .visible_height(chunks[2].height)
         .show_git_status(app.config.as_ref().is_some_and(|c| c.ui.show_git_status))
         .favorites(favorites_set)
         .selection_mode(app.selection_mode)
         .selected(app.selected_indices.clone())
-        .area_width(chunks[1].width);
-    frame.render_widget(repo_list, chunks[1]);
+        .area_width(chunks[2].width);
+    frame.render_widget(repo_list, chunks[2]);
 
     // Render status bar (with path bar)
-    render_status_bar_with_path(frame, app, chunks[2], theme);
+    render_status_bar_with_path(frame, app, chunks[3], theme);
 }
 
 /// Render status bar with path bar

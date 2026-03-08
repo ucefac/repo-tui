@@ -66,6 +66,16 @@ pub fn nord_theme() -> Theme {
                 g: 192,
                 b: 208,
             },
+            title_fg: ColorRgb {
+                r: 216,
+                g: 222,
+                b: 233,
+            },
+            title_bg: ColorRgb {
+                r: 47,
+                g: 52,
+                b: 64,
+            },
         },
     }
 }
