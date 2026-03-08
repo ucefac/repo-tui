@@ -2,7 +2,7 @@
 
 use ratatui::prelude::*;
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Padding, Paragraph, Wrap};
+use ratatui::widgets::{Paragraph, Wrap};
 use std::path::Path;
 
 use crate::ui::theme::Theme;
@@ -15,7 +15,6 @@ pub struct StatusBar<'a> {
     pub theme: &'a Theme,
     pub loading: bool,
     pub error: bool,
-    pub padding: Padding,
 }
 
 impl<'a> StatusBar<'a> {
@@ -28,7 +27,6 @@ impl<'a> StatusBar<'a> {
             theme,
             loading: false,
             error: false,
-            padding: Padding::new(1, 1, 0, 0), // left=1, right=1, top=0, bottom=0
         }
     }
 
@@ -59,22 +57,8 @@ impl<'a> StatusBar<'a> {
 
 impl<'a> Widget for StatusBar<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        // Fill background (no border)
-        buf.set_style(area, Style::default().bg(Color::DarkGray));
-
-        // Apply padding manually
-        let inner = Rect::new(
-            area.x + self.padding.left,
-            area.y + self.padding.top,
-            area.width
-                .saturating_sub(self.padding.left + self.padding.right),
-            area.height
-                .saturating_sub(self.padding.top + self.padding.bottom),
-        );
-
-        // Check minimum inner height (needs at least 2 rows: status + path)
-        let inner_height = inner.height;
-        if inner_height < 2 {
+        // Check minimum height (needs at least 2 rows: status + path)
+        if area.height < 2 {
             return;
         }
 
@@ -98,26 +82,24 @@ impl<'a> Widget for StatusBar<'a> {
             .style(Style::default().fg(self.theme.colors.text_muted.into()))
             .wrap(Wrap { trim: true })
             .alignment(Alignment::Left);
-        status_paragraph.render(inner, buf);
+        status_paragraph.render(area, buf);
 
-        // Path on bottom row (only if inner height >= 2)
-        if inner_height >= 2 {
-            if let Some(path) = self.path {
-                let path_text = format!(
-                    "📂 {}{}",
-                    path.display(),
-                    self.repo_count
-                        .map(|c| format!(" ({} repos)", c))
-                        .unwrap_or_default()
-                );
+        // Path on bottom row
+        if let Some(path) = self.path {
+            let path_text = format!(
+                "📂 {}{}",
+                path.display(),
+                self.repo_count
+                    .map(|c| format!(" ({} repos)", c))
+                    .unwrap_or_default()
+            );
 
-                let path_paragraph = Paragraph::new(path_text)
-                    .style(Style::default().fg(self.theme.colors.text_muted.into()))
-                    .alignment(Alignment::Left);
+            let path_paragraph = Paragraph::new(path_text)
+                .style(Style::default().fg(self.theme.colors.text_muted.into()))
+                .alignment(Alignment::Left);
 
-                let path_area = Rect::new(inner.x, inner.y + inner_height - 1, inner.width, 1);
-                path_paragraph.render(path_area, buf);
-            }
+            let path_area = Rect::new(area.x, area.y + area.height - 1, area.width, 1);
+            path_paragraph.render(path_area, buf);
         }
     }
 }

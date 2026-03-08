@@ -254,9 +254,6 @@ fn parse_help_message<'a>(message: &'a str, theme: &'a Theme) -> Vec<Span<'a>> {
 
 /// Render help text
 fn render_help(area: Rect, buf: &mut Buffer, theme: &Theme) {
-    // Fill background (no border, similar to StatusBar)
-    buf.set_style(area, Style::default().bg(Color::DarkGray));
-
     // Updated help text with direction keys only
     let help_text = "↑↓ navigate   ← back   → enter   SPACE select   Esc cancel";
 
@@ -264,7 +261,7 @@ fn render_help(area: Rect, buf: &mut Buffer, theme: &Theme) {
     let spans = parse_help_message(help_text, theme);
 
     let paragraph = Paragraph::new(Line::from(spans))
-        .alignment(Alignment::Center)
+        .alignment(Alignment::Left)
         .style(Style::default().fg(theme.colors.text_muted.into()));
 
     paragraph.render(area, buf);
