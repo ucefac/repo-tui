@@ -450,8 +450,20 @@ fn view(app: &App, frame: &mut Frame) {
 │   3       Open in VS Code                                    │
 │   4       Open in Finder/Explorer                            │
 │                                                               │
+│ View & Favorites                                              │
+│   f       Toggle favorite for current repo                   │
+│   Ctrl+f  Toggle favorites view (show only favorited repos)  │
+│   Ctrl+r  Toggle recent view (show recently opened repos)    │
+│                                                               │
+│ Batch Operations                                              │
+│   v       Toggle selection mode                              │
+│   Space   Toggle selection for current repo (in mode)        │
+│   Ctrl+a  Select all repos (in selection mode)               │
+│                                                               │
 │ Global                                                        │
+│   m       Change main directory                              │
 │   r       Refresh list                                       │
+│   t       Toggle theme selector                              │
 │   ?       Show this help                                     │
 │   q       Quit                                               │
 ╰───────────────────────────────────────────────────────────────╯
