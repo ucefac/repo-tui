@@ -13,9 +13,10 @@
 | [keyboard-shortcuts.md](./keyboard-shortcuts.md) | 交互规范 | 完整快捷键参考 | ✅ 已实施 |
 
 ### UI 组件
-| 文档 | 类型 | 说明 | 状态 |
-|------|------|------|------|
-| [title-bar.md](./title-bar.md) | UI 组件 | 标题栏设计规范 | ✅ 已实施 |
+| 文档 | 类型 | 说明 | 状态 | 关联 |
+|------|------|------|------|------|
+| [title-bar.md](./title-bar.md) | UI 组件 | 标题栏设计规范 | ✅ 已实施 | - |
+| [multi-directory-design-v1.md](./multi-directory-design-v1.md) | UI 组件 | 主目录管理功能设计规范 | 📝 待实施 | 主目录管理 |
 
 ### UI 系统
 | 文档 | 类型 | 说明 | 状态 |

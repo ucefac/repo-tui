@@ -39,11 +39,17 @@
 | [review-phase1-architecture.md](./review-phase1-architecture.md) | Phase 1 架构审查 |
 
 ### 测试计划
-| 文档 | 说明 |
-|------|------|
-| [test-plan-phase1.md](./test-plan-phase1.md) | Phase 1 测试计划 |
-| [test-completion-report.md](./test-completion-report.md) | 测试完成报告 |
-| [test-supplement-plan.md](./test-supplement-plan.md) | 测试补充计划 |
+| 文档 | 说明 | 关联 |
+|------|------|------|
+| [test-plan-phase1.md](./test-plan-phase1.md) | Phase 1 测试计划 | - |
+| [multi-directory-test-plan.md](./multi-directory-test-plan.md) | 多主目录管理功能测试策略 | 主目录管理 |
+| [test-completion-report.md](./test-completion-report.md) | 测试完成报告 | - |
+| [test-supplement-plan.md](./test-supplement-plan.md) | 测试补充计划 | - |
+
+### 重构计划
+| 文档 | 说明 | 关联 |
+|------|------|------|
+| [multi-directory-refactor-plan.md](./multi-directory-refactor-plan.md) | 多主目录管理重构实施计划 | 主目录管理 |
 
 ### 修复记录
 | 文档 | 说明 |
