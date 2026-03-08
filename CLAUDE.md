@@ -8,29 +8,49 @@
 
 ## 🗂️ 文档索引
 
-### 需求文档
+### 文档分类索引
 
-| 文档 | 说明 | 位置 |
-|------|------|------|
-| [ghclone-prd-v2.md](docs/ghclone-prd-v2.md) | **当前版本** - 基于审查反馈的完整 PRD | 项目根目录 |
-| [ghclone-prd-v1.md](docs/ghclone-prd-v1.md) | 初始版本 - 已审查 | 项目根目录 |
+所有项目文档按类型分类存放，通过以下索引文件访问：
 
+| 分类 | 索引文件 | 说明 |
+|------|----------|------|
+| 需求文档 (PRD) | [docs/prd/index.md](./docs/prd/index.md) | 产品需求文档索引 |
+| 设计文档 (UI/UX) | [docs/design/index.md](./docs/design/index.md) | 界面设计规范文档索引 |
+| 开发任务 | [docs/task/index.md](./docs/task/index.md) | 开发计划、Phase 报告、修复记录索引 |
+| Bug 修复 | [docs/bugs/index.md](./docs/bugs/index.md) | Bug 分析与修复方案索引 |
 
-### 开发文档
+### 快速参考
 
-详细文档位于 [`docs/`](docs/) 目录：
+- [构建命令](#构建命令)
+- [项目结构](#项目结构)
+- [安全设计](#安全设计要点)
+- [设计规范](#设计规范)
 
-| 文档 | 说明      |
-|------|---------|
-| [docs/README.md](./docs/README.md) | 开发文档总索引 |
-| [docs/DEVELOPMENT_GUIDE.md](./docs/DEVELOPMENT_GUIDE.md) | 开发清单    |
-| [docs/TITLE_BAR_DESIGN.md](./docs/TITLE_BAR_DESIGN.md) | 标题栏 UI 设计 |
-| [docs/THEME_SYSTEM_PLAN.md](./docs/THEME_SYSTEM_PLAN.md) | 主题系统设计 |
-| [docs/PHASE0_COMPLETE.md](./docs/PHASE0_COMPLETE.md) | Phase 0 完成报告 |
-| [docs/PHASE0_STATUS.md](./docs/PHASE0_STATUS.md) | 详细实施状态 |
-| [docs/FIX_PROGRESS.md](./docs/FIX_PROGRESS.md) | 修复进度记录 |
-| [docs/BUGFIX_EMPTY_PATH.md](./docs/BUGFIX_EMPTY_PATH.md) | 空路径验证 Bug 修复方案 |
+---
 
+## 📁 文档管理规范
+
+### 文档存放规则（强制执行）
+
+| 文档类型 | 存放文件夹 | 索引文件 |
+|---------|-----------|---------|
+| PRD 需求文档 | `docs/prd/` | `docs/prd/index.md` |
+| UI/UX 设计文档 | `docs/design/` | `docs/design/index.md` |
+| 开发任务文档 | `docs/task/` | `docs/task/index.md` |
+| Bug 修复文档 | `docs/bugs/` | `docs/bugs/index.md` |
+
+**禁止**将上述类型文档直接存放在 `docs/` 根目录。
+
+### 文档创建流程
+
+1. **确定文档类型**：根据内容判断属于哪一类
+2. **创建在对应文件夹**：在指定文件夹内创建 `.md` 文件
+3. **更新索引文件**：在对应的 `index.md` 中添加文档条目
+4. **命名规范**：
+   - PRD: `ghclone-prd-v{n}.md`
+   - 设计: `component-name.md` (小写，`-` 连接)
+   - 任务: `phase{n}-complete.md` 或 `feature-name.md`
+   - Bug: `brief-description.md` (小写，`-` 连接)
 
 ---
 
@@ -108,6 +128,10 @@ repotui/
 │   └── e2e/            # E2E 测试
 ├── benches/             # 基准测试
 ├── docs/                # 开发文档
+│   ├── prd/            # PRD 需求文档
+│   ├── design/         # UI/UX 设计文档
+│   ├── task/           # 开发任务文档
+│   └── bugs/           # Bug 修复文档
 └── config.toml.example  # 配置示例
 ```
 
@@ -132,10 +156,12 @@ repotui/
 - 待办事项列表
 - 进度统计
 
-**相关内容应移至**:
-- 修复记录 → `docs/FIX_PROGRESS.md`
-- 详细 Bug 分析 → `docs/BUGFIX_*.md`
-- 任务计划 → `docs/DEVELOPMENT_GUIDE.md`
+**文档迁移规则**:
+- 修复记录 → `docs/task/`
+- 详细 Bug 分析 → `docs/bugs/`
+- 任务计划 → `docs/task/`
+- PRD 文档 → `docs/prd/`
+- 设计文档 → `docs/design/`
 
 ---
 
@@ -238,86 +264,31 @@ ActionMenu (5) > Help (4) > ChoosingDir (3) > Searching (2) > Running (1)
 
 ## 📜 设计规范
 
-### 单一按键原则
+### 核心原则
 
-**核心理念**: 一个功能只能有一种触发方式，禁止多个按键触发同一功能。
+**单一按键原则**: 一个功能只能有一种触发方式，禁止多个按键触发同一功能。
 
-**例外**: 方向键 `↑/↓` 作为标准导航键。
+**设计文档**: [docs/design/ui-guidelines.md](./docs/design/ui-guidelines.md)
 
-### 标题栏设计规范
+### 常用快捷键
 
-**布局**: 位于界面顶部，高度 1 行
+| 按键 | 功能 |
+|------|------|
+| `↑/↓` | 导航 |
+| `Enter` | 打开/确认 |
+| `Esc` | 取消/返回 |
+| `Ctrl+f` | 收藏夹视图 |
+| `Ctrl+r` | 最近视图 |
+| `v` | 多选模式 |
+| `?` | 帮助 |
 
-**内容格式**: `repotui — [视图名称]`
+**完整快捷键**: [docs/design/keyboard-shortcuts.md](./docs/design/keyboard-shortcuts.md)
 
-**视图显示**:
-| 视图模式 | 显示文本 | 快捷键 |
-|----------|----------|--------|
-| `ViewMode::All` | `全部视图` | - |
-| `ViewMode::Favorites` | `收藏夹` | `Ctrl+f` |
-| `ViewMode::Recent` | `最近视图` | `Ctrl+r` |
-| 多选模式 | `多选模式 (已选 n 个)` | `v` 进入 |
+### 相关设计文档
 
-**主题差异化**: 每个主题使用专用的 `title_fg` 和 `title_bg` 颜色
-
-**详见**: [docs/TITLE_BAR_DESIGN.md](./docs/TITLE_BAR_DESIGN.md)
-
-### 底部组件 UI 规范
-
-**适用组件**: `StatusBar`、`DirChooser` 帮助区
-
-**布局**: 位于界面底部，高度 1-2 行
-
-**设计规范**:
-| 属性 | 规范 | 说明 |
-|------|------|------|
-| 背景色 | **无** | 移除硬编码背景色，依赖主题配色 |
-| 对齐方式 | **左对齐** | 内容从左上角开始排列 |
-| 边距 | **无** | 移除 padding，内容紧贴边界 |
-| 文本颜色 | `text_muted` | 使用主题定义的柔和文本色 |
-
-**设计理由**:
-1. **主题一致性**: 各主题的 `text_muted` 颜色已针对主题背景优化对比度
-2. **视觉简洁**: 消除固定背景色块，减少视觉干扰
-3. **空间效率**: 移除 padding 后内容更紧凑
-
-**示例**:
-```
-↑↓ navigate   ENTER open          ← 无背景，左对齐
-📂 /home/user (5 repos)           ← 无背景，左对齐
-```
-
-**相关组件**:
-- `src/ui/widgets/status_bar.rs` - 状态栏组件
-- `src/ui/widgets/dir_chooser.rs` - 目录选择器帮助区
-
-### 键盘交互规范
-
-| 按键       | 用途      | 说明               |
-|----------|---------|------------------|
-| `↑/↓`    | 上下移动/滚动 | 通用导航键，支持**循环滚动** |
-| `←/→`    | 目录导航 | 返回上级/进入目录（仅目录选择器界面） |
-| `Ctrl+c` | 退出      | 关闭程序             |
-| `Esc`    | 返回/关闭   | 关闭弹窗、退出搜索焦点、取消目录选择      |
-| `Enter`  | 确认/执行   | 打开菜单、执行操作        |
-| `Ctrl+f` | 视图切换   | 切换到收藏夹视图         |
-| `Ctrl+r` | 视图切换   | 切换到最近视图           |
-| `v`      | 多选模式   | 进入/退出多选模式        |
-
-#### 目录选择器专用快捷键
-
-当处于目录选择界面时：
-
-| 按键 | 用途 | 说明 |
-|------|------|------|
-| `↑/↓` | 导航 | 选择上/下目录 |
-| `→` | 进入 | 进入选中目录 |
-| `←` | 返回 | 返回上级目录 |
-| `Space` | 确认 | 选择当前目录并确认 |
-| `Esc` | 取消 | 关闭选择器 |
-| `Ctrl+C` | 退出 | 关闭程序 |
-
-**循环滚动**: 从底部继续向下回到顶部，从顶部继续向上回到底部。
+- [标题栏设计](./docs/design/title-bar.md)
+- [主题系统](./docs/design/theme-system.md)
+- [UI 设计规范](./docs/design/ui-guidelines.md)
 
 ---
 
