@@ -1,6 +1,5 @@
 //! Batch operations integration tests
 
-use std::collections::HashSet;
 use std::path::PathBuf;
 use tokio::sync::mpsc;
 
@@ -15,6 +14,7 @@ fn create_test_repo(name: &str, path: &str) -> Repository {
         last_modified: None,
         is_dirty: false,
         branch: Some("main".to_string()),
+        is_git_repo: true,
     }
 }
 

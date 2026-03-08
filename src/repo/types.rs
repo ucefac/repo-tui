@@ -1,6 +1,6 @@
 //! Repository types
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
 /// Git repository information
@@ -20,6 +20,9 @@ pub struct Repository {
 
     /// Current branch name
     pub branch: Option<String>,
+
+    /// Is a git repository
+    pub is_git_repo: bool,
 }
 
 impl Repository {
@@ -39,6 +42,28 @@ impl Repository {
             last_modified,
             is_dirty: false,
             branch: None,
+            is_git_repo: false,
+        }
+    }
+
+    /// Create a new repository from path with git status
+    pub fn from_path_with_git_status(path: &Path) -> Self {
+        let name = path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("unknown")
+            .to_string();
+
+        let last_modified = path.metadata().ok().and_then(|m| m.modified().ok());
+        let is_git_repo = path.join(".git").exists();
+
+        Self {
+            name,
+            path: path.to_path_buf(),
+            last_modified,
+            is_dirty: false,
+            branch: None,
+            is_git_repo,
         }
     }
 
@@ -51,6 +76,20 @@ impl Repository {
             last_modified: None,
             is_dirty: false,
             branch: Some("main".to_string()),
+            is_git_repo: true,
+        }
+    }
+
+    /// Test non-git repository for testing
+    #[cfg(test)]
+    pub fn test_non_git_repo() -> Self {
+        Self {
+            name: "test-non-git-repo".to_string(),
+            path: PathBuf::from("/tmp/test-non-git-repo"),
+            last_modified: None,
+            is_dirty: false,
+            branch: None,
+            is_git_repo: false,
         }
     }
 }

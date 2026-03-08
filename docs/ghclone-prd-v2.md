@@ -59,9 +59,10 @@
   ```rust
   async fn load_repositories(main_dir: &Path) -> Result<Vec<Repository>, RepoError> {
       // 异步遍历主目录所有一级子目录
-      // 过滤：仅保留 git 仓库 (存在 .git 目录或文件)
+      // 显示：所有目录（包括非 git 目录）
+      // 标记：is_git_repo 字段标识是否为 git 仓库
       // 验证：路径规范化 + 权限检查
-      // 返回 Repository { name, path, last_modified, is_dirty }
+      // 返回 Repository { name, path, last_modified, is_dirty, is_git_repo, branch }
   }
   ```
 - **错误处理**:
@@ -390,7 +391,7 @@ fn view(app: &App, frame: &mut Frame) {
 │ ╭─ Repositories ───────────────────────────────────────────╮ │
 │ │ ▌ github_facebook_react           main    ● dirty       │ │
 │ │   web_react_native_docs           main    ✓ clean       │ │
-│ │   personal_react_playground       feat    ✓ clean       │ │
+│ │   regular_folder                  (Not a git repo)      │ │
 │ │                                                           │ │
 │ │                                                           │ │
 │ ╰───────────────────────────────────────────────────────────╯ │
@@ -402,8 +403,10 @@ fn view(app: &App, frame: &mut Frame) {
 **视觉层次**:
 - 选中项：块状高亮 (`▌`) + 背景色
 - 搜索聚焦：边框颜色变化 (Cyan)
-- Dirty 状态：红色圆点 (`●`)
-- Clean 状态：绿色对勾 (`✓`)
+- Git 仓库：显示分支名称和状态
+  - Dirty 状态：红色圆点 (`●`)
+  - Clean 状态：绿色对勾 (`✓`)
+- 非 Git 仓库：显示 "(Not a git repo)" 提示（灰色）
 
 ### 4.2 目录选择界面
 ```
@@ -851,7 +854,9 @@ impl AppError {
 
 ### 功能验收
 - ✅ 首次启动能选择并保存主目录 (配置持久化验证)
-- ✅ 正确列出主目录下所有 git 仓库 (与 `find . -name .git` 比对)
+- ✅ 正确列出主目录下所有目录（包括非 git 目录，与 `ls` 命令比对）
+- ✅ Git 仓库正确显示分支名称和状态
+- ✅ 非 Git 目录显示 "(Not a git repo)" 提示
 - ✅ 搜索框实时过滤 (<50ms 响应，1000 仓库数据集)
 - ✅ 键盘导航流畅 (输入延迟 <100ms p95)
 - ✅ 能正确执行 cd+cloud 命令 (mock 测试 + E2E 验证)

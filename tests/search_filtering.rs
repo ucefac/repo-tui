@@ -16,6 +16,7 @@ fn test_filter_case_insensitive() {
             last_modified: None,
             is_dirty: false,
             branch: None,
+            is_git_repo: true,
         },
         Repository {
             name: "ANOTHER-REPO".to_string(),
@@ -23,6 +24,7 @@ fn test_filter_case_insensitive() {
             last_modified: None,
             is_dirty: false,
             branch: None,
+            is_git_repo: true,
         },
     ];
     app.search_query = "my".to_string();
@@ -42,6 +44,7 @@ fn test_filter_empty_query() {
             last_modified: None,
             is_dirty: false,
             branch: None,
+            is_git_repo: true,
         },
         Repository {
             name: "repo2".to_string(),
@@ -49,6 +52,7 @@ fn test_filter_empty_query() {
             last_modified: None,
             is_dirty: false,
             branch: None,
+            is_git_repo: true,
         },
     ];
     app.search_query = "".to_string();

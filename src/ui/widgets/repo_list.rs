@@ -225,15 +225,29 @@ fn format_repo_item(
     // Add separator space before branch
     spans.push(Span::raw(" "));
 
-    // Add branch name for Medium+ modes
+    // Add branch name or "Not a git repo" message for Medium+ modes
     if display_mode.show_branch() {
-        if let Some(ref branch) = repo.branch {
-            let max_branch_len = if area_width < 100 { 20 } else { 30 };
-            let truncated_branch = truncate_middle(branch, max_branch_len);
-            spans.push(Span::raw(" "));
+        spans.push(Span::raw(" "));
+        if repo.is_git_repo {
+            if let Some(ref branch) = repo.branch {
+                let max_branch_len = if area_width < 100 { 20 } else { 30 };
+                let truncated_branch = truncate_middle(branch, max_branch_len);
+                spans.push(Span::styled(
+                    format!("({})", truncated_branch),
+                    Style::default().fg(theme.colors.secondary.into()),
+                ));
+            } else {
+                // Git repo but branch not detected yet
+                spans.push(Span::styled(
+                    "(detecting...)",
+                    Style::default().fg(theme.colors.text_muted.into()),
+                ));
+            }
+        } else {
+            // Not a git repository
             spans.push(Span::styled(
-                format!("({})", truncated_branch),
-                Style::default().fg(theme.colors.secondary.into()),
+                "(Not a git repo)",
+                Style::default().fg(theme.colors.text_muted.into()),
             ));
         }
     }
@@ -333,6 +347,7 @@ mod tests {
                 last_modified: None,
                 is_dirty: false,
                 branch: Some("main".to_string()),
+                is_git_repo: true,
             },
             Repository {
                 name: "repo2".to_string(),
@@ -340,6 +355,7 @@ mod tests {
                 last_modified: None,
                 is_dirty: true,
                 branch: Some("feature".to_string()),
+                is_git_repo: true,
             },
         ]
     }
@@ -373,6 +389,7 @@ mod tests {
             last_modified: None,
             is_dirty: true,
             branch: Some("main".to_string()),
+            is_git_repo: true,
         };
 
         let theme = Theme::dark();
@@ -420,6 +437,7 @@ mod tests {
             last_modified: None,
             is_dirty: true,
             branch: Some("main".to_string()),
+            is_git_repo: true,
         };
 
         let theme = Theme::dark();
@@ -488,6 +506,7 @@ mod tests {
             last_modified: None,
             is_dirty: true,
             branch: Some("main".to_string()),
+            is_git_repo: true,
         };
 
         let theme = Theme::dark();
@@ -524,6 +543,7 @@ mod tests {
             last_modified: None,
             is_dirty: true,
             branch: Some("main".to_string()),
+            is_git_repo: true,
         };
 
         let theme = Theme::dark();
@@ -565,6 +585,7 @@ mod tests {
             last_modified: None,
             is_dirty: true,
             branch: Some("main".to_string()),
+            is_git_repo: true,
         };
 
         let theme = Theme::dark();
@@ -591,6 +612,43 @@ mod tests {
         assert!(
             content.contains("Modified"),
             "Large mode should show status for dirty repo"
+        );
+    }
+
+    #[test]
+    fn test_format_repo_item_non_git() {
+        use crate::ui::layout::DisplayMode;
+
+        let repo = Repository {
+            name: "non-git-folder".to_string(),
+            path: PathBuf::from("/tmp/non-git-folder"),
+            last_modified: None,
+            is_dirty: false,
+            branch: None,
+            is_git_repo: false,
+        };
+
+        let theme = Theme::dark();
+        let formatted = format_repo_item(
+            &repo,
+            false,
+            true,
+            DisplayMode::Medium,
+            80,
+            &theme,
+            RepoItemParams {
+                is_favorite: false,
+                selection_mode: false,
+                is_checked: false,
+            },
+        );
+
+        let content: String = formatted.spans.iter().map(|s| s.content.as_ref()).collect();
+        assert!(content.contains("non-git-folder"), "Should show repo name");
+        assert!(
+            content.contains("Not a git repo"),
+            "Non-git repo should show 'Not a git repo' message, got: {}",
+            content
         );
     }
 }

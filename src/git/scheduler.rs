@@ -193,6 +193,7 @@ mod tests {
                         last_modified: None,
                         is_dirty: false,
                         branch: None,
+                        is_git_repo: false,
                     },
                 )
             })

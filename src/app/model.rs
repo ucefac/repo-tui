@@ -386,6 +386,7 @@ mod favorites_tests {
             last_modified: None,
             is_dirty: false,
             branch: Some("main".to_string()),
+            is_git_repo: true,
         };
         let repo2 = Repository {
             name: "repo2".to_string(),
@@ -393,6 +394,7 @@ mod favorites_tests {
             last_modified: None,
             is_dirty: true,
             branch: Some("feature".to_string()),
+            is_git_repo: true,
         };
         app.repositories = vec![repo1, repo2];
         app.filtered_indices = vec![0, 1];
@@ -539,6 +541,7 @@ mod tests {
             last_modified: None,
             is_dirty: false,
             branch: Some("main".to_string()),
+            is_git_repo: true,
         };
         let repo2 = Repository {
             name: "repo2".to_string(),
@@ -546,6 +549,7 @@ mod tests {
             last_modified: None,
             is_dirty: true,
             branch: Some("feature".to_string()),
+            is_git_repo: true,
         };
         app.repositories = vec![repo1, repo2];
         app.filtered_indices = vec![0, 1];
@@ -647,6 +651,7 @@ mod tests {
             last_modified: None,
             is_dirty: false,
             branch: Some("main".to_string()),
+            is_git_repo: true,
         });
         app.apply_filter();
 

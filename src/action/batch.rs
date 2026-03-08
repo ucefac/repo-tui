@@ -124,6 +124,7 @@ mod tests {
             last_modified: None,
             is_dirty: false,
             branch: Some("main".to_string()),
+            is_git_repo: true,
         }
     }
 

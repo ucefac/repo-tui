@@ -30,11 +30,11 @@ pub fn discover_repositories(main_dir: &Path) -> Result<Vec<Repository>> {
             continue;
         }
 
-        // Check if it's a git repository
-        if is_git_repository(&path) {
-            let repo = Repository::from_path(path);
-            repos.push(repo);
-        }
+        // Add all directories, mark git status
+        let is_git = is_git_repository(&path);
+        let mut repo = Repository::from_path(path);
+        repo.is_git_repo = is_git;
+        repos.push(repo);
     }
 
     // Sort by name
@@ -73,9 +73,11 @@ mod tests {
 
         let repos = discover_repositories(temp_dir.path()).unwrap();
 
-        assert_eq!(repos.len(), 2);
-        assert!(repos.iter().any(|r| r.name == "repo1"));
-        assert!(repos.iter().any(|r| r.name == "repo2"));
+        // Should discover all directories (including non-git)
+        assert_eq!(repos.len(), 3);
+        assert!(repos.iter().any(|r| r.name == "repo1" && r.is_git_repo));
+        assert!(repos.iter().any(|r| r.name == "repo2" && r.is_git_repo));
+        assert!(repos.iter().any(|r| r.name == "not-repo" && !r.is_git_repo));
     }
 
     #[test]
@@ -123,6 +125,8 @@ mod tests {
         assert_eq!(repos[0].name, "alpha");
         assert_eq!(repos[1].name, "bravo");
         assert_eq!(repos[2].name, "charlie");
+        // All should be git repos
+        assert!(repos.iter().all(|r| r.is_git_repo));
     }
 
     #[test]

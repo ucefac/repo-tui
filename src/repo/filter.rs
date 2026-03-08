@@ -91,6 +91,7 @@ mod tests {
                 last_modified: None,
                 is_dirty: false,
                 branch: Some("main".to_string()),
+                is_git_repo: true,
             },
             Repository {
                 name: "vercel/next.js".to_string(),
@@ -98,6 +99,7 @@ mod tests {
                 last_modified: None,
                 is_dirty: false,
                 branch: Some("main".to_string()),
+                is_git_repo: true,
             },
             Repository {
                 name: "microsoft/vscode".to_string(),
@@ -105,6 +107,7 @@ mod tests {
                 last_modified: None,
                 is_dirty: false,
                 branch: Some("main".to_string()),
+                is_git_repo: true,
             },
             Repository {
                 name: "rust-lang/rust".to_string(),
@@ -112,6 +115,7 @@ mod tests {
                 last_modified: None,
                 is_dirty: false,
                 branch: Some("main".to_string()),
+                is_git_repo: true,
             },
             Repository {
                 name: "nodejs/node".to_string(),
@@ -119,6 +123,7 @@ mod tests {
                 last_modified: None,
                 is_dirty: false,
                 branch: Some("main".to_string()),
+                is_git_repo: true,
             },
         ]
     }
@@ -239,6 +244,7 @@ mod tests {
                 last_modified: None,
                 is_dirty: false,
                 branch: Some("main".to_string()),
+                is_git_repo: true,
             },
             Repository {
                 name: "test/project".to_string(),
@@ -246,6 +252,7 @@ mod tests {
                 last_modified: None,
                 is_dirty: false,
                 branch: Some("main".to_string()),
+                is_git_repo: true,
             },
         ];
 

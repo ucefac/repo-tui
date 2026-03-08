@@ -168,7 +168,10 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
             if let Ok(status) = result {
                 if let Some(repo) = app.repositories.get_mut(idx) {
                     repo.is_dirty = status.is_dirty;
-                    repo.branch = status.branch;
+                    // Only update branch if this is a git repo
+                    if repo.is_git_repo {
+                        repo.branch = status.branch;
+                    }
                 }
             }
         }
@@ -854,6 +857,7 @@ mod tests {
             last_modified: None,
             is_dirty: false,
             branch: Some("main".to_string()),
+            is_git_repo: true,
         }];
         app.apply_filter();
 
@@ -876,6 +880,7 @@ mod tests {
             last_modified: None,
             is_dirty: false,
             branch: Some("main".to_string()),
+            is_git_repo: true,
         }];
         app.apply_filter();
         app.set_selected_index(Some(0));
@@ -921,6 +926,7 @@ mod tests {
                 last_modified: None,
                 is_dirty: false,
                 branch: None,
+                is_git_repo: true,
             },
         };
         app.selected_repo = Some(Repository {
@@ -929,6 +935,7 @@ mod tests {
             last_modified: None,
             is_dirty: false,
             branch: None,
+            is_git_repo: true,
         });
 
         update(AppMsg::Cancel, &mut app, &runtime);
@@ -1075,6 +1082,7 @@ mod tests {
             last_modified: None,
             is_dirty: false,
             branch: Some("main".to_string()),
+            is_git_repo: true,
         }];
         app.filtered_indices = vec![0];
         app.set_selected_index(Some(0));
@@ -1105,6 +1113,7 @@ mod tests {
                 last_modified: None,
                 is_dirty: false,
                 branch: Some("main".to_string()),
+                is_git_repo: true,
             },
             Repository {
                 name: "repo2".to_string(),
@@ -1112,6 +1121,7 @@ mod tests {
                 last_modified: None,
                 is_dirty: false,
                 branch: Some("main".to_string()),
+                is_git_repo: true,
             },
         ];
         app.filtered_indices = vec![0, 1];
@@ -1146,6 +1156,7 @@ mod tests {
             last_modified: None,
             is_dirty: false,
             branch: Some("main".to_string()),
+            is_git_repo: true,
         }];
         app.filtered_indices = vec![0];
         app.set_selected_index(Some(0));

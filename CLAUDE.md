@@ -86,8 +86,8 @@ repotui/
 │   │   ├── load.rs      # 加载/保存
 │   │   └── validators.rs# 安全验证
 │   ├── repo/            # 仓库操作
-│   │   ├── types.rs     # Repository 定义
-│   │   ├── discover.rs  # 仓库发现
+│   │   ├── types.rs     # Repository 定义 (含 is_git_repo 字段)
+│   │   ├── discover.rs  # 仓库发现 (返回所有目录，标记 git 状态)
 │   │   └── status.rs    # Git 状态检测
 │   ├── action/          # 命令执行
 │   │   ├── types.rs     # Action 枚举

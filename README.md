@@ -14,6 +14,7 @@ A terminal user interface (TUI) tool for browsing and managing GitHub repositori
 - 🔐 **Secure**: Command whitelisting, path validation, no shell injection
 - 🚀 **Fast**: Async repository scanning, virtual list rendering
 - 🎨 **Themed**: Dark and light theme support
+- 📁 **Directory Discovery**: Shows all directories in the configured main directory, with git repositories displaying branch information and non-git directories showing "Not a git repo"
 
 ## Installation
 

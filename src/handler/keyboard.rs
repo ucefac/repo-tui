@@ -493,6 +493,7 @@ mod tests {
             last_modified: None,
             is_dirty: false,
             branch: Some("main".to_string()),
+            is_git_repo: true,
         }];
         app.filtered_indices = vec![0];
         app.set_selected_index(Some(0));

@@ -15,6 +15,7 @@ fn test_repository_display_format() {
         last_modified: None,
         is_dirty: false,
         branch: Some("main".to_string()),
+        is_git_repo: true,
     };
     assert_eq!(repo.name, "test-repo");
     assert_eq!(repo.branch, Some("main".to_string()));
@@ -29,6 +30,7 @@ fn test_repository_sorting() {
             last_modified: None,
             is_dirty: false,
             branch: None,
+            is_git_repo: false,
         },
         Repository {
             name: "alpha".to_string(),
@@ -36,6 +38,7 @@ fn test_repository_sorting() {
             last_modified: None,
             is_dirty: false,
             branch: None,
+            is_git_repo: true,
         },
     ];
     repos.sort_by(|a, b| a.name.cmp(&b.name));
@@ -51,6 +54,7 @@ fn test_repo_list_respects_area_width() {
         last_modified: None,
         is_dirty: true,
         branch: Some("main".to_string()),
+        is_git_repo: true,
     }];
     let filtered: Vec<usize> = vec![0];
     let theme = Theme::dark();
@@ -99,6 +103,7 @@ fn test_repo_list_with_git_status_enabled() {
             last_modified: None,
             is_dirty: true,
             branch: Some("main".to_string()),
+            is_git_repo: true,
         },
         Repository {
             name: "clean-repo".to_string(),
@@ -106,6 +111,7 @@ fn test_repo_list_with_git_status_enabled() {
             last_modified: None,
             is_dirty: false,
             branch: Some("feature".to_string()),
+            is_git_repo: true,
         },
     ];
     let filtered: Vec<usize> = vec![0, 1];
