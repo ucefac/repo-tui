@@ -25,6 +25,28 @@
 - ✅ `test_validate_directory_empty_path` - 验证空路径被拒绝
 - ✅ 所有 87 个单元测试通过
 
+### 编译错误：19 个类型不匹配
+
+**状态**: ✅ 已修复
+
+**错误类型**: `mismatched types`  
+**原因**: `ActionError` 需要包装为 `AppError::Action(...)`
+
+#### 修复模式
+
+```rust
+// ❌ 错误:
+return Err(ActionError::CommandNotFound("cmd".to_string()));
+
+// ✅ 正确:
+return Err(AppError::Action(ActionError::CommandNotFound("cmd".to_string())));
+```
+
+#### 修复文件
+- ✅ `src/action/validators.rs` - 8 处
+- ✅ `src/action/execute.rs` - 2 处
+- ✅ `src/ui/render.rs` - 9 处
+
 ---
 
 ## ✅ 编译错误已全部修复

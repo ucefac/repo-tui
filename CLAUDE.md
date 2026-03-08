@@ -6,14 +6,6 @@
 
 ---
 
-## 📋 项目状态
-
-**当前阶段**: Phase 0 - 安全基础 + 架构搭建  
-**完成度**: 100% ✅  
-**状态**: Phase 0 已完成，所有问题已修复
-
----
-
 ## 🗂️ 文档索引
 
 ### 需求文档
@@ -22,16 +14,6 @@
 |------|------|------|
 | [ghclone-prd-v2.md](docs/ghclone-prd-v2.md) | **当前版本** - 基于审查反馈的完整 PRD | 项目根目录 |
 | [ghclone-prd-v1.md](docs/ghclone-prd-v1.md) | 初始版本 - 已审查 | 项目根目录 |
-
-**PRD v2 审查状态**: ✅ 通过 (84/100)
-
-审查要点：
-- ✅ 安全性修复：命令注入、路径遍历漏洞已修复
-- ✅ 架构完整性：Elm 架构五要素完整
-- ✅ 测试策略：测试金字塔 + 跨平台矩阵
-- ⚠️ 遗留问题：7 项 (实现细节层面)
-
-详细审查报告见：[docs/PHASE0_COMPLETE.md](./docs/PHASE0_COMPLETE.md)
 
 
 ### 开发文档
@@ -124,74 +106,29 @@ repotui/
 
 ---
 
-## ✅ 已修复问题
+## 📋 文件规范
 
-### 配置空路径验证 Bug (✅ 已修复)
+**CLAUDE.md 定位**: 开发规范与指南
 
-**问题描述**: 当配置文件中 `main_directory = ""` 为空字符串时，程序运行时崩溃。
+**允许内容**:
+- 架构设计与规范
+- 编码标准与最佳实践
+- 项目结构与模块说明
+- 安全设计原则
+- 测试策略
+- 依赖管理说明
 
-**修复状态**: ✅ 已完成
+**禁止内容**:
+- 具体任务描述
+- 已修复问题记录
+- 临时修复脚本
+- 待办事项列表
+- 进度统计
 
-**修复内容**:
-1. `src/config/validators.rs:31-37` - 添加空路径检查（在 `absolutize()` 之前）
-2. `src/app/update.rs:109-119` - 所有配置错误触发目录选择器
-3. `src/config/load.rs:66-68` - 加载时检查空路径并返回错误
-
-**测试覆盖**:
-- `test_validate_directory_empty_path` - 验证空路径被拒绝
-- 所有 87 个单元测试通过
-
-### 编译错误 (✅ 已修复)
-
-**修复状态**: ✅ 所有 19 处类型不匹配错误已修复
-
-**修复方式**: 将 `ActionError` 正确包装为 `AppError::Action(...)`
-Failed to scan directory: Failed to read directory : No such file or directory (os error 2)
-```
-
-**根因分析**:
-1. 验证阶段：`absolutize()` 将空字符串转为当前目录，验证通过
-2. 使用阶段：原始空字符串传给 `read_dir(""`)，失败
-3. **验证逻辑与实际使用不一致**
-
-**修复方案**: 见 [docs/BUGFIX_EMPTY_PATH.md](./docs/BUGFIX_EMPTY_PATH.md)
-
-**涉及文件**:
-- `src/config/validators.rs` - 添加空路径检查
-- `src/app/update.rs` - 优化错误处理
-
-### 编译错误: 19 个
-
-**错误类型**: `mismatched types`  
-**原因**: `ActionError` 需要包装为 `AppError::Action(...)`
-
-### 修复模式
-
-```rust
-// ❌ 错误:
-return Err(ActionError::CommandNotFound("cmd".to_string()));
-
-// ✅ 正确:
-return Err(AppError::Action(ActionError::CommandNotFound("cmd".to_string())));
-```
-
-### 待修复文件
-
-1. `src/action/validators.rs` - 8 处
-2. `src/action/execute.rs` - 2 处
-3. `src/ui/render.rs` - 9 处
-
-### 快速修复脚本
-
-```bash
-# action/validators.rs
-sed -i '' 's/return Err(ActionError::/return Err(AppError::Action(ActionError::/g' src/action/validators.rs
-# 注意：需要手动添加闭合括号
-
-# 或者手动修复（推荐）
-# 在每个 Err(ActionError:: 前添加 AppError::Action(
-# 在行末添加 ))
-```
+**相关内容应移至**:
+- 修复记录 → `docs/FIX_PROGRESS.md`
+- 详细 Bug 分析 → `docs/BUGFIX_*.md`
+- 任务计划 → `docs/DEVELOPMENT_GUIDE.md`
 
 ---
 
@@ -302,11 +239,12 @@ ActionMenu (5) > Help (4) > ChoosingDir (3) > Searching (2) > Running (1)
 
 ### 键盘交互规范
 
-| 按键 | 用途 | 说明 |
-|------|------|------|
-| `↑/↓` | 上下移动/滚动 | 通用导航键，支持**循环滚动** |
-| `Esc` | 返回/关闭 | 关闭弹窗、退出搜索焦点 |
-| `Enter` | 确认/执行 | 打开菜单、执行操作 |
+| 按键       | 用途      | 说明               |
+|----------|---------|------------------|
+| `↑/↓`    | 上下移动/滚动 | 通用导航键，支持**循环滚动** |
+| `Ctrl+c` | 退出      | 关闭程序             |
+| `Esc`    | 返回/关闭   | 关闭弹窗、退出搜索焦点      |
+| `Enter`  | 确认/执行   | 打开菜单、执行操作        |
 
 **循环滚动**: 从底部继续向下回到顶部，从顶部继续向上回到底部。
 
