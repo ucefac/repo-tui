@@ -174,7 +174,7 @@
 | 主目录1 | `primary` | 第一个主目录 |
 | 主目录2 | `secondary` | 第二个主目录 |
 | 主目录3 | `success` | 第三个主目录 |
-| 主目录4+ | `warning` / `error` | 循环使用 |
+| 主目录4+ | `primary` (dim) / `secondary` (dim) / `success` (dim) | 循环使用降亮度版本 |
 
 ---
 
@@ -255,9 +255,9 @@
 | 按键 | 功能 | 说明 |
 |------|------|------|
 | `↑/↓` | 上/下移动 | **循环滚动**，在列表顶部按上键跳到底部 |
-| `Space` | 添加主目录 | 打开目录选择器（模式A） |
+| `a` | 添加主目录 | 打开目录选择器（模式A） |
 | `d` | 移除主目录 | 显示确认提示 |
-| `→` / `Enter` | 切换到该目录 | 切换当前主目录并返回仓库列表 |
+| `Enter` | 打开操作菜单 | 显示移除/编辑选项 |
 | `Esc` | 返回 | 返回仓库列表 |
 
 #### 目录选择器（通用）
@@ -323,11 +323,11 @@
 ```
 仓库列表
     │
-    │ 按 `o`（open single）
+    │ 按 `a`（添加单个仓库）
     ▼
 目录选择器（模式B：选择 Git 仓库）
     │
-    │ 导航到目标仓库 + Space
+    │ 导航到目标仓库 + Enter
     ▼
 打开操作菜单（针对该仓库）
     │
@@ -527,6 +527,8 @@ pub enum AppState {
 ShowingActions (5) > ShowingHelp (4) > ManagingMainDirs (3) > 
 ChoosingDir (3) > SelectingTheme (3) > Running (1)
 ```
+
+**互斥规则**: `ManagingMainDirs` 和 `ChoosingDir` 不能同时存在。从 `ManagingMainDirs` 进入 `ChoosingDir` 时，前者进入后台状态，按 Esc 返回时恢复。
 
 ---
 
