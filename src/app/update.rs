@@ -5,6 +5,7 @@ use crate::app::msg::AppMsg;
 use crate::app::state::{AppState, ViewMode};
 use crate::config;
 use crate::constants;
+use crate::error::ConfigError;
 use crate::repo::Repository;
 use crate::runtime::executor::Runtime;
 use crate::ui::Theme;
@@ -173,7 +174,10 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                     }
                 }
                 Err(e) => {
-                    app.error_message = Some(e.user_message());
+                    // 首次运行时配置文件不存在是正常流程，不显示错误消息
+                    if !matches!(e, ConfigError::NotFound(_)) {
+                        app.error_message = Some(e.user_message());
+                    }
 
                     // All configuration errors trigger directory chooser
                     app.state = AppState::ChoosingDir {
