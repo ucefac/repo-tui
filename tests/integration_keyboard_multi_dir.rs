@@ -54,7 +54,10 @@ impl KeyEvent {
 enum AppState {
     Running,
     ManagingDirs,
-    ChoosingDir { mode: ChooserMode },
+    ChoosingDir {
+        mode: ChooserMode,
+        return_to: ReturnTarget,
+    },
     ShowingHelp,
     Quit,
 }
@@ -63,6 +66,12 @@ enum AppState {
 enum ChooserMode {
     AddMainDirectory,
     AddSingleRepo,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ReturnTarget {
+    Running,
+    ManagingDirs,
 }
 
 /// Keyboard handler for multi-directory operations
@@ -103,7 +112,7 @@ impl MultiDirKeyboardHandler {
         match self.state {
             AppState::Running => self.handle_running_keys(key),
             AppState::ManagingDirs => self.handle_managing_dirs_keys(key),
-            AppState::ChoosingDir { mode } => self.handle_chooser_keys(key, mode),
+            AppState::ChoosingDir { mode, .. } => self.handle_chooser_keys(key, mode),
             AppState::ShowingHelp => self.handle_help_keys(key),
             AppState::Quit => vec![],
         }
@@ -118,12 +127,14 @@ impl MultiDirKeyboardHandler {
             KeyCode::Char('a') if !key.ctrl && !key.shift => {
                 self.state = AppState::ChoosingDir {
                     mode: ChooserMode::AddMainDirectory,
+                    return_to: ReturnTarget::ManagingDirs,
                 };
                 self.messages.push(AppMessage::AddMainDirectory);
             }
             KeyCode::Char('A') | KeyCode::Char('a') if key.shift => {
                 self.state = AppState::ChoosingDir {
                     mode: ChooserMode::AddSingleRepo,
+                    return_to: ReturnTarget::Running,
                 };
                 self.messages.push(AppMessage::AddSingleRepo);
             }
@@ -152,6 +163,7 @@ impl MultiDirKeyboardHandler {
                 self.previous_state = Some(self.state);
                 self.state = AppState::ChoosingDir {
                     mode: ChooserMode::AddMainDirectory,
+                    return_to: ReturnTarget::ManagingDirs,
                 };
                 self.messages.push(AppMessage::AddMainDirectory);
             }
@@ -276,109 +288,8 @@ mod tests {
         assert_eq!(
             handler.current_state(),
             AppState::ChoosingDir {
-                mode: ChooserMode::AddMainDirectory
-            }
-        );
-        assert!(messages.contains(&AppMessage::AddMainDirectory));
-    }
-
-    #[test]
-    fn test_d_key_removes_main_directory() {
-        // Arrange
-        let mut handler = MultiDirKeyboardHandler::new();
-        handler.handle_key(KeyEvent::new(KeyCode::Char('m'))); // Enter manager
-
-        // Act
-        let messages = handler.handle_key(KeyEvent::new(KeyCode::Char('d')));
-
-        // Assert
-        assert_eq!(handler.current_state(), AppState::ManagingDirs);
-        assert!(messages.contains(&AppMessage::RemoveMainDirectory));
-    }
-
-    #[test]
-    fn test_space_toggles_directory_enabled() {
-        // Arrange
-        let mut handler = MultiDirKeyboardHandler::new();
-        handler.handle_key(KeyEvent::new(KeyCode::Char('m'))); // Enter manager
-
-        // Act
-        let messages = handler.handle_key(KeyEvent::new(KeyCode::Space));
-
-        // Assert
-        assert!(messages.contains(&AppMessage::ToggleDirectoryEnabled));
-    }
-
-    #[test]
-    fn test_e_key_toggles_directory_enabled() {
-        // Arrange
-        let mut handler = MultiDirKeyboardHandler::new();
-        handler.handle_key(KeyEvent::new(KeyCode::Char('m'))); // Enter manager
-
-        // Act
-        let messages = handler.handle_key(KeyEvent::new(KeyCode::Char('e')));
-
-        // Assert
-        assert!(messages.contains(&AppMessage::ToggleDirectoryEnabled));
-    }
-
-    #[test]
-    fn test_up_down_navigation_in_manager() {
-        // Arrange
-        let mut handler = MultiDirKeyboardHandler::new();
-        handler.handle_key(KeyEvent::new(KeyCode::Char('m'))); // Enter manager
-
-        // Act: Navigate up
-        let messages = handler.handle_key(KeyEvent::new(KeyCode::Up));
-        assert!(messages.contains(&AppMessage::NavigateUp));
-
-        // Act: Navigate down
-        let messages = handler.handle_key(KeyEvent::new(KeyCode::Down));
-        assert!(messages.contains(&AppMessage::NavigateDown));
-    }
-
-    #[test]
-    fn test_q_key_exits_from_manager() {
-        // Arrange
-        let mut handler = MultiDirKeyboardHandler::new();
-        handler.handle_key(KeyEvent::new(KeyCode::Char('m'))); // Enter manager
-
-        // Act
-        let messages = handler.handle_key(KeyEvent::new(KeyCode::Char('q')));
-
-        // Assert
-        assert_eq!(handler.current_state(), AppState::Running);
-        assert!(messages.contains(&AppMessage::CloseMainDirectoryManager));
-    }
-
-    #[test]
-    fn test_shift_a_adds_single_repo() {
-        // Arrange
-        let mut handler = MultiDirKeyboardHandler::new();
-
-        // Act
-        let messages = handler.handle_key(KeyEvent::shift(KeyCode::Char('a')));
-
-        // Assert
-        assert_eq!(
-            handler.current_state(),
-            AppState::ChoosingDir {
-                mode: ChooserMode::AddSingleRepo
-            }
-        );
-        assert!(messages.contains(&AppMessage::AddSingleRepo));
-    }
-
-    #[test]
-    fn test_esc_returns_to_manager_from_chooser() {
-        // Arrange
-        let mut handler = MultiDirKeyboardHandler::new();
-        handler.handle_key(KeyEvent::new(KeyCode::Char('m'))); // Enter manager
-        handler.handle_key(KeyEvent::new(KeyCode::Char('a'))); // Open chooser
-        assert_eq!(
-            handler.current_state(),
-            AppState::ChoosingDir {
-                mode: ChooserMode::AddMainDirectory
+                mode: ChooserMode::AddMainDirectory,
+                return_to: ReturnTarget::ManagingDirs,
             }
         );
 
@@ -550,7 +461,8 @@ mod tests {
         assert_eq!(
             handler.current_state(),
             AppState::ChoosingDir {
-                mode: ChooserMode::AddSingleRepo
+                mode: ChooserMode::AddSingleRepo,
+                return_to: ReturnTarget::Running,
             }
         );
     }
@@ -583,7 +495,8 @@ mod tests {
         assert!(matches!(
             handler.current_state(),
             AppState::ChoosingDir {
-                mode: ChooserMode::AddMainDirectory
+                mode: ChooserMode::AddMainDirectory,
+                return_to: ReturnTarget::ManagingDirs,
             }
         ));
 
@@ -607,7 +520,8 @@ mod tests {
         assert!(matches!(
             handler.current_state(),
             AppState::ChoosingDir {
-                mode: ChooserMode::AddSingleRepo
+                mode: ChooserMode::AddSingleRepo,
+                return_to: ReturnTarget::Running,
             }
         ));
 

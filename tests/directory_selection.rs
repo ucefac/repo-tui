@@ -1,6 +1,6 @@
 //! Directory selection integration tests
 
-use repotui::app::state::{AppState, DirectoryChooserMode};
+use repotui::app::state::{AppState, DirectoryChooserMode, ReturnTarget};
 
 #[test]
 fn test_directory_selection_state() {
@@ -10,6 +10,7 @@ fn test_directory_selection_state() {
         selected_index: 0,
         scroll_offset: 0,
         mode: DirectoryChooserMode::default(),
+        return_to: ReturnTarget::Running,
     };
     assert!(matches!(state, AppState::ChoosingDir { .. }));
 }

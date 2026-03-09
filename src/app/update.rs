@@ -162,6 +162,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                             selected_index: 0,
                             scroll_offset: 0,
                             mode: crate::app::state::DirectoryChooserMode::default(),
+                            return_to: crate::app::state::ReturnTarget::Running,
                         };
                         runtime.dispatch(crate::app::msg::Cmd::ScanDirectory(
                             dirs::home_dir().unwrap_or_default(),
@@ -178,6 +179,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                         selected_index: 0,
                         scroll_offset: 0,
                         mode: crate::app::state::DirectoryChooserMode::default(),
+                        return_to: crate::app::state::ReturnTarget::Running,
                     };
                     runtime.dispatch(crate::app::msg::Cmd::ScanDirectory(
                         dirs::home_dir().unwrap_or_default(),
@@ -289,6 +291,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                     allow_multiple: false,
                     edit_mode: false,
                 },
+                return_to: crate::app::state::ReturnTarget::Running,
             };
             runtime.dispatch(crate::app::msg::Cmd::ScanDirectory(
                 dirs::home_dir().unwrap_or_default(),
@@ -303,14 +306,20 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
 
             let path_buf = PathBuf::from(&path);
 
-            // Get current chooser mode
-            let mode = if let AppState::ChoosingDir { mode, .. } = &app.state {
-                mode.clone()
+            // Get current chooser mode and return target
+            let (mode, return_to) = if let AppState::ChoosingDir {
+                mode, return_to, ..
+            } = &app.state
+            {
+                (mode.clone(), return_to.clone())
             } else {
-                crate::app::state::DirectoryChooserMode::SelectMainDirectory {
-                    allow_multiple: false,
-                    edit_mode: false,
-                }
+                (
+                    crate::app::state::DirectoryChooserMode::SelectMainDirectory {
+                        allow_multiple: false,
+                        edit_mode: false,
+                    },
+                    crate::app::state::ReturnTarget::Running,
+                )
             };
 
             match mode {
@@ -369,7 +378,22 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                             }
                         }
                     }
-                    app.state = AppState::Running;
+                    // Return to appropriate state based on return_to
+                    match return_to {
+                        crate::app::state::ReturnTarget::ManagingDirs => {
+                            // Re-initialize ManagingDirs state
+                            let mut list_state = ratatui::widgets::ListState::default();
+                            list_state.select(Some(0));
+                            app.state = AppState::ManagingDirs {
+                                list_state,
+                                selected_dir_index: 0,
+                                editing: None,
+                            };
+                        }
+                        crate::app::state::ReturnTarget::Running => {
+                            app.state = AppState::Running;
+                        }
+                    }
                 }
             }
         }
@@ -402,6 +426,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 selected_index,
                 scroll_offset,
                 mode: _,
+                return_to: _,
             } = &mut app.state
             {
                 if !entries.is_empty() {
@@ -422,6 +447,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 selected_index,
                 scroll_offset,
                 mode: _,
+                return_to: _,
             } = &mut app.state
             {
                 if !entries.is_empty() {
@@ -887,6 +913,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 selected_index: 0,
                 scroll_offset: 0,
                 mode: crate::app::state::DirectoryChooserMode::AddSingleRepository,
+                return_to: crate::app::state::ReturnTarget::Running,
             };
             runtime.dispatch(crate::app::msg::Cmd::ScanDirectory(
                 dirs::home_dir().unwrap_or_default(),
@@ -919,12 +946,21 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
 
         // === Directory Chooser Enhanced ===
         AppMsg::ShowDirectoryChooserWithMode(mode) => {
+            // Determine return target based on mode
+            let return_to = match &mode {
+                crate::app::state::DirectoryChooserMode::SelectMainDirectory { .. } => {
+                    crate::app::state::ReturnTarget::ManagingDirs
+                }
+                _ => crate::app::state::ReturnTarget::Running,
+            };
+
             app.state = AppState::ChoosingDir {
                 path: dirs::home_dir().unwrap_or_default(),
                 entries: Vec::new(),
                 selected_index: 0,
                 scroll_offset: 0,
                 mode,
+                return_to,
             };
             runtime.dispatch(crate::app::msg::Cmd::ScanDirectory(
                 dirs::home_dir().unwrap_or_default(),
@@ -966,6 +1002,7 @@ mod tests {
             selected_index: 0,
             scroll_offset: 0,
             mode: crate::app::state::DirectoryChooserMode::default(),
+            return_to: crate::app::state::ReturnTarget::Running,
         };
 
         update(AppMsg::DirectoryNavDown, &mut app, &runtime);
@@ -989,6 +1026,7 @@ mod tests {
             selected_index: 2,
             scroll_offset: 0,
             mode: crate::app::state::DirectoryChooserMode::default(),
+            return_to: crate::app::state::ReturnTarget::Running,
         };
 
         update(AppMsg::DirectoryNavDown, &mut app, &runtime);
@@ -1012,6 +1050,7 @@ mod tests {
             selected_index: 2,
             scroll_offset: 0,
             mode: crate::app::state::DirectoryChooserMode::default(),
+            return_to: crate::app::state::ReturnTarget::Running,
         };
 
         update(AppMsg::DirectoryNavUp, &mut app, &runtime);
@@ -1035,6 +1074,7 @@ mod tests {
             selected_index: 0,
             scroll_offset: 0,
             mode: crate::app::state::DirectoryChooserMode::default(),
+            return_to: crate::app::state::ReturnTarget::Running,
         };
 
         update(AppMsg::DirectoryNavUp, &mut app, &runtime);
@@ -1521,6 +1561,7 @@ mod tests {
                 allow_multiple: false,
                 edit_mode: false,
             },
+            return_to: crate::app::state::ReturnTarget::Running,
         };
 
         // Send DirectorySelected message
@@ -1569,6 +1610,7 @@ mod tests {
                 allow_multiple: false,
                 edit_mode: false,
             },
+            return_to: crate::app::state::ReturnTarget::Running,
         };
 
         // Send DirectorySelected message

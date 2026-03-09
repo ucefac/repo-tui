@@ -268,7 +268,10 @@ fn handle_directory_back(
     runtime: &Runtime,
     mode: crate::app::state::DirectoryChooserMode,
 ) {
-    if let AppState::ChoosingDir { path, .. } = &app.state {
+    if let AppState::ChoosingDir {
+        path, return_to, ..
+    } = &app.state
+    {
         if let Some(parent) = path.parent() {
             let parent_path = parent.to_path_buf();
 
@@ -282,6 +285,7 @@ fn handle_directory_back(
                 selected_index: 0,
                 scroll_offset: 0,
                 mode,
+                return_to: return_to.clone(),
             };
         }
     }
@@ -297,6 +301,7 @@ fn handle_directory_enter(
         path,
         entries,
         selected_index,
+        return_to,
         ..
     } = &app.state
     {
@@ -314,6 +319,7 @@ fn handle_directory_enter(
                 selected_index: 0,
                 scroll_offset: 0,
                 mode,
+                return_to: return_to.clone(),
             };
         }
     }
@@ -397,9 +403,9 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
             let _ = app.msg_tx.try_send(AppMsg::OpenThemeSelector);
         }
 
-        // Change main directory
+        // Change main directory - open main directory manager
         KeyCode::Char('m') => {
-            let _ = app.msg_tx.try_send(AppMsg::ShowDirectoryChooser);
+            let _ = app.msg_tx.try_send(AppMsg::ShowMainDirectoryManager);
         }
 
         // Actions
@@ -464,25 +470,18 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
 }
 
 // Main directory management functions
-fn handle_main_dir_manager_keys(key: KeyEvent, app: &mut App, runtime: &Runtime) {
+fn handle_main_dir_manager_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
     match key.code {
         KeyCode::Esc | KeyCode::Char('q') => {
             let _ = app.msg_tx.try_send(AppMsg::CloseMainDirectoryManager);
         }
         KeyCode::Char('a') => {
-            // Add new main directory - open chooser
-            app.state = AppState::ChoosingDir {
-                path: dirs::home_dir().unwrap_or_default(),
-                entries: Vec::new(),
-                selected_index: 0,
-                scroll_offset: 0,
-                mode: crate::app::state::DirectoryChooserMode::SelectMainDirectory {
+            // Add new main directory - open chooser via message system
+            let _ = app.msg_tx.try_send(AppMsg::ShowDirectoryChooserWithMode(
+                crate::app::state::DirectoryChooserMode::SelectMainDirectory {
                     allow_multiple: false,
                     edit_mode: false,
                 },
-            };
-            runtime.dispatch(crate::app::msg::Cmd::ScanDirectory(
-                dirs::home_dir().unwrap_or_default(),
             ));
         }
         KeyCode::Char('d') => {
@@ -697,6 +696,7 @@ mod tests {
             selected_index: 0,
             scroll_offset: 0,
             mode: DirectoryChooserMode::default(),
+            return_to: crate::app::state::ReturnTarget::Running,
         };
 
         // Test navigation
@@ -748,6 +748,7 @@ mod tests {
             selected_index: 0,
             scroll_offset: 0,
             mode: DirectoryChooserMode::default(),
+            return_to: crate::app::state::ReturnTarget::Running,
         };
 
         // Test ←/→ navigation

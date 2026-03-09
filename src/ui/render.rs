@@ -44,6 +44,7 @@ pub fn render(frame: &mut Frame, app: &mut App) {
             selected_index,
             scroll_offset,
             ref mode,
+            return_to: _,
         } => {
             render_directory_chooser(
                 frame,

@@ -27,6 +27,21 @@ impl Default for DirectoryChooserMode {
     }
 }
 
+/// Return target for directory chooser
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ReturnTarget {
+    /// Return to running state (main repo list)
+    Running,
+    /// Return to main directory manager
+    ManagingDirs,
+}
+
+impl Default for ReturnTarget {
+    fn default() -> Self {
+        ReturnTarget::Running
+    }
+}
+
 /// Application state
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AppState {
@@ -49,6 +64,9 @@ pub enum AppState {
 
         /// Chooser mode
         mode: DirectoryChooserMode,
+
+        /// Return to state after selection
+        return_to: ReturnTarget,
     },
 
     /// Managing main directories

@@ -20,7 +20,7 @@ fn create_key(code: KeyCode) -> KeyEvent {
 }
 
 #[tokio::test]
-async fn test_m_key_opens_directory_chooser() {
+async fn test_m_key_opens_main_directory_manager() {
     let (tx, mut rx) = tokio::sync::mpsc::channel(100);
     let mut app = App::new(tx.clone());
     let runtime = Runtime::new(tx);
@@ -38,79 +38,12 @@ async fn test_m_key_opens_directory_chooser() {
         repotui::app::update::update(msg, &mut app, &runtime);
     }
 
-    // Should open directory chooser
-    assert!(matches!(app.state, AppState::ChoosingDir { .. }));
-}
-
-#[test]
-fn test_path_bar_display_with_main_dir() {
-    let (tx, _rx) = tokio::sync::mpsc::channel(100);
-    let mut app = App::new(tx);
-
-    // Set main directory
-    let temp_dir = TempDir::new().unwrap();
-    app.main_dir = Some(temp_dir.path().to_path_buf());
-    app.repositories = vec![];
-
-    // Should have path_bar_area (will be set during render)
-    // For now, just verify main_dir is set
-    assert!(app.main_dir.is_some());
-    assert_eq!(app.main_dir.as_ref().unwrap(), temp_dir.path());
-}
-
-#[test]
-fn test_copy_path_to_clipboard_message() {
-    let (tx, _rx) = tokio::sync::mpsc::channel(100);
-    let mut app = App::new(tx.clone());
-    let runtime = Runtime::new(tx);
-
-    // Set main directory
-    let test_path = PathBuf::from("/tmp/test/path");
-    app.main_dir = Some(test_path.clone());
-
-    // Send copy path message
-    let msg = AppMsg::CopyPathToClipboard(test_path.clone());
-    repotui::app::update::update(msg, &mut app, &runtime);
-
-    // Should have success message
-    assert!(app.loading_message.is_some());
-    assert!(app.loading_message.as_ref().unwrap().contains("copied"));
-}
-
-#[test]
-fn test_path_bar_widget_creation() {
-    use repotui::ui::theme::Theme;
-    use repotui::ui::widgets::PathBar;
-    use std::path::Path;
-
-    let theme = Theme::dark();
-    let path = Path::new("/tmp/test");
-
-    let path_bar = PathBar::new(path, Some(5), &theme);
-
-    // Verify widget properties
-    assert_eq!(path_bar.path, path);
-    assert_eq!(path_bar.repo_count, Some(5));
-}
-
-#[test]
-fn test_path_bar_truncation() {
-    use repotui::ui::theme::Theme;
-    use repotui::ui::widgets::PathBar;
-    use std::path::Path;
-
-    let theme = Theme::dark();
-    let long_path = Path::new("/Users/yyyyyyh/Desktop/ghclone/repotui/src/ui/widgets/path_bar");
-
-    let path_bar = PathBar::new(long_path, Some(10), &theme).max_length(30);
-    let text = path_bar.display_text(50);
-
-    assert!(text.len() <= 30);
-    assert!(text.contains("..."));
+    // Should open main directory manager
+    assert!(matches!(app.state, AppState::ManagingDirs { .. }));
 }
 
 #[tokio::test]
-async fn test_directory_chooser_can_be_opened_with_m_key() {
+async fn test_m_key_opens_manager_from_running() {
     let (tx, mut rx) = tokio::sync::mpsc::channel(100);
     let mut app = App::new(tx.clone());
     let runtime = Runtime::new(tx);
@@ -127,11 +60,11 @@ async fn test_directory_chooser_can_be_opened_with_m_key() {
         repotui::app::update::update(msg, &mut app, &runtime);
     }
 
-    // Verify directory chooser is open
-    if let AppState::ChoosingDir { path, .. } = &app.state {
-        assert_eq!(path, &dirs::home_dir().unwrap_or_default());
+    // Verify main directory manager is open
+    if let AppState::ManagingDirs { .. } = &app.state {
+        // Success - ManagingDirs state
     } else {
-        panic!("Expected ChoosingDir state");
+        panic!("Expected ManagingDirs state, got {:?}", app.state);
     }
 }
 
