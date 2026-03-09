@@ -242,6 +242,9 @@ pub enum AppMsg {
 
     /// Directories selected (multi-select)
     DirectoriesSelected(Vec<String>),
+
+    /// Cancel directory chooser and return
+    CancelDirectoryChooser,
 }
 
 impl AppMsg {

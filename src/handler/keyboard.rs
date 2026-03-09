@@ -201,7 +201,8 @@ fn handle_chooser_keys(
 ) {
     match key.code {
         KeyCode::Esc => {
-            let _ = app.msg_tx.try_send(AppMsg::Quit);
+            // Cancel directory chooser and return to previous state
+            let _ = app.msg_tx.try_send(AppMsg::CancelDirectoryChooser);
         }
         KeyCode::Left => {
             // Go to parent directory

@@ -980,6 +980,32 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
             runtime.dispatch(crate::app::msg::Cmd::LoadConfig);
             app.state = AppState::Running;
         }
+
+        AppMsg::CancelDirectoryChooser => {
+            // Get current return target
+            let return_to = if let AppState::ChoosingDir { return_to, .. } = &app.state {
+                return_to.clone()
+            } else {
+                crate::app::state::ReturnTarget::Running
+            };
+
+            // Return to appropriate state based on return_to
+            match return_to {
+                crate::app::state::ReturnTarget::ManagingDirs => {
+                    // Re-initialize ManagingDirs state
+                    let mut list_state = ratatui::widgets::ListState::default();
+                    list_state.select(Some(0));
+                    app.state = AppState::ManagingDirs {
+                        list_state,
+                        selected_dir_index: 0,
+                        editing: None,
+                    };
+                }
+                crate::app::state::ReturnTarget::Running => {
+                    app.state = AppState::Running;
+                }
+            }
+        }
     }
 }
 
