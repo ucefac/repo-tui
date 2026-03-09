@@ -111,15 +111,21 @@ impl Runtime {
                     let result = tokio::task::spawn_blocking(move || {
                         std::fs::read_dir(&path)
                             .map(|entries| {
-                                entries
+                                let mut entries: Vec<_> = entries
                                     .filter_map(|e| {
                                         e.ok().and_then(|entry| {
-                                            entry.path().is_dir().then(|| {
-                                                entry.file_name().to_string_lossy().to_string()
-                                            })
+                                            let file_name = entry.file_name();
+                                            let name = file_name.to_string_lossy();
+                                            // Filter hidden folders (starting with ".")
+                                            (entry.path().is_dir()
+                                                && !name.starts_with('.'))
+                                                .then(|| name.to_string())
                                         })
                                     })
-                                    .collect::<Vec<_>>()
+                                    .collect();
+                                // Sort directory entries alphabetically
+                                entries.sort();
+                                entries
                             })
                             .map_err(|e| RepoError::ScanFailed(e.to_string()))
                     })
