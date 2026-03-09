@@ -947,7 +947,7 @@ mod tests {
     use super::*;
     use crate::app::msg::AppMsg;
     use crate::app::state::AppState;
-    use crate::repo::Repository;
+    use crate::repo::{RepoSource, Repository};
 
     #[test]
     fn test_directory_nav_down() {
@@ -1180,6 +1180,7 @@ mod tests {
             is_dirty: false,
             branch: Some("main".to_string()),
             is_git_repo: true,
+                source: RepoSource::Standalone,
         }];
         app.apply_filter();
 
@@ -1203,6 +1204,7 @@ mod tests {
             is_dirty: false,
             branch: Some("main".to_string()),
             is_git_repo: true,
+                source: RepoSource::Standalone,
         }];
         app.apply_filter();
         app.set_selected_index(Some(0));
@@ -1249,6 +1251,7 @@ mod tests {
                 is_dirty: false,
                 branch: None,
                 is_git_repo: true,
+                source: RepoSource::Standalone,
             },
         };
         app.selected_repo = Some(Repository {
@@ -1258,6 +1261,7 @@ mod tests {
             is_dirty: false,
             branch: None,
             is_git_repo: true,
+                source: RepoSource::Standalone,
         });
 
         update(AppMsg::Cancel, &mut app, &runtime);
@@ -1405,6 +1409,7 @@ mod tests {
             is_dirty: false,
             branch: Some("main".to_string()),
             is_git_repo: true,
+                source: RepoSource::Standalone,
         }];
         app.filtered_indices = vec![0];
         app.set_selected_index(Some(0));
@@ -1436,6 +1441,7 @@ mod tests {
                 is_dirty: false,
                 branch: Some("main".to_string()),
                 is_git_repo: true,
+                source: RepoSource::Standalone,
             },
             Repository {
                 name: "repo2".to_string(),
@@ -1444,6 +1450,7 @@ mod tests {
                 is_dirty: false,
                 branch: Some("main".to_string()),
                 is_git_repo: true,
+                source: RepoSource::Standalone,
             },
         ];
         app.filtered_indices = vec![0, 1];
@@ -1479,6 +1486,7 @@ mod tests {
             is_dirty: false,
             branch: Some("main".to_string()),
             is_git_repo: true,
+                source: RepoSource::Standalone,
         }];
         app.filtered_indices = vec![0];
         app.set_selected_index(Some(0));

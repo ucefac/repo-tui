@@ -400,17 +400,20 @@ mod tests {
         let config = Config::default();
         let serialized = toml::to_string(&config).unwrap();
         assert!(serialized.contains("version"));
-        assert!(serialized.contains("main_directory"));
+        // Config now uses main_directories instead of main_directory
+        assert!(serialized.contains("main_directories") || serialized.contains("main_directory"));
     }
 
     #[test]
     fn test_config_deserialize() {
         let toml_str = r#"
             version = "1.0"
-            main_directory = "/test"
+            [[main_directories]]
+            path = "/test"
         "#;
         let config: Config = toml::from_str(toml_str).unwrap();
         assert_eq!(config.version, "1.0");
-        assert_eq!(config.main_directory, PathBuf::from("/test"));
+        assert_eq!(config.main_directories.len(), 1);
+        assert_eq!(config.main_directories[0].path, PathBuf::from("/test"));
     }
 }

@@ -348,7 +348,7 @@ mod tests {
                 is_dirty: false,
                 branch: Some("main".to_string()),
                 is_git_repo: true,
-                source: RepoSource::Standalone,
+                source: crate::repo::source::RepoSource::Standalone,
             },
             Repository {
                 name: "repo2".to_string(),
@@ -357,7 +357,7 @@ mod tests {
                 is_dirty: true,
                 branch: Some("feature".to_string()),
                 is_git_repo: true,
-                source: RepoSource::Standalone,
+                source: crate::repo::source::RepoSource::Standalone,
             },
         ]
     }
@@ -392,6 +392,7 @@ mod tests {
             is_dirty: true,
             branch: Some("main".to_string()),
             is_git_repo: true,
+            source: crate::repo::source::RepoSource::Standalone,
         };
 
         let theme = Theme::dark();
@@ -440,6 +441,7 @@ mod tests {
             is_dirty: true,
             branch: Some("main".to_string()),
             is_git_repo: true,
+            source: crate::repo::source::RepoSource::Standalone,
         };
 
         let theme = Theme::dark();
@@ -509,6 +511,7 @@ mod tests {
             is_dirty: true,
             branch: Some("main".to_string()),
             is_git_repo: true,
+            source: crate::repo::source::RepoSource::Standalone,
         };
 
         let theme = Theme::dark();
@@ -546,6 +549,7 @@ mod tests {
             is_dirty: true,
             branch: Some("main".to_string()),
             is_git_repo: true,
+            source: crate::repo::source::RepoSource::Standalone,
         };
 
         let theme = Theme::dark();
@@ -588,6 +592,7 @@ mod tests {
             is_dirty: true,
             branch: Some("main".to_string()),
             is_git_repo: true,
+            source: crate::repo::source::RepoSource::Standalone,
         };
 
         let theme = Theme::dark();
@@ -628,6 +633,7 @@ mod tests {
             is_dirty: false,
             branch: None,
             is_git_repo: false,
+            source: crate::repo::source::RepoSource::Standalone,
         };
 
         let theme = Theme::dark();

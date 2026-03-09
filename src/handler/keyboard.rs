@@ -563,6 +563,7 @@ fn handle_main_dir_edit_keys(key: KeyEvent, app: &mut App) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::app::state::DirectoryChooserMode;
     use crate::ui::Theme;
     use crossterm::event::KeyEventKind;
     use std::path::PathBuf;
@@ -605,7 +606,7 @@ mod tests {
         let runtime = Runtime::new(tx);
 
         // Add a mock repository
-        use crate::repo::Repository;
+        use crate::repo::{RepoSource, Repository};
         use std::path::PathBuf;
         app.repositories = vec![Repository {
             name: "test-repo".to_string(),
@@ -614,6 +615,7 @@ mod tests {
             is_dirty: false,
             branch: Some("main".to_string()),
             is_git_repo: true,
+            source: RepoSource::Standalone,
         }];
         app.filtered_indices = vec![0];
         app.set_selected_index(Some(0));
@@ -694,18 +696,44 @@ mod tests {
             entries: vec!["Documents".to_string(), "Projects".to_string()],
             selected_index: 0,
             scroll_offset: 0,
+            mode: DirectoryChooserMode::default(),
         };
 
         // Test navigation
-        handle_chooser_keys(create_test_key(KeyCode::Down), &mut app, &runtime);
-        handle_chooser_keys(create_test_key(KeyCode::Up), &mut app, &runtime);
+        handle_chooser_keys(
+            create_test_key(KeyCode::Down),
+            &mut app,
+            &runtime,
+            DirectoryChooserMode::default(),
+        );
+        handle_chooser_keys(
+            create_test_key(KeyCode::Up),
+            &mut app,
+            &runtime,
+            DirectoryChooserMode::default(),
+        );
 
         // Test home/end
-        handle_chooser_keys(create_test_key(KeyCode::Home), &mut app, &runtime);
-        handle_chooser_keys(create_test_key(KeyCode::End), &mut app, &runtime);
+        handle_chooser_keys(
+            create_test_key(KeyCode::Home),
+            &mut app,
+            &runtime,
+            DirectoryChooserMode::default(),
+        );
+        handle_chooser_keys(
+            create_test_key(KeyCode::End),
+            &mut app,
+            &runtime,
+            DirectoryChooserMode::default(),
+        );
 
         // Test quit
-        handle_chooser_keys(create_test_key(KeyCode::Esc), &mut app, &runtime);
+        handle_chooser_keys(
+            create_test_key(KeyCode::Esc),
+            &mut app,
+            &runtime,
+            DirectoryChooserMode::default(),
+        );
     }
 
     #[tokio::test(flavor = "multi_thread")]
@@ -719,12 +747,32 @@ mod tests {
             entries: vec!["dir1".to_string(), "dir2".to_string(), "dir3".to_string()],
             selected_index: 0,
             scroll_offset: 0,
+            mode: DirectoryChooserMode::default(),
         };
 
         // Test ←/→ navigation
-        handle_chooser_keys(create_test_key(KeyCode::Left), &mut app, &runtime);
-        handle_chooser_keys(create_test_key(KeyCode::Right), &mut app, &runtime);
-        handle_chooser_keys(create_test_key(KeyCode::Right), &mut app, &runtime);
+        let mode = crate::app::state::DirectoryChooserMode::SelectMainDirectory {
+            allow_multiple: false,
+            edit_mode: false,
+        };
+        handle_chooser_keys(
+            create_test_key(KeyCode::Left),
+            &mut app,
+            &runtime,
+            mode.clone(),
+        );
+        handle_chooser_keys(
+            create_test_key(KeyCode::Right),
+            &mut app,
+            &runtime,
+            mode.clone(),
+        );
+        handle_chooser_keys(
+            create_test_key(KeyCode::Right),
+            &mut app,
+            &runtime,
+            mode.clone(),
+        );
     }
 
     #[test]

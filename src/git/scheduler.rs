@@ -122,6 +122,7 @@ pub fn needs_status_check(path: &Path) -> bool {
 mod tests {
     use super::*;
     use crate::repo::GitStatus;
+    use crate::repo::RepoSource;
     use std::time::Duration;
     use tempfile::TempDir;
 
@@ -194,6 +195,7 @@ mod tests {
                         is_dirty: false,
                         branch: None,
                         is_git_repo: false,
+                        source: RepoSource::Standalone,
                     },
                 )
             })

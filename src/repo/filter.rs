@@ -92,6 +92,7 @@ mod tests {
                 is_dirty: false,
                 branch: Some("main".to_string()),
                 is_git_repo: true,
+                source: crate::repo::source::RepoSource::Standalone,
             },
             Repository {
                 name: "vercel/next.js".to_string(),
@@ -100,6 +101,7 @@ mod tests {
                 is_dirty: false,
                 branch: Some("main".to_string()),
                 is_git_repo: true,
+                source: crate::repo::source::RepoSource::Standalone,
             },
             Repository {
                 name: "microsoft/vscode".to_string(),
@@ -108,6 +110,7 @@ mod tests {
                 is_dirty: false,
                 branch: Some("main".to_string()),
                 is_git_repo: true,
+                source: crate::repo::source::RepoSource::Standalone,
             },
             Repository {
                 name: "rust-lang/rust".to_string(),
@@ -116,6 +119,7 @@ mod tests {
                 is_dirty: false,
                 branch: Some("main".to_string()),
                 is_git_repo: true,
+                source: crate::repo::source::RepoSource::Standalone,
             },
             Repository {
                 name: "nodejs/node".to_string(),
@@ -124,6 +128,7 @@ mod tests {
                 is_dirty: false,
                 branch: Some("main".to_string()),
                 is_git_repo: true,
+                source: crate::repo::source::RepoSource::Standalone,
             },
         ]
     }
@@ -245,6 +250,7 @@ mod tests {
                 is_dirty: false,
                 branch: Some("main".to_string()),
                 is_git_repo: true,
+                source: crate::repo::source::RepoSource::Standalone,
             },
             Repository {
                 name: "test/project".to_string(),
@@ -253,6 +259,7 @@ mod tests {
                 is_dirty: false,
                 branch: Some("main".to_string()),
                 is_git_repo: true,
+                source: crate::repo::source::RepoSource::Standalone,
             },
         ];
 

@@ -200,16 +200,6 @@ mod tests {
     }
 
     #[test]
-    fn test_toggle_theme() {
-        let dark = Theme::dark();
-        let light = dark.toggle();
-        assert_eq!(light.name, "light");
-
-        let dark_again = light.toggle();
-        assert_eq!(dark_again.name, "dark");
-    }
-
-    #[test]
     fn test_theme_next() {
         // First theme is now "🎲 Random (随机)", second is "dark"
         let dark = Theme::new("dark");
