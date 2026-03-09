@@ -4,9 +4,8 @@ use crate::app::model::App;
 use crate::app::state::AppState;
 use crate::ui::theme::Theme;
 use crate::ui::widgets::{
-    centered_help_popup, centered_popup, centered_rect, main_dir_centered_rect, ActionMenu,
-    DirectoryChooser, DirectoryChooserState, HelpPanel, MainDirManager, RepoList, SearchBox,
-    ThemeSelector, TitleBar,
+    centered_help_popup, centered_popup, centered_rect, ActionMenu, DirectoryChooser,
+    DirectoryChooserState, HelpPanel, MainDirManager, RepoList, SearchBox, ThemeSelector, TitleBar,
 };
 use ratatui::prelude::*;
 use ratatui::widgets::{Clear, Paragraph};
@@ -259,10 +258,9 @@ fn render_directory_chooser(
 
 /// Render main directory manager
 fn render_main_dir_manager(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
-    let popup_area = main_dir_centered_rect(60, 70, area);
-
-    // Clear background for modal
-    frame.render_widget(Clear, popup_area);
+    // Full screen display (not popup/modal)
+    // Clear the entire area
+    frame.render_widget(Clear, area);
 
     if let AppState::ManagingDirs {
         selected_dir_index,
@@ -279,7 +277,7 @@ fn render_main_dir_manager(frame: &mut Frame, area: Rect, app: &mut App, theme: 
             manager
         };
 
-        frame.render_widget(manager, popup_area);
+        frame.render_widget(manager, area);
     }
 }
 
