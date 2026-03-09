@@ -12,10 +12,11 @@ pub mod mock_fs;
 pub mod mock_terminal;
 pub mod ui_assertions;
 
-use crate::app::model::App;
-use crate::app::msg::AppMsg;
-use crate::config::Config;
-use crate::repo::Repository;
+use repotui::app::model::App;
+use repotui::app::msg::AppMsg;
+use repotui::config::Config;
+use repotui::config::types::{EditorConfig, SecurityConfig, FavoritesConfig, RecentConfig};
+use repotui::repo::Repository;
 use std::path::PathBuf;
 use tokio::sync::mpsc;
 
@@ -48,6 +49,8 @@ pub fn create_test_app_with_sample_repos() -> (App, mpsc::Receiver<AppMsg>) {
             last_modified: None,
             is_dirty: false,
             branch: Some("main".to_string()),
+            is_git_repo: true,
+            source: repotui::repo::source::RepoSource::Standalone,
         },
         Repository {
             name: "vue".to_string(),
@@ -55,6 +58,8 @@ pub fn create_test_app_with_sample_repos() -> (App, mpsc::Receiver<AppMsg>) {
             last_modified: None,
             is_dirty: true,
             branch: Some("dev".to_string()),
+            is_git_repo: true,
+            source: repotui::repo::source::RepoSource::Standalone,
         },
         Repository {
             name: "angular".to_string(),
@@ -62,6 +67,8 @@ pub fn create_test_app_with_sample_repos() -> (App, mpsc::Receiver<AppMsg>) {
             last_modified: None,
             is_dirty: false,
             branch: Some("main".to_string()),
+            is_git_repo: true,
+            source: repotui::repo::source::RepoSource::Standalone,
         },
     ];
 
@@ -77,6 +84,8 @@ pub fn create_test_app_with_many_repos(count: usize) -> (App, mpsc::Receiver<App
             last_modified: None,
             is_dirty: i % 3 == 0,
             branch: Some("main".to_string()),
+            is_git_repo: true,
+            source: repotui::repo::source::RepoSource::Standalone,
         })
         .collect();
 
@@ -86,18 +95,25 @@ pub fn create_test_app_with_many_repos(count: usize) -> (App, mpsc::Receiver<App
 /// Create a test configuration
 pub fn create_test_config(main_dir: PathBuf) -> Config {
     Config {
-        main_directory: main_dir,
-        editors: crate::config::EditorsConfig {
+        main_directories: vec![repotui::config::MainDirectoryConfig {
+            path: main_dir,
+            display_name: None,
+            max_depth: None,
+            enabled: true,
+        }],
+        single_repositories: vec![],
+        main_directory: None,
+        editors: EditorConfig {
             webstorm: Some("webstorm".to_string()),
             vscode: Some("code".to_string()),
+            others: std::collections::HashMap::new(),
         },
         default_command: Some("claude".to_string()),
-        security: crate::config::SecurityConfig {
-            allow_symlinks: false,
-        },
-        ui: crate::config::UiConfig {
-            theme: "dark".to_string(),
-        },
+        security: SecurityConfig::default(),
+        ui: repotui::config::UiConfig::default(),
+        favorites: FavoritesConfig::default(),
+        recent: RecentConfig::default(),
+        version: "2.0".to_string(),
     }
 }
 
