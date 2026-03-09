@@ -216,7 +216,7 @@ fn format_repo_item(
 
     // Add repo name
     let max_name_len = display_mode.max_name_length();
-    let truncated_name = truncate_middle(&repo.name, max_name_len);
+    let truncated_name = truncate_middle(&repo.display_name(), max_name_len);
     spans.push(Span::styled(
         truncated_name,
         Style::default().fg(theme.colors.foreground.into()),

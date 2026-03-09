@@ -136,18 +136,28 @@ impl Runtime {
                 });
             }
 
-            Cmd::LoadRepositoriesMulti(dirs) => {
+            Cmd::LoadRepositoriesMulti {
+                main_dirs,
+                single_repos,
+            } => {
                 tokio::spawn(async move {
                     let result: Result<Vec<_>, RepoError> =
                         tokio::task::spawn_blocking(move || {
                             let mut all_repos = Vec::new();
                             let mut seen_paths = std::collections::HashSet::new();
 
-                            for (path, _max_depth) in dirs {
+                            // Load from main directories
+                            for (dir_index, (path, _max_depth)) in main_dirs.iter().enumerate() {
                                 match repo::discover_repositories(&path) {
                                     Ok(repos) => {
-                                        for repo in repos {
+                                        for mut repo in repos {
                                             if seen_paths.insert(repo.path.clone()) {
+                                                // Set correct source for main directory repos
+                                                repo.source =
+                                                    crate::repo::RepoSource::MainDirectory {
+                                                        dir_index,
+                                                        dir_path: path.clone(),
+                                                    };
                                                 all_repos.push(repo);
                                             }
                                         }
@@ -159,6 +169,17 @@ impl Runtime {
                                             e
                                         )));
                                     }
+                                }
+                            }
+
+                            // Load standalone repositories
+                            for path in single_repos {
+                                if seen_paths.insert(path.clone()) {
+                                    let repo = crate::repo::Repository::from_path_with_source(
+                                        path,
+                                        crate::repo::RepoSource::Standalone,
+                                    );
+                                    all_repos.push(repo);
                                 }
                             }
 

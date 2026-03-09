@@ -150,7 +150,10 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                         .collect();
 
                     if !main_dirs.is_empty() || !app.single_repositories.is_empty() {
-                        runtime.dispatch(crate::app::msg::Cmd::LoadRepositoriesMulti(main_dirs));
+                        runtime.dispatch(crate::app::msg::Cmd::LoadRepositoriesMulti {
+                            main_dirs,
+                            single_repos: app.single_repositories.clone(),
+                        });
                     } else if let Some(ref main_dir) = app.main_dir {
                         // Fallback to legacy single directory loading
                         runtime.dispatch(crate::app::msg::Cmd::LoadRepositories(main_dir.clone()));
@@ -465,12 +468,25 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
         }
 
         AppMsg::Refresh => {
-            if let Some(path) = app.main_dir.clone() {
-                app.state = AppState::Loading {
-                    message: "Refreshing repositories...".to_string(),
-                };
-                runtime.dispatch(crate::app::msg::Cmd::LoadRepositories(path));
-            }
+            app.state = AppState::Loading {
+                message: "Refreshing repositories...".to_string(),
+            };
+            // Load from all configured sources
+            let main_dirs: Vec<_> = app
+                .config
+                .as_ref()
+                .map(|c| {
+                    c.enabled_main_dirs_with_meta()
+                        .into_iter()
+                        .map(|(_, path, max_depth)| (path.clone(), max_depth))
+                        .collect()
+                })
+                .unwrap_or_default();
+
+            runtime.dispatch(crate::app::msg::Cmd::LoadRepositoriesMulti {
+                main_dirs,
+                single_repos: app.single_repositories.clone(),
+            });
         }
 
         // === Global ===

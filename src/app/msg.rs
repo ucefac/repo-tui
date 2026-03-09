@@ -16,8 +16,13 @@ pub enum Cmd {
     /// Load repositories from directory (legacy)
     LoadRepositories(PathBuf),
 
-    /// Load repositories from multiple main directories
-    LoadRepositoriesMulti(Vec<(PathBuf, Option<usize>)>),
+    /// Load repositories from multiple main directories and standalone repos
+    LoadRepositoriesMulti {
+        /// Main directories with optional max depth
+        main_dirs: Vec<(PathBuf, Option<usize>)>,
+        /// Standalone repository paths
+        single_repos: Vec<PathBuf>,
+    },
 
     /// Check git status for a repository
     CheckGitStatus(usize, PathBuf),
