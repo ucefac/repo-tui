@@ -20,7 +20,7 @@ dirs = "5.0"
 path-absolutize = "3.1"
 
 # Async Runtime (minimal features)
-tokio = { version = "1", features = ["rt-multi-thread", "sync", "fs", "time", "macros", "process"] }
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "fs", "time", "macros", "process", "io-util"] }
 
 # Error Handling
 thiserror = "1.0"
