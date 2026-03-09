@@ -11,6 +11,9 @@
 | [ghclone-prd-v1.md](./ghclone-prd-v1.md) | v1 | 初始版本 - 已审查 | ✅ 已归档 | - |
 | [ghclone-prd-v2.md](./ghclone-prd-v2.md) | v2 | 当前版本 - 基于审查反馈的完整 PRD | ✅ 当前有效 | - |
 | [multi-directory-prd-v1.md](./multi-directory-prd-v1.md) | v1 | 多主目录管理功能 PRD | 📝 待审查 | 主目录管理 |
+| [clone-feature-prd-v1.md](./clone-feature-prd-v1.md) | v1 | Git Clone 功能 PRD | 📝 已审查 | Clone 功能 |
+| [clone-feature-prd-v2.md](./clone-feature-prd-v2.md) | v2 | Git Clone 功能 PRD（基于审查修复） | 📝 已审查 | Clone 功能 |
+| [clone-feature-prd-v3.md](./clone-feature-prd-v3.md) | v3-final | Git Clone 功能 PRD（审查通过） | ✅ **定稿** | Clone 功能 |
 
 ---
 
@@ -45,6 +48,9 @@
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-03-09 | v3 | Git Clone 功能 PRD v3（修复所有 High Priority 审查问题） |
+| 2026-03-09 | v2 | Git Clone 功能 PRD 定稿（基于审查意见修复） |
+| 2026-03-09 | v1 | 新增 Git Clone 功能 PRD |
 | 2026-03-08 | - | 新增多主目录管理功能 PRD |
 | 2026-03-05 | v2 | 基于 codeteam 审查修复安全性、架构和测试问题 |
 | 2026-03-XX | v1 | 初始版本创建 |
