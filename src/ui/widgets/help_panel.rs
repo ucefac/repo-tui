@@ -80,6 +80,7 @@ impl HelpPanel {
                 "Global",
                 Style::default().add_modifier(Modifier::BOLD),
             )),
+            Line::from("  a           - Add single repository"),
             Line::from("  m           - Change main directory"),
             Line::from("  r           - Refresh list"),
             Line::from("  t           - Theme selector"),

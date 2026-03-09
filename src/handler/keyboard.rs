@@ -436,6 +436,11 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
             }
         }
 
+        KeyCode::Char('a') => {
+            // Add single repository
+            let _ = app.msg_tx.try_send(AppMsg::ShowAddSingleRepoChooser);
+        }
+
         KeyCode::Char(' ') => {
             // Space: Toggle selection for current repo (in selection mode)
             if app.selection_mode {
