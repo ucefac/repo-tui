@@ -15,6 +15,9 @@ pub enum AppError {
     #[error("Action error: {0}")]
     Action(#[from] ActionError),
 
+    #[error("Clone error: {0}")]
+    Clone(#[from] CloneError),
+
     #[error("Terminal error: {0}")]
     Terminal(String),
 
@@ -130,6 +133,64 @@ pub enum ActionError {
     UnsafePath(String),
 }
 
+/// Clone operation errors
+#[derive(Error, Debug, Clone, PartialEq, Eq)]
+pub enum CloneError {
+    #[error("Invalid URL: {0}")]
+    InvalidUrl(String),
+
+    #[error("URL too long (max {0} characters)")]
+    UrlTooLong(usize),
+
+    #[error("Invalid URL format")]
+    InvalidFormat,
+
+    #[error("Invalid URL scheme: {0}")]
+    InvalidScheme(String),
+
+    #[error("Unsupported Git host: {0}")]
+    UnsupportedHost(String),
+
+    #[error("Repository already exists at: {0}")]
+    AlreadyExists(PathBuf),
+
+    #[error("Git command failed with code: {0:?}")]
+    GitFailed(Option<i32>),
+
+    #[error("Network error: {0}")]
+    Network(String),
+
+    #[error("Permission denied: {0}")]
+    PermissionDenied(PathBuf),
+
+    #[error("Disk full")]
+    DiskFull,
+
+    #[error("Git not installed")]
+    GitNotFound,
+
+    #[error("Operation cancelled by user")]
+    Cancelled,
+
+    #[error("Target is not a git repository")]
+    NotAGitRepository,
+
+    #[error("Protected path cannot be removed: {0}")]
+    ProtectedPath(PathBuf),
+
+    #[error("Path outside allowed directory: {0}")]
+    OutsideAllowedDirectory(PathBuf),
+
+    #[error("Invalid characters in URL")]
+    InvalidCharacters,
+
+    #[error("Path error: {0}")]
+    PathError(String),
+
+    #[error("IO error: {0}")]
+    Io(String),
+}
+
 impl AppError {
     /// Get user-friendly error message
     pub fn user_message(&self) -> String {
@@ -161,6 +222,7 @@ impl AppError {
             AppError::Repo(RepoError::NotGitRepo(path)) => {
                 format!("Not a git repository: {}", path.display())
             }
+            AppError::Clone(clone_err) => clone_err.user_message(),
             _ => self.to_string(),
         }
     }
@@ -176,6 +238,7 @@ impl AppError {
             AppError::Action(ActionError::CommandNotAllowed(_)) => ErrorSeverity::Error,
             AppError::Action(ActionError::ExecutionFailed(_)) => ErrorSeverity::Error,
             AppError::Repo(RepoError::NotGitRepo(_)) => ErrorSeverity::Info,
+            AppError::Clone(clone_err) => clone_err.severity(),
             _ => ErrorSeverity::Info,
         }
     }
@@ -245,6 +308,71 @@ impl ActionError {
                 format!("Command not allowed: {}", cmd)
             }
             _ => self.to_string(),
+        }
+    }
+}
+
+impl CloneError {
+    /// Get user-friendly error message
+    pub fn user_message(&self) -> String {
+        match self {
+            CloneError::InvalidUrl(url) => {
+                format!("Invalid repository URL: {}", url)
+            }
+            CloneError::UrlTooLong(max) => {
+                format!("URL too long (max {} characters)", max)
+            }
+            CloneError::InvalidFormat => {
+                "Invalid URL format. Example: https://github.com/owner/repo".to_string()
+            }
+            CloneError::InvalidScheme(scheme) => {
+                format!("Unsupported URL scheme: {}. Use https:// or git@", scheme)
+            }
+            CloneError::UnsupportedHost(host) => {
+                format!("Unsupported Git host: {}", host)
+            }
+            CloneError::AlreadyExists(path) => {
+                format!("Repository already exists at: {}", path.display())
+            }
+            CloneError::GitFailed(code) => {
+                format!("Git clone failed (code: {:?}). Check the URL and your permissions", code)
+            }
+            CloneError::Network(msg) => {
+                format!("Network error: {}. Check your connection", msg)
+            }
+            CloneError::PermissionDenied(path) => {
+                format!("Permission denied: {}. Check directory permissions", path.display())
+            }
+            CloneError::DiskFull => {
+                "Not enough disk space".to_string()
+            }
+            CloneError::GitNotFound => {
+                "Git not found. Please install Git".to_string()
+            }
+            CloneError::Cancelled => {
+                "Clone operation cancelled".to_string()
+            }
+            CloneError::NotAGitRepository => {
+                "Target is not a Git repository".to_string()
+            }
+            CloneError::ProtectedPath(path) => {
+                format!("Cannot remove protected path: {}", path.display())
+            }
+            CloneError::OutsideAllowedDirectory(path) => {
+                format!("Path outside allowed directory: {}", path.display())
+            }
+            _ => self.to_string(),
+        }
+    }
+
+    /// Get error severity
+    pub fn severity(&self) -> ErrorSeverity {
+        match self {
+            CloneError::Cancelled => ErrorSeverity::Info,
+            CloneError::InvalidUrl(_) | CloneError::InvalidFormat => ErrorSeverity::Warning,
+            CloneError::AlreadyExists(_) => ErrorSeverity::Warning,
+            CloneError::Network(_) => ErrorSeverity::Warning,
+            _ => ErrorSeverity::Error,
         }
     }
 }

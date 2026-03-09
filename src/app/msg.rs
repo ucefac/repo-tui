@@ -41,6 +41,14 @@ pub enum Cmd {
 
     /// Validate directory path
     ValidateDirectory(PathBuf),
+
+    /// Clone a repository
+    CloneRepository {
+        /// Repository URL
+        url: String,
+        /// Target path
+        target_path: PathBuf,
+    },
 }
 
 /// Application messages
@@ -196,6 +204,49 @@ pub enum AppMsg {
 
     /// Batch action completed
     BatchActionExecuted(crate::action::batch::BatchResult),
+
+    // === Clone Operations ===
+    /// Start clone operation
+    StartClone,
+
+    /// Clone URL input character
+    CloneUrlInput(char),
+
+    /// Clone URL paste text
+    CloneUrlPaste(String),
+
+    /// Clone URL backspace
+    CloneUrlBackspace,
+
+    /// Clone URL clear from cursor
+    CloneUrlClear,
+
+    /// Clone URL confirm
+    CloneUrlConfirm,
+
+    /// Navigate to next main directory for clone
+    CloneNextMainDir,
+
+    /// Navigate to previous main directory for clone
+    ClonePreviousMainDir,
+
+    /// Select main directory for clone
+    CloneSelectMainDir(usize),
+
+    /// Confirm replace existing folder
+    CloneConfirmReplace(bool),
+
+    /// Clone progress update
+    CloneProgress(String),
+
+    /// Clone completed
+    CloneCompleted(Result<crate::repo::Repository, crate::error::CloneError>),
+
+    /// Clone retry after error
+    CloneRetry,
+
+    /// Cancel clone operation
+    CancelClone,
 
     // === Main Directory Management ===
     /// Show main directory manager

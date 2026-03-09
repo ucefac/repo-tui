@@ -1026,6 +1026,214 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 }
             }
         }
+
+        // === Clone Operations (Phase 1: basic structure) ===
+        AppMsg::StartClone => {
+            // Initialize clone state and transition to Cloning state
+            let clone_state = crate::app::state::CloneState::new();
+            app.state = AppState::Cloning { clone_state };
+        }
+
+        AppMsg::CloneUrlInput(c) => {
+            if let Some(clone_state) = app.state.clone_state_mut() {
+                clone_state.insert_char(c);
+            }
+        }
+
+        AppMsg::CloneUrlPaste(text) => {
+            if let Some(clone_state) = app.state.clone_state_mut() {
+                clone_state.paste(&text);
+            }
+        }
+
+        AppMsg::CloneUrlBackspace => {
+            if let Some(clone_state) = app.state.clone_state_mut() {
+                clone_state.backspace();
+            }
+        }
+
+        AppMsg::CloneUrlClear => {
+            if let Some(clone_state) = app.state.clone_state_mut() {
+                clone_state.clear_from_cursor();
+            }
+        }
+
+        AppMsg::CloneUrlConfirm => {
+            // Validate URL and check target folder
+            if let Some(clone_state) = app.state.clone_state_mut() {
+                let url = clone_state.url_input.trim().to_string();
+
+                // Validate URL
+                if let Err(e) = crate::repo::clone::validate_git_url(&url, crate::constants::MAX_URL_LENGTH) {
+                    clone_state.stage = crate::app::state::CloneStage::Error(e);
+                    return;
+                }
+
+                // Parse URL
+                let parsed = match crate::repo::clone::parse_git_url(&url) {
+                    Ok(p) => p,
+                    Err(e) => {
+                        clone_state.stage = crate::app::state::CloneStage::Error(e);
+                        return;
+                    }
+                };
+
+                // Store parsed URL
+                clone_state.parsed_url = Some(parsed.clone());
+
+                // Get target main directory
+                let target_idx = clone_state.selected_main_dir();
+                let target_dir = app
+                    .main_directories
+                    .get(target_idx)
+                    .map(|d| d.path.clone())
+                    .or_else(|| app.main_dir.clone())
+                    .unwrap_or_else(|| {
+                        std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."))
+                    });
+
+                // Generate folder name
+                let folder_name = crate::repo::clone::generate_folder_name(&parsed);
+                let target_path = target_dir.join(&folder_name);
+
+                // Check if folder already exists
+                if target_path.exists() {
+                    // Check if it's a valid git repository that can be replaced
+                    match crate::repo::clone::validate_folder_replace(&target_path, &[target_dir]) {
+                        Ok(()) => {
+                            // Can replace - show confirmation
+                            clone_state.stage = crate::app::state::CloneStage::ConfirmReplace {
+                                existing_path: target_path,
+                            };
+                        }
+                        Err(e) => {
+                            // Cannot replace (not a git repo or other issue)
+                            clone_state.stage = crate::app::state::CloneStage::Error(e);
+                        }
+                    }
+                } else {
+                    // Folder doesn't exist - start clone
+                    clone_state.stage = crate::app::state::CloneStage::Executing;
+                    clone_state.target_main_dir = Some(target_idx);
+
+                    // Dispatch clone command
+                    runtime.dispatch(crate::app::msg::Cmd::CloneRepository {
+                        url: url.clone(),
+                        target_path: target_path.clone(),
+                    });
+                }
+            }
+        }
+
+        AppMsg::CloneNextMainDir => {
+            if let Some(clone_state) = app.state.clone_state_mut() {
+                let max_dirs = app.main_directories.len();
+                clone_state.next_main_dir(max_dirs);
+            }
+        }
+
+        AppMsg::ClonePreviousMainDir => {
+            if let Some(clone_state) = app.state.clone_state_mut() {
+                clone_state.previous_main_dir();
+            }
+        }
+
+        AppMsg::CloneSelectMainDir(index) => {
+            if let Some(clone_state) = app.state.clone_state_mut() {
+                clone_state.set_selected_main_dir(index);
+            }
+        }
+
+        AppMsg::CloneConfirmReplace(confirmed) => {
+            if confirmed {
+                // User confirmed replacement - delete old folder and clone
+                if let Some(clone_state) = app.state.clone_state_mut() {
+                    if let crate::app::state::CloneStage::ConfirmReplace { existing_path } = clone_state.stage.clone() {
+                        // Delete the existing folder
+                        if let Err(e) = std::fs::remove_dir_all(&existing_path) {
+                            clone_state.stage = crate::app::state::CloneStage::Error(
+                                crate::error::CloneError::Io(e.to_string()),
+                            );
+                            return;
+                        }
+
+                        // Get URL and start clone
+                        let url = clone_state.url_input.clone();
+                        clone_state.stage = crate::app::state::CloneStage::Executing;
+
+                        // Dispatch clone command
+                        runtime.dispatch(crate::app::msg::Cmd::CloneRepository {
+                            url,
+                            target_path: existing_path,
+                        });
+                    }
+                }
+            } else {
+                // User cancelled - go back to input stage
+                if let Some(clone_state) = app.state.clone_state_mut() {
+                    clone_state.stage = crate::app::state::CloneStage::InputUrl;
+                }
+            }
+        }
+
+        AppMsg::CloneProgress(line) => {
+            if let Some(clone_state) = app.state.clone_state_mut() {
+                clone_state.add_progress(line);
+            }
+        }
+
+        AppMsg::CloneCompleted(result) => {
+            match result {
+                Ok(_repo) => {
+                    // Clone successful - refresh repositories
+                    if let Some(config) = &app.config {
+                        let main_dirs: Vec<(PathBuf, Option<usize>)> = config
+                            .main_directories
+                            .iter()
+                            .enumerate()
+                            .filter(|(_, d)| d.enabled)
+                            .map(|(idx, d)| (d.path.clone(), Some(idx)))
+                            .collect();
+
+                        let single_repos: Vec<PathBuf> = config
+                            .single_repositories
+                            .iter()
+                            .map(|r| r.path.clone())
+                            .collect();
+
+                        runtime.dispatch(crate::app::msg::Cmd::LoadRepositoriesMulti {
+                            main_dirs,
+                            single_repos,
+                        });
+                    }
+
+                    // Return to Running state
+                    app.state = AppState::Running;
+                }
+                Err(e) => {
+                    // Clone failed - show error
+                    if let Some(clone_state) = app.state.clone_state_mut() {
+                        clone_state.stage = crate::app::state::CloneStage::Error(e);
+                    }
+                }
+            }
+        }
+
+        AppMsg::CloneRetry => {
+            // Retry clone - go back to input stage
+            if let Some(clone_state) = app.state.clone_state_mut() {
+                clone_state.stage = crate::app::state::CloneStage::InputUrl;
+                clone_state.progress_lines.clear();
+            }
+        }
+
+        AppMsg::CancelClone => {
+            // Cancel clone operation and return to Running state
+            if let Some(clone_state) = app.state.clone_state() {
+                clone_state.cancel();
+            }
+            app.state = AppState::Running;
+        }
     }
 }
 

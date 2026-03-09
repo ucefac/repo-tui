@@ -16,6 +16,9 @@ pub fn handle_key_event(key: KeyEvent, app: &mut App, runtime: &Runtime) {
 
     // State-based handling (priority order)
     match &app.state {
+        AppState::Cloning { .. } => {
+            handle_cloning_keys(key, app);
+        }
         AppState::ShowingActions { .. } => {
             handle_action_menu_keys(key, app, runtime);
         }
@@ -469,6 +472,11 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
         KeyCode::Char('v') => {
             // v: Toggle selection mode
             let _ = app.msg_tx.try_send(AppMsg::ToggleSelectionMode);
+        }
+
+        KeyCode::Char('c') => {
+            // c: Start clone operation
+            let _ = app.msg_tx.try_send(AppMsg::StartClone);
         }
 
         _ => {}
@@ -925,5 +933,95 @@ mod tests {
         // Test Ctrl+r again switches back to All
         handle_running_keys(ctrl_r, &mut app, &runtime);
         assert_eq!(app.view_mode, ViewMode::All);
+    }
+
+    #[test]
+    fn test_c_key_starts_clone() {
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        // Test 'c' key sends StartClone message
+        handle_running_keys(
+            KeyEvent {
+                code: KeyCode::Char('c'),
+                modifiers: KeyModifiers::NONE,
+                kind: KeyEventKind::Press,
+                state: crossterm::event::KeyEventState::NONE,
+            },
+            &mut app,
+            &runtime,
+        );
+    }
+}
+
+/// Handle keys in cloning state
+fn handle_cloning_keys(key: KeyEvent, app: &mut App) {
+    use crate::app::state::CloneStage;
+
+    // Get clone state info
+    let stage = app.state.clone_state().map(|s| s.stage.clone());
+
+    match stage {
+        Some(CloneStage::InputUrl) => {
+            match key.code {
+                KeyCode::Esc => {
+                    let _ = app.msg_tx.try_send(AppMsg::CancelClone);
+                }
+                KeyCode::Enter => {
+                    let _ = app.msg_tx.try_send(AppMsg::CloneUrlConfirm);
+                }
+                KeyCode::Backspace => {
+                    let _ = app.msg_tx.try_send(AppMsg::CloneUrlBackspace);
+                }
+                KeyCode::Char('k') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    let _ = app.msg_tx.try_send(AppMsg::CloneUrlClear);
+                }
+                KeyCode::Up => {
+                    let _ = app.msg_tx.try_send(AppMsg::ClonePreviousMainDir);
+                }
+                KeyCode::Down => {
+                    let _ = app.msg_tx.try_send(AppMsg::CloneNextMainDir);
+                }
+                KeyCode::Char(c) => {
+                    let _ = app.msg_tx.try_send(AppMsg::CloneUrlInput(c));
+                }
+                _ => {}
+            }
+        }
+        Some(CloneStage::ConfirmReplace { .. }) => {
+            match key.code {
+                KeyCode::Esc | KeyCode::Char('2') => {
+                    // Cancel - go back to input
+                    let _ = app.msg_tx.try_send(AppMsg::CloneConfirmReplace(false));
+                }
+                KeyCode::Char('1') | KeyCode::Enter => {
+                    // Confirm replace
+                    let _ = app.msg_tx.try_send(AppMsg::CloneConfirmReplace(true));
+                }
+                _ => {}
+            }
+        }
+        Some(CloneStage::Executing) => {
+            match key.code {
+                KeyCode::Esc => {
+                    // Cancel clone operation
+                    let _ = app.msg_tx.try_send(AppMsg::CancelClone);
+                }
+                _ => {}
+            }
+        }
+        Some(CloneStage::Error(_)) => {
+            match key.code {
+                KeyCode::Esc => {
+                    let _ = app.msg_tx.try_send(AppMsg::CancelClone);
+                }
+                KeyCode::Char('r') | KeyCode::Char('R') => {
+                    let _ = app.msg_tx.try_send(AppMsg::CloneRetry);
+                }
+                _ => {}
+            }
+        }
+        None => {}
     }
 }

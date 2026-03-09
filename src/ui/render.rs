@@ -4,11 +4,13 @@ use crate::app::model::App;
 use crate::app::state::AppState;
 use crate::ui::theme::Theme;
 use crate::ui::widgets::{
-    centered_help_popup, centered_popup, centered_rect, ActionMenu, DirectoryChooser,
-    DirectoryChooserState, HelpPanel, MainDirManager, RepoList, SearchBox, ThemeSelector, TitleBar,
+    centered_help_popup, centered_popup, centered_rect, ActionMenu, CloneDialog,
+    DirectoryChooser, DirectoryChooserState, HelpPanel, MainDirManager, RepoList, SearchBox,
+    ThemeSelector, TitleBar,
 };
 use ratatui::prelude::*;
 use ratatui::widgets::{Clear, Paragraph};
+use std::path::PathBuf;
 
 /// Render the application UI
 pub fn render(frame: &mut Frame, app: &mut App) {
@@ -74,6 +76,11 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         AppState::SelectingTheme { .. } => {
             render_main_ui(frame, area, app, &theme);
             render_theme_selector(frame, area, app, &theme);
+        }
+        AppState::Cloning { .. } => {
+            // Phase 1 placeholder - full CloneDialog UI in Phase 2
+            render_main_ui(frame, area, app, &theme);
+            render_clone_dialog(frame, area, app, &theme);
         }
         AppState::Quit => {
             // Don't render anything when quitting
@@ -310,4 +317,48 @@ fn render_theme_selector(frame: &mut Frame, area: Rect, app: &mut App, theme: &T
 
         frame.render_widget(selector, popup_area);
     }
+}
+
+/// Render clone dialog using the CloneDialog component
+fn render_clone_dialog(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
+    use crate::ui::widgets::clone_dialog_rect;
+
+    let popup_area = clone_dialog_rect(area);
+
+    // Get clone state
+    let clone_state = match app.state.clone_state() {
+        Some(state) => state,
+        None => return,
+    };
+
+    // Build main directories list for display
+    let main_dirs: Vec<(PathBuf, String)> = app
+        .main_directories
+        .iter()
+        .filter(|d| d.enabled)
+        .map(|d| (d.path.clone(), d.display_name.clone()))
+        .collect();
+
+    // Generate folder preview if URL is parsed
+    let folder_preview = clone_state.parsed_url.as_ref().map(|parsed| {
+        let folder_name = crate::repo::clone::generate_folder_name(parsed);
+        if let Some(target_idx) = clone_state.target_main_dir {
+            if let Some((path, _)) = main_dirs.get(target_idx) {
+                format!("{}/{}", path.display(), folder_name)
+            } else {
+                folder_name
+            }
+        } else if let Some((path, _)) = main_dirs.first() {
+            format!("{}/{}", path.display(), folder_name)
+        } else {
+            folder_name
+        }
+    });
+
+    // Create and render the dialog
+    let dialog = CloneDialog::new(clone_state, theme, &main_dirs)
+        .folder_preview(folder_preview)
+        .validation_error(None); // TODO: Add validation error from state
+
+    frame.render_widget(dialog, popup_area);
 }

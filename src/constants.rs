@@ -39,6 +39,9 @@ pub const GIT_STATUS_CACHE_MAX_SIZE: usize = 1000;
 #[allow(dead_code)]
 pub const COMMAND_TIMEOUT_SECS: u64 = 5;
 
+/// Maximum URL length for clone operations
+pub const MAX_URL_LENGTH: usize = 2048;
+
 /// Allowed commands whitelist
 pub const ALLOWED_COMMANDS: &[&str] = &["claude", "cursor", "cline"];
 

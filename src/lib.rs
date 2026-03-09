@@ -35,13 +35,15 @@ mod constants;
 
 use anyhow::Result;
 use crossterm::{
-    event::{self, Event},
+    event::{self, Event, EnableBracketedPaste},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::prelude::*;
 use std::io;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+
+use crate::app::msg::AppMsg;
 
 /// Initialize logging
 fn init_logging() -> Result<()> {
@@ -56,7 +58,7 @@ fn init_logging() -> Result<()> {
 fn init_terminal() -> Result<Terminal<CrosstermBackend<io::Stdout>>> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen)?;
+    execute!(stdout, EnterAlternateScreen, EnableBracketedPaste)?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
     terminal.hide_cursor()?;
@@ -112,6 +114,12 @@ async fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Resul
                 Event::Mouse(mouse) => {
                     if let Some(msg) = handler::handle_mouse_event(mouse, &app) {
                         app::update::update(msg, &mut app, &runtime);
+                    }
+                }
+                Event::Paste(text) => {
+                    // Handle bracketed paste - only in cloning state for URL input
+                    if app.state.is_cloning() {
+                        let _ = app.msg_tx.try_send(AppMsg::CloneUrlPaste(text));
                     }
                 }
                 _ => {}

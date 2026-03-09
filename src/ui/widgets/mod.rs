@@ -3,6 +3,7 @@
 //! Reusable widget components for the TUI.
 
 pub mod action_menu;
+pub mod clone_dialog;
 pub mod dir_chooser;
 pub mod help_panel;
 pub mod main_dir_manager;
@@ -14,6 +15,7 @@ pub mod theme_selector;
 pub mod title_bar;
 
 pub use action_menu::{centered_popup, ActionMenu};
+pub use clone_dialog::{clone_dialog_rect, CloneDialog};
 pub use dir_chooser::{centered_rect, DirectoryChooser, DirectoryChooserState};
 pub use help_panel::{centered_help_popup, HelpPanel};
 pub use main_dir_manager::{centered_rect as main_dir_centered_rect, MainDirManager};

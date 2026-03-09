@@ -214,6 +214,98 @@ impl Runtime {
                         .await;
                 });
             }
+
+            Cmd::CloneRepository { url, target_path } => {
+                tokio::spawn(async move {
+                    use tokio::io::AsyncBufReadExt;
+                    use tokio::process::Command;
+
+                    tracing::info!("Starting git clone: {} -> {:?}", url, target_path);
+
+                    // Create parent directory if it doesn't exist
+                    if let Some(parent) = target_path.parent() {
+                        if let Err(e) = tokio::fs::create_dir_all(parent).await {
+                            let _ = msg_tx
+                                .send(AppMsg::CloneCompleted(Err(
+                                    crate::error::CloneError::Io(e.to_string()),
+                                )))
+                                .await;
+                            return;
+                        }
+                    }
+
+                    // Spawn git clone process
+                    let mut child = match Command::new("git")
+                        .args(["clone", "--progress", &url, target_path.to_string_lossy().as_ref()])
+                        .stderr(std::process::Stdio::piped())
+                        .stdout(std::process::Stdio::null())
+                        .spawn()
+                    {
+                        Ok(c) => c,
+                        Err(e) => {
+                            tracing::error!("Failed to spawn git clone: {}", e);
+                            let error = if e.kind() == std::io::ErrorKind::NotFound {
+                                crate::error::CloneError::GitNotFound
+                            } else {
+                                crate::error::CloneError::Io(e.to_string())
+                            };
+                            let _ = msg_tx.send(AppMsg::CloneCompleted(Err(error))).await;
+                            return;
+                        }
+                    };
+
+                    // Read progress from stderr using a simple line reader
+                    if let Some(stderr) = child.stderr.take() {
+                        let mut buf_reader = tokio::io::BufReader::new(stderr);
+                        let mut line = String::new();
+
+                        loop {
+                            match buf_reader.read_line(&mut line).await {
+                                Ok(0) => break, // EOF
+                                Ok(_) => {
+                                    let trimmed = line.trim_end().to_string();
+                                    if !trimmed.is_empty() {
+                                        tracing::debug!("git clone progress: {}", trimmed);
+                                        let _ = msg_tx.send(AppMsg::CloneProgress(trimmed)).await;
+                                    }
+                                    line.clear();
+                                }
+                                Err(e) => {
+                                    tracing::error!("Error reading git clone output: {}", e);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Wait for process to complete
+                    match child.wait().await {
+                        Ok(status) => {
+                            if status.success() {
+                                tracing::info!("git clone completed successfully");
+                                // Create a minimal repository info
+                                let repo = crate::repo::Repository::from_path(target_path);
+                                let _ = msg_tx.send(AppMsg::CloneCompleted(Ok(repo))).await;
+                            } else {
+                                tracing::error!("git clone failed with status: {:?}", status.code());
+                                let _ = msg_tx
+                                    .send(AppMsg::CloneCompleted(Err(
+                                        crate::error::CloneError::GitFailed(status.code()),
+                                    )))
+                                    .await;
+                            }
+                        }
+                        Err(e) => {
+                            tracing::error!("Failed to wait for git clone: {}", e);
+                            let _ = msg_tx
+                                .send(AppMsg::CloneCompleted(Err(
+                                    crate::error::CloneError::Io(e.to_string()),
+                                )))
+                                .await;
+                        }
+                    }
+                });
+            }
         }
     }
 

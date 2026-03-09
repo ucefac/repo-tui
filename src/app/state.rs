@@ -2,7 +2,196 @@
 
 use std::path::PathBuf;
 
+pub use crate::repo::clone::ParsedGitUrl;
 use crate::repo::Repository;
+use ratatui::widgets::ListState;
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
+
+/// Clone operation stage
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CloneStage {
+    /// Input URL and select main directory
+    InputUrl,
+    /// Confirm replacing existing folder
+    ConfirmReplace {
+        /// Path to existing folder
+        existing_path: PathBuf,
+    },
+    /// Executing git clone
+    Executing,
+    /// Error state with error details
+    Error(crate::error::CloneError),
+}
+
+/// Clone state
+#[derive(Debug, Clone)]
+pub struct CloneState {
+    /// URL input buffer
+    pub url_input: String,
+    /// Cursor position in URL input
+    pub cursor_position: usize,
+    /// Parsed URL info
+    pub parsed_url: Option<ParsedGitUrl>,
+    /// Selected main directory index
+    pub target_main_dir: Option<usize>,
+    /// Current stage
+    pub stage: CloneStage,
+    /// Progress lines for display
+    pub progress_lines: Vec<String>,
+    /// Main directory list state for selection
+    pub main_dir_list_state: ListState,
+    /// Cancel flag for async operation
+    pub cancel_flag: Arc<AtomicBool>,
+}
+
+impl PartialEq for CloneState {
+    fn eq(&self, other: &Self) -> bool {
+        self.url_input == other.url_input
+            && self.cursor_position == other.cursor_position
+            && self.parsed_url == other.parsed_url
+            && self.target_main_dir == other.target_main_dir
+            && self.stage == other.stage
+            && self.progress_lines == other.progress_lines
+            && self.selected_main_dir() == other.selected_main_dir()
+        // Note: cancel_flag and main_dir_list_state are not compared
+    }
+}
+
+impl Eq for CloneState {}
+
+impl CloneState {
+    /// Create a new clone state
+    pub fn new() -> Self {
+        let mut list_state = ListState::default();
+        list_state.select(Some(0));
+
+        Self {
+            url_input: String::new(),
+            cursor_position: 0,
+            parsed_url: None,
+            target_main_dir: None,
+            stage: CloneStage::InputUrl,
+            progress_lines: Vec::new(),
+            main_dir_list_state: list_state,
+            cancel_flag: Arc::new(AtomicBool::new(false)),
+        }
+    }
+
+    /// Reset to initial state
+    pub fn reset(&mut self) {
+        self.url_input.clear();
+        self.cursor_position = 0;
+        self.parsed_url = None;
+        self.target_main_dir = None;
+        self.stage = CloneStage::InputUrl;
+        self.progress_lines.clear();
+        self.main_dir_list_state.select(Some(0));
+        self.cancel_flag.store(false, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    /// Insert character at cursor position
+    pub fn insert_char(&mut self, c: char) {
+        self.url_input.insert(self.cursor_position, c);
+        self.cursor_position += 1;
+    }
+
+    /// Delete character before cursor
+    pub fn backspace(&mut self) {
+        if self.cursor_position > 0 {
+            self.cursor_position -= 1;
+            self.url_input.remove(self.cursor_position);
+        }
+    }
+
+    /// Delete character at cursor
+    pub fn delete(&mut self) {
+        if self.cursor_position < self.url_input.len() {
+            self.url_input.remove(self.cursor_position);
+        }
+    }
+
+    /// Clear input from cursor to end
+    pub fn clear_from_cursor(&mut self) {
+        self.url_input.truncate(self.cursor_position);
+    }
+
+    /// Paste text at cursor position
+    pub fn paste(&mut self, text: &str) {
+        self.url_input.insert_str(self.cursor_position, text);
+        self.cursor_position += text.len();
+    }
+
+    /// Move cursor left
+    pub fn move_cursor_left(&mut self) {
+        if self.cursor_position > 0 {
+            self.cursor_position -= 1;
+        }
+    }
+
+    /// Move cursor right
+    pub fn move_cursor_right(&mut self) {
+        if self.cursor_position < self.url_input.len() {
+            self.cursor_position += 1;
+        }
+    }
+
+    /// Navigate to next main directory
+    pub fn next_main_dir(&mut self, max: usize) {
+        let current = self.main_dir_list_state.selected().unwrap_or(0);
+        if current < max.saturating_sub(1) {
+            self.main_dir_list_state.select(Some(current + 1));
+        }
+    }
+
+    /// Navigate to previous main directory
+    pub fn previous_main_dir(&mut self) {
+        let current = self.main_dir_list_state.selected().unwrap_or(0);
+        if current > 0 {
+            self.main_dir_list_state.select(Some(current - 1));
+        }
+    }
+
+    /// Get selected main directory index
+    pub fn selected_main_dir(&self) -> usize {
+        self.main_dir_list_state.selected().unwrap_or(0)
+    }
+
+    /// Set selected main directory
+    pub fn set_selected_main_dir(&mut self, index: usize) {
+        self.main_dir_list_state.select(Some(index));
+    }
+
+    /// Add progress line
+    pub fn add_progress(&mut self, line: String) {
+        self.progress_lines.push(line);
+        // Keep only last 100 lines to prevent memory issues
+        if self.progress_lines.len() > 100 {
+            self.progress_lines.remove(0);
+        }
+    }
+
+    /// Clear progress lines
+    pub fn clear_progress(&mut self) {
+        self.progress_lines.clear();
+    }
+
+    /// Check if operation should be cancelled
+    pub fn is_cancelled(&self) -> bool {
+        self.cancel_flag.load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    /// Request cancellation
+    pub fn cancel(&self) {
+        self.cancel_flag.store(true, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+impl Default for CloneState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 /// Directory chooser mode
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -113,6 +302,12 @@ pub enum AppState {
         /// Preview theme (stored to ensure "what you see is what you get")
         preview_theme: crate::ui::theme::Theme,
     },
+
+    /// Cloning repository
+    Cloning {
+        /// Clone state
+        clone_state: CloneState,
+    },
 }
 
 /// Main directory edit state
@@ -145,6 +340,7 @@ impl AppState {
     /// Higher priority states intercept all key events
     pub fn priority(&self) -> u8 {
         match self {
+            AppState::Cloning { .. } => 6,
             AppState::ShowingActions { .. } => 5,
             AppState::ShowingHelp { .. } => 4,
             AppState::ManagingDirs { .. } => 4,
@@ -165,12 +361,36 @@ impl AppState {
                 | AppState::ChoosingDir { .. }
                 | AppState::SelectingTheme { .. }
                 | AppState::ManagingDirs { .. }
+                | AppState::Cloning { .. }
         )
     }
 
     /// Check if application is running normally
     pub fn is_running(&self) -> bool {
         matches!(self, AppState::Running)
+    }
+
+    /// Check if application is in cloning state
+    pub fn is_cloning(&self) -> bool {
+        matches!(self, AppState::Cloning { .. })
+    }
+
+    /// Get mutable reference to clone state if in Cloning state
+    pub fn clone_state_mut(&mut self) -> Option<&mut CloneState> {
+        if let AppState::Cloning { clone_state } = self {
+            Some(clone_state)
+        } else {
+            None
+        }
+    }
+
+    /// Get reference to clone state if in Cloning state
+    pub fn clone_state(&self) -> Option<&CloneState> {
+        if let AppState::Cloning { clone_state } = self {
+            Some(clone_state)
+        } else {
+            None
+        }
     }
 
     /// Check if application is in a loading/error state
