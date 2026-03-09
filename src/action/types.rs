@@ -16,6 +16,12 @@ pub enum Action {
 
     /// Open in Finder/Explorer
     OpenFileManager,
+
+    /// Open in IntelliJ IDEA
+    OpenIntelliJ,
+
+    /// Open in OpenCode
+    OpenOpenCode,
 }
 
 impl Action {
@@ -26,6 +32,8 @@ impl Action {
             Action::OpenWebStorm => '2',
             Action::OpenVsCode => '3',
             Action::OpenFileManager => '4',
+            Action::OpenIntelliJ => '5',
+            Action::OpenOpenCode => '6',
         }
     }
 
@@ -36,6 +44,8 @@ impl Action {
             Action::OpenWebStorm => "Open in WebStorm",
             Action::OpenVsCode => "Open in VS Code",
             Action::OpenFileManager => "Open in Finder/Explorer",
+            Action::OpenIntelliJ => "Open in IntelliJ IDEA",
+            Action::OpenOpenCode => "Open in OpenCode",
         }
     }
 
@@ -46,6 +56,8 @@ impl Action {
             Action::OpenWebStorm,
             Action::OpenVsCode,
             Action::OpenFileManager,
+            Action::OpenIntelliJ,
+            Action::OpenOpenCode,
         ]
     }
 }
@@ -60,6 +72,8 @@ mod tests {
         assert_eq!(Action::OpenWebStorm.shortcut(), '2');
         assert_eq!(Action::OpenVsCode.shortcut(), '3');
         assert_eq!(Action::OpenFileManager.shortcut(), '4');
+        assert_eq!(Action::OpenIntelliJ.shortcut(), '5');
+        assert_eq!(Action::OpenOpenCode.shortcut(), '6');
     }
 
     #[test]
@@ -71,6 +85,6 @@ mod tests {
     #[test]
     fn test_action_all() {
         let actions = Action::all();
-        assert_eq!(actions.len(), 4);
+        assert_eq!(actions.len(), 6);
     }
 }

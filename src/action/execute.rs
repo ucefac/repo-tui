@@ -27,6 +27,14 @@ pub fn execute_action(action: &Action, repo: &Repository) -> AppResult<()> {
             execute_editor("code", &repo.path)?;
         }
 
+        Action::OpenIntelliJ => {
+            execute_editor("idea", &repo.path)?;
+        }
+
+        Action::OpenOpenCode => {
+            execute_cd_and_opencode(&repo.path)?;
+        }
+
         Action::OpenFileManager => {
             open_file_manager(&repo.path)?;
         }
@@ -83,6 +91,27 @@ fn execute_cd_and_cloud(repo_path: &Path) -> AppResult<()> {
     if !status.success() {
         return Err(AppError::Action(ActionError::ExecutionFailed(format!(
             "claude exited with code: {:?}",
+            status.code()
+        ))));
+    }
+
+    Ok(())
+}
+
+/// Execute cd + opencode
+///
+/// Security: Uses current_dir() instead of shell cd command
+fn execute_cd_and_opencode(repo_path: &Path) -> AppResult<()> {
+    // Use which to get full path
+    let opencode_path =
+        which::which("opencode").map_err(|_| ActionError::CommandNotFound("opencode".to_string()))?;
+
+    // Execute with current_dir (safer than shell cd)
+    let status = Command::new(opencode_path).current_dir(repo_path).status()?;
+
+    if !status.success() {
+        return Err(AppError::Action(ActionError::ExecutionFailed(format!(
+            "opencode exited with code: {:?}",
             status.code()
         ))));
     }

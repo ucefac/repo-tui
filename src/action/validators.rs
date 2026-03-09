@@ -51,6 +51,34 @@ pub fn validate_action(action: &Action) -> AppResult<()> {
             }
         }
 
+        Action::OpenIntelliJ => {
+            if !is_editor_allowed("idea") {
+                return Err(AppError::Action(ActionError::CommandNotAllowed(
+                    "idea".to_string(),
+                )));
+            }
+
+            if which::which("idea").is_err() {
+                return Err(AppError::Action(ActionError::CommandNotFound(
+                    "idea".to_string(),
+                )));
+            }
+        }
+
+        Action::OpenOpenCode => {
+            if !is_command_allowed("opencode") {
+                return Err(AppError::Action(ActionError::CommandNotAllowed(
+                    "opencode".to_string(),
+                )));
+            }
+
+            if which::which("opencode").is_err() {
+                return Err(AppError::Action(ActionError::CommandNotFound(
+                    "opencode".to_string(),
+                )));
+            }
+        }
+
         Action::OpenFileManager => {
             // File manager, commands are platform-specific and always allowed
             #[cfg(target_os = "macos")]

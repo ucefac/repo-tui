@@ -43,7 +43,7 @@ pub const COMMAND_TIMEOUT_SECS: u64 = 5;
 pub const MAX_URL_LENGTH: usize = 2048;
 
 /// Allowed commands whitelist
-pub const ALLOWED_COMMANDS: &[&str] = &["claude", "cursor", "cline"];
+pub const ALLOWED_COMMANDS: &[&str] = &["claude", "cursor", "cline", "opencode"];
 
 /// Allowed editors whitelist
 pub const ALLOWED_EDITORS: &[&str] = &[
