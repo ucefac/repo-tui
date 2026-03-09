@@ -136,14 +136,39 @@ impl Runtime {
                 });
             }
 
-            Cmd::LoadRepositoriesMulti(_dirs) => {
-                // TODO: Implement multi-directory loading
+            Cmd::LoadRepositoriesMulti(dirs) => {
                 tokio::spawn(async move {
-                    let _ = msg_tx
-                        .send(AppMsg::ShowError(
-                            "Multi-directory loading not yet implemented".to_string(),
-                        ))
-                        .await;
+                    let result: Result<Vec<_>, RepoError> =
+                        tokio::task::spawn_blocking(move || {
+                            let mut all_repos = Vec::new();
+                            let mut seen_paths = std::collections::HashSet::new();
+
+                            for (path, _max_depth) in dirs {
+                                match repo::discover_repositories(&path) {
+                                    Ok(repos) => {
+                                        for repo in repos {
+                                            if seen_paths.insert(repo.path.clone()) {
+                                                all_repos.push(repo);
+                                            }
+                                        }
+                                    }
+                                    Err(e) => {
+                                        return Err(RepoError::ScanFailed(format!(
+                                            "Failed to scan {}: {}",
+                                            path.display(),
+                                            e
+                                        )));
+                                    }
+                                }
+                            }
+
+                            Ok(all_repos)
+                        })
+                        .await
+                        .map_err(|_| RepoError::ScanFailed("Task join failed".to_string()))
+                        .and_then(|r| r);
+
+                    let _ = msg_tx.send(AppMsg::RepositoriesLoaded(result)).await;
                 });
             }
 
