@@ -296,6 +296,11 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
         }
 
         AppMsg::DirectorySelected(path) => {
+            // Create default config if not exists (first launch scenario)
+            if app.config.is_none() {
+                app.config = Some(config::Config::default());
+            }
+
             let path_buf = PathBuf::from(&path);
 
             // Get current chooser mode
@@ -1180,7 +1185,7 @@ mod tests {
             is_dirty: false,
             branch: Some("main".to_string()),
             is_git_repo: true,
-                source: RepoSource::Standalone,
+            source: RepoSource::Standalone,
         }];
         app.apply_filter();
 
@@ -1204,7 +1209,7 @@ mod tests {
             is_dirty: false,
             branch: Some("main".to_string()),
             is_git_repo: true,
-                source: RepoSource::Standalone,
+            source: RepoSource::Standalone,
         }];
         app.apply_filter();
         app.set_selected_index(Some(0));
@@ -1261,7 +1266,7 @@ mod tests {
             is_dirty: false,
             branch: None,
             is_git_repo: true,
-                source: RepoSource::Standalone,
+            source: RepoSource::Standalone,
         });
 
         update(AppMsg::Cancel, &mut app, &runtime);
@@ -1409,7 +1414,7 @@ mod tests {
             is_dirty: false,
             branch: Some("main".to_string()),
             is_git_repo: true,
-                source: RepoSource::Standalone,
+            source: RepoSource::Standalone,
         }];
         app.filtered_indices = vec![0];
         app.set_selected_index(Some(0));
@@ -1486,7 +1491,7 @@ mod tests {
             is_dirty: false,
             branch: Some("main".to_string()),
             is_git_repo: true,
-                source: RepoSource::Standalone,
+            source: RepoSource::Standalone,
         }];
         app.filtered_indices = vec![0];
         app.set_selected_index(Some(0));
@@ -1495,5 +1500,89 @@ mod tests {
         update(AppMsg::ShowFavorites, &mut app, &runtime);
         assert_eq!(app.view_mode, ViewMode::Favorites);
         assert_eq!(app.filtered_indices.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_directory_selected_creates_config_when_none() {
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        // Ensure initial config is None
+        assert!(app.config.is_none(), "Initial config should be None");
+
+        // Setup ChoosingDir state for first launch
+        app.state = AppState::ChoosingDir {
+            path: std::path::PathBuf::from("/tmp"),
+            entries: vec![],
+            selected_index: 0,
+            scroll_offset: 0,
+            mode: crate::app::state::DirectoryChooserMode::SelectMainDirectory {
+                allow_multiple: false,
+                edit_mode: false,
+            },
+        };
+
+        // Send DirectorySelected message
+        let test_path = "/tmp/test_repo";
+        update(
+            AppMsg::DirectorySelected(test_path.to_string()),
+            &mut app,
+            &runtime,
+        );
+
+        // Verify config was created
+        assert!(app.config.is_some(), "Config should be created when None");
+        assert_eq!(
+            app.config.as_ref().unwrap().version,
+            crate::constants::CONFIG_VERSION
+        );
+    }
+
+    #[tokio::test]
+    async fn test_directory_selected_preserves_existing_config() {
+        use crate::config::Config;
+
+        let (tx, _rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        // Set up existing config with custom values
+        let existing_config = Config {
+            version: "2.0".to_string(),
+            ui: crate::config::UiConfig {
+                theme: "nord".to_string(),
+                show_git_status: false,
+                show_branch: false,
+            },
+            ..Config::default()
+        };
+        app.config = Some(existing_config.clone());
+
+        // Setup ChoosingDir state
+        app.state = AppState::ChoosingDir {
+            path: std::path::PathBuf::from("/tmp"),
+            entries: vec![],
+            selected_index: 0,
+            scroll_offset: 0,
+            mode: crate::app::state::DirectoryChooserMode::SelectMainDirectory {
+                allow_multiple: false,
+                edit_mode: false,
+            },
+        };
+
+        // Send DirectorySelected message
+        let test_path = "/tmp/test_repo";
+        update(
+            AppMsg::DirectorySelected(test_path.to_string()),
+            &mut app,
+            &runtime,
+        );
+
+        // Verify existing config was preserved
+        assert!(app.config.is_some());
+        assert_eq!(app.config.as_ref().unwrap().version, "2.0");
+        assert_eq!(app.config.as_ref().unwrap().ui.theme, "nord");
+        assert!(!app.config.as_ref().unwrap().ui.show_git_status);
     }
 }
