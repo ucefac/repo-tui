@@ -53,6 +53,8 @@ impl HelpPanel {
             Line::from("  2           - WebStorm"),
             Line::from("  3           - VS Code"),
             Line::from("  4           - Finder/Explorer"),
+            Line::from("  5           - IntelliJ IDEA"),
+            Line::from("  6           - OpenCode"),
             Line::from(""),
             Line::from(Span::styled(
                 "Selection",

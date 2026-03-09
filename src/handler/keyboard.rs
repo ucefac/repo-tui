@@ -90,6 +90,22 @@ fn handle_action_menu_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
                 let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
             }
         }
+        KeyCode::Char('5') => {
+            let action = crate::action::Action::OpenIntelliJ;
+            if app.selection_mode && app.selected_count() > 0 {
+                let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
+            } else {
+                let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
+            }
+        }
+        KeyCode::Char('6') => {
+            let action = crate::action::Action::OpenOpenCode;
+            if app.selection_mode && app.selected_count() > 0 {
+                let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
+            } else {
+                let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
+            }
+        }
         KeyCode::Down => {
             // Navigate down in menu
             let _ = app.msg_tx.try_send(AppMsg::ActionMenuNavDown);

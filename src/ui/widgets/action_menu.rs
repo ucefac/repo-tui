@@ -163,7 +163,7 @@ mod tests {
     fn test_action_menu_creation() {
         let repo = Repository::test_repo();
         let menu = ActionMenu::new(&repo, 0);
-        assert_eq!(menu.action_count(), 4);
+        assert_eq!(menu.action_count(), 6);
     }
 
     #[test]
@@ -185,9 +185,9 @@ mod tests {
         let repo = Repository::test_repo();
         let mut menu = ActionMenu::new(&repo, 0);
 
-        // Wrap around from start
+        // Wrap around from start (now 6 actions, so index 5 is the last)
         menu.select_previous();
-        assert_eq!(menu.selected_index, 3);
+        assert_eq!(menu.selected_index, 5);
 
         // Wrap around from end
         menu.select_next();
