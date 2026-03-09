@@ -395,6 +395,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                                 list_state,
                                 selected_dir_index: 0,
                                 editing: None,
+                                confirming_delete: false,
                             };
                         }
                         crate::app::state::ReturnTarget::Running => {
@@ -782,6 +783,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 list_state,
                 selected_dir_index: 0,
                 editing: None,
+                confirming_delete: false,
             };
         }
 
@@ -821,6 +823,10 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                     }
                     let _ = config::save_config(config);
                     runtime.dispatch(crate::app::msg::Cmd::LoadConfig);
+                    // Reset confirmation state after successful deletion
+                    if let AppState::ManagingDirs { confirming_delete, .. } = &mut app.state {
+                        *confirming_delete = false;
+                    }
                 }
             }
         }
@@ -925,6 +931,18 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
             }
         }
 
+        AppMsg::ShowDeleteMainDirConfirmation => {
+            if let AppState::ManagingDirs { confirming_delete, .. } = &mut app.state {
+                *confirming_delete = true;
+            }
+        }
+
+        AppMsg::CancelDeleteMainDirConfirmation => {
+            if let AppState::ManagingDirs { confirming_delete, .. } = &mut app.state {
+                *confirming_delete = false;
+            }
+        }
+
         // === Single Repository Management ===
         AppMsg::ShowAddSingleRepoChooser => {
             app.state = AppState::ChoosingDir {
@@ -1019,6 +1037,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                         list_state,
                         selected_dir_index: 0,
                         editing: None,
+                        confirming_delete: false,
                     };
                 }
                 crate::app::state::ReturnTarget::Running => {

@@ -282,6 +282,12 @@ pub enum AppMsg {
     /// Cancel main directory edit
     CancelEditMainDirectory,
 
+    /// Show delete confirmation for main directory
+    ShowDeleteMainDirConfirmation,
+
+    /// Cancel delete confirmation for main directory
+    CancelDeleteMainDirConfirmation,
+
     // === Single Repository Management ===
     /// Show add single repo chooser
     ShowAddSingleRepoChooser,

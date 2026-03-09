@@ -265,6 +265,13 @@ fn render_directory_chooser(
 
 /// Render main directory manager
 fn render_main_dir_manager(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
+    // Check if we're in delete confirmation mode
+    let is_confirming = if let AppState::ManagingDirs { confirming_delete, .. } = &app.state {
+        *confirming_delete
+    } else {
+        false
+    };
+
     // Full screen display (not popup/modal)
     // Clear the entire area
     frame.render_widget(Clear, area);
@@ -286,6 +293,58 @@ fn render_main_dir_manager(frame: &mut Frame, area: Rect, app: &mut App, theme: 
 
         frame.render_widget(manager, area);
     }
+
+    // If confirming delete, render confirmation dialog as overlay on top
+    if is_confirming {
+        render_delete_confirmation_dialog(frame, area, app, theme);
+    }
+}
+
+/// Render delete confirmation dialog
+fn render_delete_confirmation_dialog(
+    frame: &mut Frame,
+    area: Rect,
+    app: &mut App,
+    theme: &Theme,
+) {
+    // Create a centered popup for the confirmation dialog
+    let popup_area = centered_popup(50, 30, area);
+
+    // Clear background
+    frame.render_widget(Clear, popup_area);
+
+    // Get the directory name being deleted
+    let dir_name = if let AppState::ManagingDirs { selected_dir_index, .. } = &app.state {
+        app.main_directories
+            .get(*selected_dir_index)
+            .map(|d| d.display_name.clone())
+            .unwrap_or_else(|| "Unknown".to_string())
+    } else {
+        "Unknown".to_string()
+    };
+
+    // Build dialog content
+    let text = format!(
+        "⚠️  Delete Main Directory\n\n\"{}\"\n\nThis will remove the directory from the list.\nRepositories will not be deleted.\n\n[y] Confirm  [n] Cancel",
+        dir_name
+    );
+
+    let paragraph = Paragraph::new(text)
+        .alignment(Alignment::Center)
+        .wrap(ratatui::widgets::Wrap { trim: true })
+        .style(
+            Style::default()
+                .fg(theme.colors.foreground.into())
+                .bg(theme.colors.background.into()),
+        )
+        .block(
+            ratatui::widgets::Block::default()
+                .borders(ratatui::widgets::Borders::ALL)
+                .border_style(Style::default().fg(theme.colors.error.into()))
+                .title("Confirm Delete"),
+        );
+
+    frame.render_widget(paragraph, popup_area);
 }
 
 /// Render theme selector

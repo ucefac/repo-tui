@@ -485,6 +485,34 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
 
 // Main directory management functions
 fn handle_main_dir_manager_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
+    // Check if we're in delete confirmation mode
+    let is_confirming = if let AppState::ManagingDirs { confirming_delete, .. } = &app.state {
+        *confirming_delete
+    } else {
+        false
+    };
+
+    // If confirming delete, handle confirmation keys
+    if is_confirming {
+        match key.code {
+            KeyCode::Char('y') | KeyCode::Enter => {
+                // Confirm deletion
+                if let AppState::ManagingDirs { selected_dir_index, .. } = &app.state {
+                    let _ = app
+                        .msg_tx
+                        .try_send(AppMsg::RemoveMainDirectory(*selected_dir_index));
+                }
+            }
+            KeyCode::Char('n') | KeyCode::Esc => {
+                // Cancel deletion
+                let _ = app.msg_tx.try_send(AppMsg::CancelDeleteMainDirConfirmation);
+            }
+            _ => {}
+        }
+        return;
+    }
+
+    // Normal mode - handle regular keys
     match key.code {
         KeyCode::Esc | KeyCode::Char('q') => {
             let _ = app.msg_tx.try_send(AppMsg::CloseMainDirectoryManager);
@@ -499,15 +527,8 @@ fn handle_main_dir_manager_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime
             ));
         }
         KeyCode::Char('d') => {
-            // Remove selected main directory
-            if let AppState::ManagingDirs {
-                selected_dir_index, ..
-            } = &app.state
-            {
-                let _ = app
-                    .msg_tx
-                    .try_send(AppMsg::RemoveMainDirectory(*selected_dir_index));
-            }
+            // Show delete confirmation
+            let _ = app.msg_tx.try_send(AppMsg::ShowDeleteMainDirConfirmation);
         }
         KeyCode::Char('e') => {
             // Edit selected main directory

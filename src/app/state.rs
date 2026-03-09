@@ -266,6 +266,8 @@ pub enum AppState {
         selected_dir_index: usize,
         /// Editing state
         editing: Option<MainDirEdit>,
+        /// Delete confirmation state
+        confirming_delete: bool,
     },
 
     /// Showing action menu
