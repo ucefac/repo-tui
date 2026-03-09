@@ -11,6 +11,12 @@
 |------|------|
 | [development-guide.md](./development-guide.md) | 开发清单和常见问题 |
 
+### Git Clone 功能开发
+| 文档 | 阶段 | 说明 |
+|------|------|------|
+| [clone-phase2-complete.md](./clone-phase2-complete.md) | Phase 2 | Clone 功能 UI 组件完成报告 |
+| [clone-phase3-complete.md](./clone-phase3-complete.md) | Phase 3 | Clone 功能业务逻辑完成报告 |
+
 ### Phase 计划与完成报告
 | 文档 | 阶段 | 说明 |
 |------|------|------|
