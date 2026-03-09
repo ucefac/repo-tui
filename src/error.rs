@@ -302,7 +302,14 @@ impl ActionError {
     pub fn user_message(&self) -> String {
         match self {
             ActionError::CommandNotFound(cmd) => {
-                format!("Command not found: {}", cmd)
+                match cmd.as_str() {
+                    "code" => "默认情况下，VS Code 安装后不会自动添加 code 命令到终端。\n你需要手动配置：\n1. 打开 VS Code\n2. 按 Cmd+Shift+P 打开命令面板\n3. 输入并选择 Shell Command: Install 'code' command in PATH\n4. 这会将 code 命令添加到 /usr/local/bin".to_string(),
+                    "webstorm" => "WebStorm 未安装".to_string(),
+                    "idea" => "IDEA 未安装".to_string(),
+                    "opencode" => "OpenCode 未安装\n终端执行命令：brew install anomalyco/tap/opencode".to_string(),
+                    "claude" => "Claude Code 未安装\n终端执行命令：brew install --cask claude-code".to_string(),
+                    _ => format!("Command not found: {}", cmd),
+                }
             }
             ActionError::CommandNotAllowed(cmd) => {
                 format!("Command not allowed: {}", cmd)
