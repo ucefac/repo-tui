@@ -125,7 +125,7 @@ fn extract_scope(path: &PathBuf) -> String {
 mod tests {
     use super::*;
 
-    fn create_mock_repo(parent: &PathBuf, name: &str) -> PathBuf {
+    fn create_mock_repo(parent: &std::path::Path, name: &str) -> PathBuf {
         let repo_path = parent.join(name);
         std::fs::create_dir_all(&repo_path).unwrap();
         std::fs::create_dir(repo_path.join(".git")).unwrap();

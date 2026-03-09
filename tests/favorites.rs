@@ -8,7 +8,14 @@ use std::path::PathBuf;
 fn test_favorites_persistence() {
     // Create a test config
     let mut config = Config::default();
-    config.main_directory = PathBuf::from("/tmp/test");
+    config
+        .main_directories
+        .push(config::types::MainDirectoryConfig {
+            path: PathBuf::from("/tmp/test"),
+            display_name: None,
+            max_depth: None,
+            enabled: true,
+        });
 
     // Add some favorites
     config.favorites.repositories = vec![

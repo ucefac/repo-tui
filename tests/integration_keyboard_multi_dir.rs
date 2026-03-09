@@ -161,7 +161,7 @@ impl MultiDirKeyboardHandler {
             KeyCode::Char('e') => {
                 self.messages.push(AppMessage::ToggleDirectoryEnabled);
             }
-            KeyCode::Char(' ') => {
+            KeyCode::Space => {
                 self.messages.push(AppMessage::ToggleDirectoryEnabled);
             }
             KeyCode::Up => {

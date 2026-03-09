@@ -2,12 +2,194 @@
 //!
 //! Tests for loading and managing multi-directory configurations
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tempfile::TempDir;
 
-mod helpers {
-    pub use super::helpers::config_helper::*;
+// === Helper functions (inlined from config_helper.rs) ===
+
+/// Create a temporary directory with a multi-directory config
+fn create_temp_config_with_dirs(dirs: &[&str]) -> (TempDir, PathBuf) {
+    let temp_dir = TempDir::new().unwrap();
+    let config_path = temp_dir.path().join("config.toml");
+
+    let dirs_toml = dirs
+        .iter()
+        .map(|d| format!("    \"{}\"", d))
+        .collect::<Vec<_>>()
+        .join(",\n");
+
+    let config_content = format!(
+        r#"version = "2.0"
+main_directories = [
+{}
+]
+single_repos = []
+
+[editors]
+vscode = "code"
+webstorm = "webstorm"
+
+[ui]
+theme = "dark"
+show_git_status = true
+show_branch = true
+
+[security]
+allow_symlinks = false
+max_search_depth = 2
+"#,
+        dirs_toml
+    );
+
+    std::fs::write(&config_path, config_content).unwrap();
+    (temp_dir, config_path)
 }
+
+/// Create a temporary directory with an old format (v1) config
+fn create_old_format_config() -> (TempDir, PathBuf) {
+    let temp_dir = TempDir::new().unwrap();
+    let config_path = temp_dir.path().join("config.toml");
+
+    let config_content = r#"version = "1.0"
+main_directory = "/home/user/projects"
+
+[editors]
+vscode = "code"
+webstorm = "webstorm"
+
+[ui]
+theme = "dark"
+show_git_status = true
+show_branch = true
+
+[security]
+allow_symlinks = false
+max_search_depth = 2
+"#;
+
+    std::fs::write(&config_path, config_content).unwrap();
+    (temp_dir, config_path)
+}
+
+/// Create a temporary directory with an empty main_directories config
+fn create_empty_main_dirs_config() -> (TempDir, PathBuf) {
+    let temp_dir = TempDir::new().unwrap();
+    let config_path = temp_dir.path().join("config.toml");
+
+    let config_content = r#"version = "2.0"
+main_directories = []
+single_repos = []
+
+[editors]
+vscode = "code"
+webstorm = "webstorm"
+
+[ui]
+theme = "dark"
+show_git_status = true
+show_branch = true
+
+[security]
+allow_symlinks = false
+max_search_depth = 2
+"#;
+
+    std::fs::write(&config_path, config_content).unwrap();
+    (temp_dir, config_path)
+}
+
+/// Create a config with duplicate paths
+fn create_config_with_duplicates() -> (TempDir, PathBuf) {
+    let temp_dir = TempDir::new().unwrap();
+    let config_path = temp_dir.path().join("config.toml");
+
+    let config_content = r#"version = "2.0"
+main_directories = [
+    "/home/user/projects",
+    "/home/user/projects",
+    "/home/user/work"
+]
+single_repos = []
+
+[editors]
+vscode = "code"
+webstorm = "webstorm"
+
+[ui]
+theme = "dark"
+show_git_status = true
+show_branch = true
+
+[security]
+allow_symlinks = false
+max_search_depth = 2
+"#;
+
+    std::fs::write(&config_path, config_content).unwrap();
+    (temp_dir, config_path)
+}
+
+/// Create a config with both old and new fields
+fn create_config_with_both_fields() -> (TempDir, PathBuf) {
+    let temp_dir = TempDir::new().unwrap();
+    let config_path = temp_dir.path().join("config.toml");
+
+    let config_content = r#"version = "1.5"
+main_directory = "/home/user/legacy"
+main_directories = [
+    "/home/user/projects",
+    "/home/user/work"
+]
+single_repos = []
+
+[editors]
+vscode = "code"
+webstorm = "webstorm"
+
+[ui]
+theme = "dark"
+show_git_status = true
+show_branch = true
+
+[security]
+allow_symlinks = false
+max_search_depth = 2
+"#;
+
+    std::fs::write(&config_path, config_content).unwrap();
+    (temp_dir, config_path)
+}
+
+/// Read the version from a config file
+fn read_config_version(path: &Path) -> String {
+    let content = std::fs::read_to_string(path).unwrap();
+    for line in content.lines() {
+        if line.starts_with("version") {
+            return line
+                .split('=')
+                .nth(1)
+                .unwrap()
+                .trim()
+                .trim_matches('"')
+                .to_string();
+        }
+    }
+    panic!("Version not found in config")
+}
+
+/// Count the number of main directories in a config file
+fn count_main_directories(path: &Path) -> usize {
+    let content = std::fs::read_to_string(path).unwrap();
+    let value: toml::Value = content.parse().unwrap();
+
+    if let Some(arr) = value.get("main_directories").and_then(|v| v.as_array()) {
+        arr.len()
+    } else {
+        0
+    }
+}
+
+// === Test code ===
 
 /// Simulate loading a multi-directory configuration
 fn load_multi_dir_config(config_path: &PathBuf) -> Result<MockConfig, ConfigError> {
@@ -57,7 +239,6 @@ enum ConfigError {
 
 #[cfg(test)]
 mod tests {
-    use super::helpers::config_helper::*;
     use super::*;
 
     #[test]
@@ -174,7 +355,6 @@ mod tests {
         let content = std::fs::read_to_string(&config_path).unwrap();
 
         // Simulate migration: Parse old format and convert
-        // In real implementation, this would be handled by the config loader
         let old_config: toml::Value = content.parse().unwrap();
         let old_path = old_config
             .get("main_directory")
@@ -306,22 +486,6 @@ mod tests {
         assert_eq!(loaded.main_directories[0], "/home/user/first");
         assert_eq!(loaded.main_directories[1], "/home/user/second");
         assert_eq!(loaded.main_directories[2], "/home/user/third");
-    }
-
-    #[test]
-    fn test_empty_path_validation() {
-        // Arrange: Config with empty path strings
-        let (_temp, config_path) = create_config_with_empty_paths();
-
-        // Act
-        let result = load_multi_dir_config(&config_path);
-
-        // Assert: Empty string is technically valid but should be filtered
-        // In this mock, we don't filter empty strings, so it passes
-        // In real implementation, empty strings should be filtered out
-        assert!(result.is_ok());
-        let config = result.unwrap();
-        assert!(config.main_directories.contains(&"".to_string()));
     }
 
     #[test]

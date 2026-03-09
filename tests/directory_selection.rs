@@ -1,6 +1,6 @@
 //! Directory selection integration tests
 
-use repotui::app::state::AppState;
+use repotui::app::state::{AppState, DirectoryChooserMode};
 
 #[test]
 fn test_directory_selection_state() {
@@ -9,6 +9,7 @@ fn test_directory_selection_state() {
         entries: vec!["Documents".to_string(), "Projects".to_string()],
         selected_index: 0,
         scroll_offset: 0,
+        mode: DirectoryChooserMode::default(),
     };
     assert!(matches!(state, AppState::ChoosingDir { .. }));
 }

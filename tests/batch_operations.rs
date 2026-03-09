@@ -5,7 +5,7 @@ use tokio::sync::mpsc;
 
 use repotui::app::model::App;
 use repotui::app::msg::AppMsg;
-use repotui::repo::Repository;
+use repotui::repo::{RepoSource, Repository};
 
 fn create_test_repo(name: &str, path: &str) -> Repository {
     Repository {
@@ -15,6 +15,7 @@ fn create_test_repo(name: &str, path: &str) -> Repository {
         is_dirty: false,
         branch: Some("main".to_string()),
         is_git_repo: true,
+        source: RepoSource::Standalone,
     }
 }
 

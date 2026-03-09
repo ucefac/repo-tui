@@ -59,6 +59,9 @@ impl MultiDirectoryDiscoverer {
             }
         }
 
+        // Sort by name for consistent results
+        all_repos.sort_by(|a, b| a.name.cmp(&b.name));
+
         all_repos
     }
 
