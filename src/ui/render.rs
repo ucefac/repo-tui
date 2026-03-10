@@ -177,12 +177,15 @@ fn render_main_ui(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
     render_status_bar_with_path(frame, app, chunks[3], theme);
 
     // Render action hints
-    render_action_hints(frame, chunks[4], app, &theme);
+    render_action_hints(frame, chunks[4], app, theme);
 }
 
 /// Render status bar with path bar
 fn render_status_bar_with_path(frame: &mut Frame, app: &mut App, area: Rect, theme: &Theme) {
     use crate::ui::widgets::StatusBar;
+
+    // Store click area for mouse events before any borrows
+    app.path_bar_area = Some(area);
 
     let status_text = if app.loading {
         app.loading_message.as_deref().unwrap_or("Loading...")
@@ -196,18 +199,25 @@ fn render_status_bar_with_path(frame: &mut Frame, app: &mut App, area: Rect, the
         .loading(app.loading)
         .error(app.error_message.is_some());
 
-    if let Some(ref main_dir) = app.main_dir {
-        status_bar = status_bar.path(main_dir).repo_count(app.repositories.len());
-    }
+    // Display selected repository path, fall back to main_dir if no repository selected
+    // Clone the path to avoid borrow checker issues
+    let path_to_display = if let Some(repo) = app.selected_repository() {
+        Some(repo.path.clone())
+    } else {
+        app.main_dir.clone()
+    };
 
-    // Store click area for mouse events
-    app.path_bar_area = Some(area);
+    if let Some(ref path) = path_to_display {
+        status_bar = status_bar.path(path).repo_count(app.repositories.len());
+    }
 
     frame.render_widget(status_bar, area);
 }
 
 /// Render action hints bar
 fn render_action_hints(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+    use ratatui::text::{Line, Span};
+
     // Only show in Running state and when search is not active
     if app.search_active || !matches!(app.state, AppState::Running) {
         return;
@@ -227,13 +237,22 @@ fn render_action_hints(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) 
         ('6', "OpenCode"),
     ];
 
-    let hint_text = hints
-        .iter()
-        .map(|(key, desc)| format!("[{}] {}", key, desc))
-        .collect::<Vec<_>>()
-        .join("   ");
+    // Build styled spans with key hints highlighted (same style as status bar)
+    let mut spans = Vec::new();
+    for (i, (key, desc)) in hints.iter().enumerate() {
+        if i > 0 {
+            spans.push(Span::raw("   "));
+        }
+        // Format: [1] Claude Code - highlight "[1]" with primary color
+        let key_hint = format!("[{}]", key);
+        spans.push(Span::styled(
+            key_hint,
+            Style::default().fg(theme.colors.primary.into()),
+        ));
+        spans.push(Span::raw(format!(" {}", desc)));
+    }
 
-    let paragraph = Paragraph::new(hint_text)
+    let paragraph = Paragraph::new(Line::from(spans))
         .style(Style::default().fg(theme.colors.text_muted.into()))
         .alignment(Alignment::Center);
 
