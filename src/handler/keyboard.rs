@@ -19,9 +19,6 @@ pub fn handle_key_event(key: KeyEvent, app: &mut App, runtime: &Runtime) {
         AppState::Cloning { .. } => {
             handle_cloning_keys(key, app);
         }
-        AppState::ShowingActions { .. } => {
-            handle_action_menu_keys(key, app, runtime);
-        }
         AppState::ShowingHelp { .. } => {
             handle_help_keys(key, app);
         }
@@ -50,89 +47,6 @@ pub fn handle_key_event(key: KeyEvent, app: &mut App, runtime: &Runtime) {
             // Already quitting
         }
     }
-}
-
-/// Handle keys in action menu
-fn handle_action_menu_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
-    match key.code {
-        KeyCode::Esc => {
-            let _ = app.msg_tx.try_send(AppMsg::CloseActions);
-        }
-        KeyCode::Char('1') => {
-            let action = crate::action::Action::CdAndCloud;
-            if app.selection_mode && app.selected_count() > 0 {
-                let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
-            } else {
-                let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
-            }
-        }
-        KeyCode::Char('2') => {
-            let action = crate::action::Action::OpenWebStorm;
-            if app.selection_mode && app.selected_count() > 0 {
-                let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
-            } else {
-                let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
-            }
-        }
-        KeyCode::Char('3') => {
-            let action = crate::action::Action::OpenVsCode;
-            if app.selection_mode && app.selected_count() > 0 {
-                let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
-            } else {
-                let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
-            }
-        }
-        KeyCode::Char('4') => {
-            let action = crate::action::Action::OpenFileManager;
-            if app.selection_mode && app.selected_count() > 0 {
-                let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
-            } else {
-                let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
-            }
-        }
-        KeyCode::Char('5') => {
-            let action = crate::action::Action::OpenIntelliJ;
-            if app.selection_mode && app.selected_count() > 0 {
-                let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
-            } else {
-                let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
-            }
-        }
-        KeyCode::Char('6') => {
-            let action = crate::action::Action::OpenOpenCode;
-            if app.selection_mode && app.selected_count() > 0 {
-                let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
-            } else {
-                let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
-            }
-        }
-        KeyCode::Down => {
-            // Navigate down in menu
-            let _ = app.msg_tx.try_send(AppMsg::ActionMenuNavDown);
-        }
-        KeyCode::Up => {
-            // Navigate up in menu
-            let _ = app.msg_tx.try_send(AppMsg::ActionMenuNavUp);
-        }
-        KeyCode::Enter => {
-            // Execute selected action
-            if let Some(action) = get_selected_action(app) {
-                if app.selection_mode && app.selected_count() > 0 {
-                    let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
-                } else {
-                    let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
-                }
-            }
-        }
-        _ => {}
-    }
-}
-
-/// Get currently selected action from app state
-fn get_selected_action(_app: &App) -> Option<crate::action::Action> {
-    // This would need to be implemented in app/model.rs
-    // For now, default to CdAndCloud
-    Some(crate::action::Action::CdAndCloud)
 }
 
 /// Maximum scroll offset for help panel (total lines - visible lines)
@@ -428,10 +342,68 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
             let _ = app.msg_tx.try_send(AppMsg::ShowMainDirectoryManager);
         }
 
-        // Actions
-        KeyCode::Enter => {
-            let _ = app.msg_tx.try_send(AppMsg::OpenActions);
+        // Direct action triggers (1-6 keys)
+        KeyCode::Char('1') => {
+            let action = crate::action::Action::CdAndCloud;
+            if app.selected_repository().is_some() {
+                if app.selection_mode && app.selected_count() > 0 {
+                    let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
+                } else {
+                    let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
+                }
+            }
         }
+        KeyCode::Char('2') => {
+            let action = crate::action::Action::OpenWebStorm;
+            if app.selected_repository().is_some() {
+                if app.selection_mode && app.selected_count() > 0 {
+                    let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
+                } else {
+                    let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
+                }
+            }
+        }
+        KeyCode::Char('3') => {
+            let action = crate::action::Action::OpenVsCode;
+            if app.selected_repository().is_some() {
+                if app.selection_mode && app.selected_count() > 0 {
+                    let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
+                } else {
+                    let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
+                }
+            }
+        }
+        KeyCode::Char('4') => {
+            let action = crate::action::Action::OpenFileManager;
+            if app.selected_repository().is_some() {
+                if app.selection_mode && app.selected_count() > 0 {
+                    let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
+                } else {
+                    let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
+                }
+            }
+        }
+        KeyCode::Char('5') => {
+            let action = crate::action::Action::OpenIntelliJ;
+            if app.selected_repository().is_some() {
+                if app.selection_mode && app.selected_count() > 0 {
+                    let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
+                } else {
+                    let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
+                }
+            }
+        }
+        KeyCode::Char('6') => {
+            let action = crate::action::Action::OpenOpenCode;
+            if app.selected_repository().is_some() {
+                if app.selection_mode && app.selected_count() > 0 {
+                    let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
+                } else {
+                    let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
+                }
+            }
+        }
+
         KeyCode::Char('f') if key.modifiers.contains(KeyModifiers::CONTROL) => {
             // Ctrl+f: Toggle favorites view
             if app.view_mode == ViewMode::Favorites {
@@ -675,41 +647,13 @@ mod tests {
         app.filtered_indices = vec![0];
         app.set_selected_index(Some(0));
 
-        // Test direct action shortcuts
-        handle_running_keys(create_test_key(KeyCode::Char('c')), &mut app, &runtime);
-        handle_running_keys(create_test_key(KeyCode::Char('w')), &mut app, &runtime);
-        handle_running_keys(create_test_key(KeyCode::Char('v')), &mut app, &runtime);
-        handle_running_keys(create_test_key(KeyCode::Char('f')), &mut app, &runtime);
-    }
-
-    #[test]
-    fn test_handle_action_menu_keys() {
-        let (tx, _rx) = tokio::sync::mpsc::channel(100);
-        let mut app = App::new(tx.clone());
-
-        // Test close action menu
-        handle_action_menu_keys(
-            create_test_key(KeyCode::Esc),
-            &mut app,
-            &Runtime::new(tx.clone()),
-        );
-
-        // Test execute actions
-        handle_action_menu_keys(
-            create_test_key(KeyCode::Char('c')),
-            &mut app,
-            &Runtime::new(tx.clone()),
-        );
-        handle_action_menu_keys(
-            create_test_key(KeyCode::Char('w')),
-            &mut app,
-            &Runtime::new(tx.clone()),
-        );
-        handle_action_menu_keys(
-            create_test_key(KeyCode::Char('1')),
-            &mut app,
-            &Runtime::new(tx.clone()),
-        );
+        // Test direct action shortcuts (1-6 keys)
+        handle_running_keys(create_test_key(KeyCode::Char('1')), &mut app, &runtime);
+        handle_running_keys(create_test_key(KeyCode::Char('2')), &mut app, &runtime);
+        handle_running_keys(create_test_key(KeyCode::Char('3')), &mut app, &runtime);
+        handle_running_keys(create_test_key(KeyCode::Char('4')), &mut app, &runtime);
+        handle_running_keys(create_test_key(KeyCode::Char('5')), &mut app, &runtime);
+        handle_running_keys(create_test_key(KeyCode::Char('6')), &mut app, &runtime);
     }
 
     #[test]

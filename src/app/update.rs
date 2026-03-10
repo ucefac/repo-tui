@@ -259,20 +259,9 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
         }
 
         // === State Transitions ===
-        AppMsg::OpenActions => {
-            if let Some(repo) = app.selected_repository().cloned() {
-                app.selected_repo = Some(repo.clone());
-                app.state = AppState::ShowingActions { repo };
-            }
-        }
-
-        AppMsg::CloseActions => {
-            app.selected_repo = None;
-            app.state = AppState::Running;
-        }
-
         AppMsg::ExecuteAction(action) => {
-            if let Some(repo) = app.selected_repo.clone() {
+            // Get the currently selected repository
+            if let Some(repo) = app.selected_repository().cloned() {
                 // Record as recently opened
                 app.recent.add(&repo.path);
 
@@ -283,8 +272,6 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 }
 
                 runtime.dispatch(crate::app::msg::Cmd::ExecuteAction(action, repo));
-                app.state = AppState::Running;
-                app.selected_repo = None;
             }
         }
 
@@ -521,10 +508,6 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
         }
 
         AppMsg::Cancel => match &app.state {
-            AppState::ShowingActions { .. } => {
-                app.state = AppState::Running;
-                app.selected_repo = None;
-            }
             AppState::ShowingHelp { .. } => {
                 app.state = AppState::Running;
             }
@@ -540,7 +523,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
         },
 
         AppMsg::ActionMenuNavDown => {
-            // Navigate down in action menu
+            // Navigate down in action menu (deprecated - no longer used)
             // This would be handled by the ActionMenu widget state
             // For now, just log
         }
@@ -1308,6 +1291,12 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 runtime.dispatch(Cmd::SaveConfig(config.clone()));
             }
         }
+
+        // Deprecated messages (no longer used, but kept for backwards compatibility)
+        AppMsg::OpenActions | AppMsg::CloseActions => {
+            // No-op: these messages are deprecated
+            // Actions are now triggered directly via 1-6 keys
+        }
     }
 }
 
@@ -1565,36 +1554,6 @@ mod tests {
     }
 
     #[test]
-    fn test_update_open_close_actions() {
-        let (tx, _rx) = tokio::sync::mpsc::channel(100);
-        let mut app = App::new(tx.clone());
-        let runtime = Runtime::new(tx);
-
-        app.repositories = vec![Repository {
-            name: "repo1".to_string(),
-            path: std::path::PathBuf::from("/tmp/repo1"),
-            last_modified: None,
-            is_dirty: false,
-            branch: Some("main".to_string()),
-            is_git_repo: true,
-            source: RepoSource::Standalone,
-        }];
-        app.apply_filter();
-        app.set_selected_index(Some(0));
-        app.state = AppState::Running;
-
-        // Open actions
-        update(AppMsg::OpenActions, &mut app, &runtime);
-        assert!(matches!(app.state, AppState::ShowingActions { .. }));
-        assert!(app.selected_repo.is_some());
-
-        // Close actions
-        update(AppMsg::CloseActions, &mut app, &runtime);
-        assert!(matches!(app.state, AppState::Running));
-        assert!(app.selected_repo.is_none());
-    }
-
-    #[test]
     fn test_update_show_close_help() {
         let (tx, _rx) = tokio::sync::mpsc::channel(100);
         let mut app = App::new(tx.clone());
@@ -1615,33 +1574,13 @@ mod tests {
         let mut app = App::new(tx.clone());
         let runtime = Runtime::new(tx);
 
-        // Cancel from ShowingActions
-        app.state = AppState::ShowingActions {
-            repo: Repository {
-                name: "test".to_string(),
-                path: std::path::PathBuf::from("/tmp/test"),
-                last_modified: None,
-                is_dirty: false,
-                branch: None,
-                is_git_repo: true,
-                source: RepoSource::Standalone,
-            },
-        };
-        app.selected_repo = Some(Repository {
-            name: "test".to_string(),
-            path: std::path::PathBuf::from("/tmp/test"),
-            last_modified: None,
-            is_dirty: false,
-            branch: None,
-            is_git_repo: true,
-            source: RepoSource::Standalone,
-        });
-
+        // Cancel from ShowingHelp
+        app.state = AppState::ShowingHelp { scroll_offset: 0 };
         update(AppMsg::Cancel, &mut app, &runtime);
         assert!(matches!(app.state, AppState::Running));
-        assert!(app.selected_repo.is_none());
 
         // Cancel from search focus
+        app.state = AppState::Running;
         app.search_active = true;
         app.search_query = "test".to_string();
 

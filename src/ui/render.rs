@@ -4,7 +4,7 @@ use crate::app::model::App;
 use crate::app::state::AppState;
 use crate::ui::theme::Theme;
 use crate::ui::widgets::{
-    centered_help_popup, centered_popup, centered_rect, ActionMenu, CloneDialog,
+    centered_help_popup, centered_popup, centered_rect, CloneDialog,
     DirectoryChooser, DirectoryChooserState, HelpPanel, MainDirManager, RepoList, SearchBox,
     ThemeSelector, TitleBar,
 };
@@ -64,10 +64,6 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         }
         AppState::Running => {
             render_main_ui(frame, area, app, &theme);
-        }
-        AppState::ShowingActions { ref repo } => {
-            render_main_ui(frame, area, app, &theme);
-            render_action_menu(frame, area, repo, &theme);
         }
         AppState::ShowingHelp { scroll_offset } => {
             render_main_ui(frame, area, app, &theme);
@@ -131,10 +127,11 @@ fn render_main_ui(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Length(1), // Title bar (新增)
+            Constraint::Length(1), // Title bar
             Constraint::Length(3), // Search box
             Constraint::Min(5),    // Repository list
-            Constraint::Length(2), // Status bar (status + path)
+            Constraint::Length(2), // Status bar (2 rows: status + path)
+            Constraint::Length(1), // Action hints
         ])
         .split(area);
 
@@ -178,6 +175,9 @@ fn render_main_ui(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
 
     // Render status bar (with path bar)
     render_status_bar_with_path(frame, app, chunks[3], theme);
+
+    // Render action hints
+    render_action_hints(frame, chunks[4], app, &theme);
 }
 
 /// Render status bar with path bar
@@ -189,7 +189,7 @@ fn render_status_bar_with_path(frame: &mut Frame, app: &mut App, area: Rect, the
     } else if let Some(ref error) = app.error_message {
         error
     } else {
-        "↑↓ navigate   / search   ENTER open   r refresh   ? help   Ctrl+C quit"
+        "↑↓ navigate   / search   r refresh   ? help   Ctrl+C quit"
     };
 
     let mut status_bar = StatusBar::new(status_text, theme)
@@ -206,19 +206,38 @@ fn render_status_bar_with_path(frame: &mut Frame, app: &mut App, area: Rect, the
     frame.render_widget(status_bar, area);
 }
 
-/// Render action menu
-fn render_action_menu(
-    frame: &mut Frame,
-    area: Rect,
-    repo: &crate::repo::Repository,
-    _theme: &Theme,
-) {
-    // Create centered popup
-    let popup_area = centered_popup(50, 50, area);
+/// Render action hints bar
+fn render_action_hints(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
+    // Only show in Running state and when search is not active
+    if app.search_active || !matches!(app.state, AppState::Running) {
+        return;
+    }
 
-    // Render action menu widget (includes Clear widget internally)
-    let menu = ActionMenu::new(repo, 0);
-    menu.render(frame, popup_area);
+    // Don't show when repository list is empty
+    if app.repositories.is_empty() || app.filtered_indices.is_empty() {
+        return;
+    }
+
+    let hints: Vec<(char, &str)> = vec![
+        ('1', "Claude Code"),
+        ('2', "WebStorm"),
+        ('3', "VS Code"),
+        ('4', "Finder"),
+        ('5', "IntelliJ"),
+        ('6', "OpenCode"),
+    ];
+
+    let hint_text = hints
+        .iter()
+        .map(|(key, desc)| format!("[{}] {}", key, desc))
+        .collect::<Vec<_>>()
+        .join("   ");
+
+    let paragraph = Paragraph::new(hint_text)
+        .style(Style::default().fg(theme.colors.text_muted.into()))
+        .alignment(Alignment::Center);
+
+    frame.render_widget(paragraph, area);
 }
 
 /// Render help panel

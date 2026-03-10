@@ -3,7 +3,6 @@
 use std::path::PathBuf;
 
 pub use crate::repo::clone::ParsedGitUrl;
-use crate::repo::Repository;
 use ratatui::widgets::ListState;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -270,12 +269,6 @@ pub enum AppState {
         confirming_delete: bool,
     },
 
-    /// Showing action menu
-    ShowingActions {
-        /// Selected repository
-        repo: Repository,
-    },
-
     /// Showing help panel
     ShowingHelp {
         /// Scroll offset for viewport
@@ -343,7 +336,6 @@ impl AppState {
     pub fn priority(&self) -> u8 {
         match self {
             AppState::Cloning { .. } => 6,
-            AppState::ShowingActions { .. } => 5,
             AppState::ShowingHelp { .. } => 4,
             AppState::ManagingDirs { .. } => 4,
             AppState::ChoosingDir { .. } => 3,
@@ -358,8 +350,7 @@ impl AppState {
     pub fn is_modal(&self) -> bool {
         matches!(
             self,
-            AppState::ShowingActions { .. }
-                | AppState::ShowingHelp { .. }
+            AppState::ShowingHelp { .. }
                 | AppState::ChoosingDir { .. }
                 | AppState::SelectingTheme { .. }
                 | AppState::ManagingDirs { .. }
@@ -436,13 +427,6 @@ mod tests {
 
     #[test]
     fn test_state_priority() {
-        assert_eq!(
-            AppState::ShowingActions {
-                repo: Repository::test_repo()
-            }
-            .priority(),
-            5
-        );
         assert_eq!(AppState::ShowingHelp { scroll_offset: 0 }.priority(), 4);
         assert_eq!(AppState::Running.priority(), 1);
     }
