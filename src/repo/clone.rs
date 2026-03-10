@@ -161,9 +161,33 @@ fn parse_path_components(original_url: &str, domain: &str, path: &str) -> Option
     })
 }
 
+/// Strip common TLD suffixes from domain name
+///
+/// Examples:
+/// - "github.com" -> "github"
+/// - "gitlab.org" -> "gitlab"
+/// - "bitbucket.io" -> "bitbucket"
+fn strip_tld(domain: &str) -> String {
+    // List of common TLDs to strip
+    const TLDS: &[&str] = &[
+        ".com", ".org", ".net", ".io", ".co", ".dev", ".app",
+        ".info", ".biz", ".us", ".uk", ".eu", ".de", ".fr",
+        ".jp", ".cn", ".ru", ".in", ".au", ".br", ".mx",
+        ".co.uk", ".com.cn", ".co.jp", ".com.au",
+    ];
+
+    let domain_lower = domain.to_lowercase();
+    for tld in TLDS {
+        if let Some(stripped) = domain_lower.strip_suffix(tld) {
+            return stripped.to_string();
+        }
+    }
+    domain_lower
+}
+
 /// Generate folder name from parsed URL
 ///
-/// Format: `{domain}_{owner}_{repo}`
+/// Format: `{domain}_{owner}_{repo}` (domain without TLD)
 ///
 /// # Examples
 /// ```
@@ -171,12 +195,12 @@ fn parse_path_components(original_url: &str, domain: &str, path: &str) -> Option
 ///
 /// let parsed = parse_git_url("https://github.com/farion1231/cc-switch").unwrap();
 /// let folder_name = generate_folder_name(&parsed);
-/// assert_eq!(folder_name, "github.com_farion1231_cc-switch");
+/// assert_eq!(folder_name, "github_farion1231_cc-switch");
 /// ```
 pub fn generate_folder_name(parsed: &ParsedGitUrl) -> String {
     format!(
         "{}_{}_{}",
-        sanitize(&parsed.domain),
+        sanitize(&strip_tld(&parsed.domain)),
         sanitize(&parsed.owner),
         sanitize(&parsed.repo)
     )
@@ -422,7 +446,29 @@ mod tests {
             repo: "cc-switch".to_string(),
             original_url: "https://github.com/farion1231/cc-switch".to_string(),
         };
-        assert_eq!(generate_folder_name(&parsed), "github.com_farion1231_cc-switch");
+        assert_eq!(generate_folder_name(&parsed), "github_farion1231_cc-switch");
+    }
+
+    #[test]
+    fn test_generate_folder_name_gitlab() {
+        let parsed = ParsedGitUrl {
+            domain: "gitlab.org".to_string(),
+            owner: "group".to_string(),
+            repo: "project".to_string(),
+            original_url: "https://gitlab.org/group/project".to_string(),
+        };
+        assert_eq!(generate_folder_name(&parsed), "gitlab_group_project");
+    }
+
+    #[test]
+    fn test_generate_folder_name_bitbucket() {
+        let parsed = ParsedGitUrl {
+            domain: "bitbucket.org".to_string(),
+            owner: "team".to_string(),
+            repo: "project".to_string(),
+            original_url: "https://bitbucket.org/team/project".to_string(),
+        };
+        assert_eq!(generate_folder_name(&parsed), "bitbucket_team_project");
     }
 
     #[test]
@@ -503,7 +549,7 @@ mod tests {
             repo: "repo@name".to_string(),
             original_url: "https://github.com/user/name/repo@name".to_string(),
         };
-        assert_eq!(generate_folder_name(&parsed), "github.com_user_name_repo_name");
+        assert_eq!(generate_folder_name(&parsed), "github_user_name_repo_name");
     }
 
     #[test]
@@ -514,7 +560,7 @@ mod tests {
             repo: "项目".to_string(),
             original_url: "https://github.com/用户/项目".to_string(),
         };
-        assert_eq!(generate_folder_name(&parsed), "github.com_用户_项目");
+        assert_eq!(generate_folder_name(&parsed), "github_用户_项目");
     }
 
     #[test]
@@ -530,7 +576,15 @@ mod tests {
     }
 
     #[test]
-    fn test_sanitize_empty_string() {
+    fn test_strip_tld() {
+        assert_eq!(strip_tld("github.com"), "github");
+        assert_eq!(strip_tld("gitlab.org"), "gitlab");
+        assert_eq!(strip_tld("bitbucket.io"), "bitbucket");
+        assert_eq!(strip_tld("my-site.net"), "my-site");
+        assert_eq!(strip_tld("example.co.uk"), "example");
+        assert_eq!(strip_tld("no-tld"), "no-tld");
+        assert_eq!(strip_tld("GitHub.COM"), "github");  // Case insensitive
+    }
         assert_eq!(sanitize(""), "");
     }
 

@@ -1069,24 +1069,55 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
         AppMsg::CloneUrlInput(c) => {
             if let Some(clone_state) = app.state.clone_state_mut() {
                 clone_state.insert_char(c);
+
+                // Real-time URL validation
+                let url = clone_state.url_input.trim();
+                if url.is_empty() {
+                    clone_state.validation_error = None;
+                } else {
+                    clone_state.validation_error =
+                        crate::repo::clone::validate_git_url(url, crate::constants::MAX_URL_LENGTH)
+                            .err();
+                }
             }
         }
 
         AppMsg::CloneUrlPaste(text) => {
             if let Some(clone_state) = app.state.clone_state_mut() {
                 clone_state.paste(&text);
+
+                // Real-time URL validation after paste
+                let url = clone_state.url_input.trim();
+                if url.is_empty() {
+                    clone_state.validation_error = None;
+                } else {
+                    clone_state.validation_error =
+                        crate::repo::clone::validate_git_url(url, crate::constants::MAX_URL_LENGTH)
+                            .err();
+                }
             }
         }
 
         AppMsg::CloneUrlBackspace => {
             if let Some(clone_state) = app.state.clone_state_mut() {
                 clone_state.backspace();
+
+                // Real-time URL validation after backspace
+                let url = clone_state.url_input.trim();
+                if url.is_empty() {
+                    clone_state.validation_error = None;
+                } else {
+                    clone_state.validation_error =
+                        crate::repo::clone::validate_git_url(url, crate::constants::MAX_URL_LENGTH)
+                            .err();
+                }
             }
         }
 
         AppMsg::CloneUrlClear => {
             if let Some(clone_state) = app.state.clone_state_mut() {
                 clone_state.clear_from_cursor();
+                clone_state.validation_error = None;
             }
         }
 
@@ -1095,9 +1126,14 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
             if let Some(clone_state) = app.state.clone_state_mut() {
                 let url = clone_state.url_input.trim().to_string();
 
+                // If there's already a validation error, don't proceed
+                if clone_state.validation_error.is_some() {
+                    return;
+                }
+
                 // Validate URL
                 if let Err(e) = crate::repo::clone::validate_git_url(&url, crate::constants::MAX_URL_LENGTH) {
-                    clone_state.stage = crate::app::state::CloneStage::Error(e);
+                    clone_state.validation_error = Some(e);
                     return;
                 }
 
@@ -1105,7 +1141,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 let parsed = match crate::repo::clone::parse_git_url(&url) {
                     Ok(p) => p,
                     Err(e) => {
-                        clone_state.stage = crate::app::state::CloneStage::Error(e);
+                        clone_state.validation_error = Some(e);
                         return;
                     }
                 };
