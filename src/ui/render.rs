@@ -130,8 +130,8 @@ fn render_main_ui(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
             Constraint::Length(1), // Title bar
             Constraint::Length(3), // Search box
             Constraint::Min(5),    // Repository list
-            Constraint::Length(2), // Status bar (2 rows: status + path)
             Constraint::Length(1), // Action hints
+            Constraint::Length(2), // Status bar (2 rows: status + path)
         ])
         .split(area);
 
@@ -173,11 +173,11 @@ fn render_main_ui(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
         .area_width(chunks[2].width);
     frame.render_widget(repo_list, chunks[2]);
 
-    // Render status bar (with path bar)
-    render_status_bar_with_path(frame, app, chunks[3], theme);
-
     // Render action hints
-    render_action_hints(frame, chunks[4], app, theme);
+    render_action_hints(frame, chunks[3], app, theme);
+
+    // Render status bar (with path bar)
+    render_status_bar_with_path(frame, app, chunks[4], theme);
 }
 
 /// Render status bar with path bar
@@ -254,7 +254,7 @@ fn render_action_hints(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) 
 
     let paragraph = Paragraph::new(Line::from(spans))
         .style(Style::default().fg(theme.colors.text_muted.into()))
-        .alignment(Alignment::Center);
+        .alignment(Alignment::Left);
 
     frame.render_widget(paragraph, area);
 }
