@@ -86,14 +86,13 @@ fn validate_repo_path(path: &Path) -> AppResult<()> {
 ///
 /// Security: Uses current_dir() instead of shell cd command
 /// Terminal: Restores terminal before execution for interactive CLI tools
-/// Note: This function will cause repotui to exit after spawning claude
+/// Note: On Unix, this function replaces the current process with claude (exec)
+/// On Windows, it spawns claude and signals repotui to exit
 fn execute_cd_and_cloud(repo_path: &Path) -> AppResult<()> {
-    // Use which to get full path
     let claude_path =
         which::which("claude").map_err(|_| ActionError::CommandNotFound("claude".to_string()))?;
 
     // Restore terminal to normal state before launching interactive CLI
-    // This allows claude to properly take over the terminal
     let _ = disable_raw_mode();
     let _ = execute!(io::stdout(), LeaveAlternateScreen);
     let _ = io::stdout().flush();
@@ -101,27 +100,46 @@ fn execute_cd_and_cloud(repo_path: &Path) -> AppResult<()> {
     // Clear the screen to avoid display artifacts
     println!("\n\n");
 
-    // Spawn claude process - it will take over the terminal
-    // We don't wait for it to complete; repotui will exit immediately after
-    let _child = Command::new(claude_path)
-        .current_dir(repo_path)
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .spawn()?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
 
-    // Return special error to signal that repotui should exit
-    // The child process will continue running in the foreground
-    Err(AppError::Action(ActionError::ExitAfterExecution))
+        // exec replaces the current process with claude
+        // This does not return on success
+        let _ = Command::new(&claude_path)
+            .current_dir(repo_path)
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .exec();
+
+        // exec only returns on error
+        Err(AppError::Action(ActionError::ExecutionFailed(
+            "Failed to execute claude".to_string()
+        )))
+    }
+
+    #[cfg(windows)]
+    {
+        // Windows: spawn and signal repotui to exit
+        let _child = Command::new(&claude_path)
+            .current_dir(repo_path)
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .spawn()?;
+
+        Err(AppError::Action(ActionError::ExitAfterExecution))
+    }
 }
 
 /// Execute cd + opencode
 ///
 /// Security: Uses current_dir() instead of shell cd command
 /// Terminal: Restores terminal before execution for interactive CLI tools
-/// Note: This function will cause repotui to exit after spawning opencode
+/// Note: On Unix, this function replaces the current process with opencode (exec)
+/// On Windows, it spawns opencode and signals repotui to exit
 fn execute_cd_and_opencode(repo_path: &Path) -> AppResult<()> {
-    // Use which to get full path
     let opencode_path =
         which::which("opencode").map_err(|_| ActionError::CommandNotFound("opencode".to_string()))?;
 
@@ -133,18 +151,37 @@ fn execute_cd_and_opencode(repo_path: &Path) -> AppResult<()> {
     // Clear the screen to avoid display artifacts
     println!("\n\n");
 
-    // Spawn opencode process - it will take over the terminal
-    // We don't wait for it to complete; repotui will exit immediately after
-    let _child = Command::new(opencode_path)
-        .current_dir(repo_path)
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
-        .spawn()?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
 
-    // Return special error to signal that repotui should exit
-    // The child process will continue running in the foreground
-    Err(AppError::Action(ActionError::ExitAfterExecution))
+        // exec replaces the current process with opencode
+        // This does not return on success
+        let _ = Command::new(&opencode_path)
+            .current_dir(repo_path)
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .exec();
+
+        // exec only returns on error
+        Err(AppError::Action(ActionError::ExecutionFailed(
+            "Failed to execute opencode".to_string()
+        )))
+    }
+
+    #[cfg(windows)]
+    {
+        // Windows: spawn and signal repotui to exit
+        let _child = Command::new(&opencode_path)
+            .current_dir(repo_path)
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .spawn()?;
+
+        Err(AppError::Action(ActionError::ExitAfterExecution))
+    }
 }
 
 /// Execute editor with repository path
