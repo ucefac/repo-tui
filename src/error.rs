@@ -136,6 +136,11 @@ pub enum ActionError {
     /// This is used for interactive commands that take over the terminal
     #[error("Terminal needs reinitialization")]
     TerminalNeedsReinit,
+
+    /// Indicates that the action executed successfully and the app should exit
+    /// This is used for external TUI programs that should take over the terminal
+    #[error("Exit after execution")]
+    ExitAfterExecution,
 }
 
 /// Clone operation errors

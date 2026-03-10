@@ -242,6 +242,11 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
         AppMsg::ActionExecuted(result) => {
             match result {
                 Ok(()) => {}
+                Err(ActionError::ExitAfterExecution) => {
+                    // Exit repotui after launching external TUI program
+                    // The external program (claude/opencode) will take over the terminal
+                    app.state = AppState::Quit;
+                }
                 Err(ActionError::TerminalNeedsReinit) => {
                     // Signal that terminal needs reinitialization
                     app.needs_terminal_reinit = true;

@@ -86,6 +86,7 @@ fn validate_repo_path(path: &Path) -> AppResult<()> {
 ///
 /// Security: Uses current_dir() instead of shell cd command
 /// Terminal: Restores terminal before execution for interactive CLI tools
+/// Note: This function will cause repotui to exit after spawning claude
 fn execute_cd_and_cloud(repo_path: &Path) -> AppResult<()> {
     // Use which to get full path
     let claude_path =
@@ -100,32 +101,25 @@ fn execute_cd_and_cloud(repo_path: &Path) -> AppResult<()> {
     // Clear the screen to avoid display artifacts
     println!("\n\n");
 
-    // Execute with current_dir (safer than shell cd)
-    // Use inherit for stdin/stdout/stderr to allow full terminal interaction
-    let status = Command::new(claude_path)
+    // Spawn claude process - it will take over the terminal
+    // We don't wait for it to complete; repotui will exit immediately after
+    let _child = Command::new(claude_path)
         .current_dir(repo_path)
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
-        .status()?;
+        .spawn()?;
 
-    // Signal that terminal needs reinitialization
-    // The main loop will handle restoring the TUI state
-    if !status.success() {
-        return Err(AppError::Action(ActionError::ExecutionFailed(format!(
-            "claude exited with code: {:?}",
-            status.code()
-        ))));
-    }
-
-    // Return special error to signal terminal needs reinitialization
-    Err(AppError::Action(ActionError::TerminalNeedsReinit))
+    // Return special error to signal that repotui should exit
+    // The child process will continue running in the foreground
+    Err(AppError::Action(ActionError::ExitAfterExecution))
 }
 
 /// Execute cd + opencode
 ///
 /// Security: Uses current_dir() instead of shell cd command
 /// Terminal: Restores terminal before execution for interactive CLI tools
+/// Note: This function will cause repotui to exit after spawning opencode
 fn execute_cd_and_opencode(repo_path: &Path) -> AppResult<()> {
     // Use which to get full path
     let opencode_path =
@@ -139,23 +133,18 @@ fn execute_cd_and_opencode(repo_path: &Path) -> AppResult<()> {
     // Clear the screen to avoid display artifacts
     println!("\n\n");
 
-    // Execute with current_dir (safer than shell cd)
-    let status = Command::new(opencode_path)
+    // Spawn opencode process - it will take over the terminal
+    // We don't wait for it to complete; repotui will exit immediately after
+    let _child = Command::new(opencode_path)
         .current_dir(repo_path)
         .stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
-        .status()?;
+        .spawn()?;
 
-    if !status.success() {
-        return Err(AppError::Action(ActionError::ExecutionFailed(format!(
-            "opencode exited with code: {:?}",
-            status.code()
-        ))));
-    }
-
-    // Return special error to signal terminal needs reinitialization
-    Err(AppError::Action(ActionError::TerminalNeedsReinit))
+    // Return special error to signal that repotui should exit
+    // The child process will continue running in the foreground
+    Err(AppError::Action(ActionError::ExitAfterExecution))
 }
 
 /// Execute editor with repository path
