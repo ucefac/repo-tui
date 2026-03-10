@@ -28,3 +28,4 @@ logs/
 
 # Build artifacts
 **/*.rs.bk
+.worktrees/
