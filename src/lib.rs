@@ -40,7 +40,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use ratatui::prelude::*;
-use std::io;
+use std::io::{self, Write};
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 use crate::app::msg::AppMsg;
@@ -128,14 +128,24 @@ async fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Resul
 
         // Receive async messages
         if let Ok(msg) = msg_rx.try_recv() {
-            // Handle terminal reinitialization specially
-            if matches!(msg, AppMsg::TerminalNeedsReinit) {
-                // Reinitialize terminal
-                *terminal = init_terminal()?;
-                terminal.clear()?;
-            } else {
-                app::update::update(msg, &mut app, &runtime);
-            }
+            app::update::update(msg, &mut app, &runtime);
+        }
+
+        // Check if terminal needs reinitialization (after running external TUI)
+        if app.needs_terminal_reinit {
+            app.needs_terminal_reinit = false;
+
+            // 彻底清理终端状态，确保从干净状态重新初始化
+            // 这对于从外部TUI（如lazygit、claude）返回后特别重要
+            let _ = disable_raw_mode();
+            let _ = execute!(io::stdout(), LeaveAlternateScreen);
+            let _ = io::stdout().flush();
+
+            // 短暂延迟确保终端完全释放（某些终端需要）
+            std::thread::sleep(std::time::Duration::from_millis(50));
+
+            *terminal = init_terminal()?;
+            terminal.clear()?;
         }
 
         // Check for quit
