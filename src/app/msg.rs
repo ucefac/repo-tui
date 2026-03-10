@@ -248,6 +248,9 @@ pub enum AppMsg {
     /// Cancel clone operation
     CancelClone,
 
+    /// Terminal needs reinitialization (after interactive CLI command)
+    TerminalNeedsReinit,
+
     // === Main Directory Management ===
     /// Show main directory manager
     ShowMainDirectoryManager,

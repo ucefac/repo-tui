@@ -3,8 +3,13 @@
 use crate::action::{validators, Action};
 use crate::error::{ActionError, AppError, AppResult};
 use crate::repo::Repository;
+use crossterm::{
+    execute,
+    terminal::{disable_raw_mode, LeaveAlternateScreen},
+};
+use std::io::{self, Write};
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Stdio};
 
 /// Execute an action on a repository
 pub fn execute_action(action: &Action, repo: &Repository) -> AppResult<()> {
@@ -80,14 +85,32 @@ fn validate_repo_path(path: &Path) -> AppResult<()> {
 /// Execute cd + cloud (claude)
 ///
 /// Security: Uses current_dir() instead of shell cd command
+/// Terminal: Restores terminal before execution for interactive CLI tools
 fn execute_cd_and_cloud(repo_path: &Path) -> AppResult<()> {
     // Use which to get full path
     let claude_path =
         which::which("claude").map_err(|_| ActionError::CommandNotFound("claude".to_string()))?;
 
-    // Execute with current_dir (safer than shell cd)
-    let status = Command::new(claude_path).current_dir(repo_path).status()?;
+    // Restore terminal to normal state before launching interactive CLI
+    // This allows claude to properly take over the terminal
+    let _ = disable_raw_mode();
+    let _ = execute!(io::stdout(), LeaveAlternateScreen);
+    let _ = io::stdout().flush();
 
+    // Clear the screen to avoid display artifacts
+    println!("\n\n");
+
+    // Execute with current_dir (safer than shell cd)
+    // Use inherit for stdin/stdout/stderr to allow full terminal interaction
+    let status = Command::new(claude_path)
+        .current_dir(repo_path)
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .status()?;
+
+    // Signal that terminal needs reinitialization
+    // The main loop will handle restoring the TUI state
     if !status.success() {
         return Err(AppError::Action(ActionError::ExecutionFailed(format!(
             "claude exited with code: {:?}",
@@ -95,19 +118,34 @@ fn execute_cd_and_cloud(repo_path: &Path) -> AppResult<()> {
         ))));
     }
 
-    Ok(())
+    // Return special error to signal terminal needs reinitialization
+    Err(AppError::Action(ActionError::TerminalNeedsReinit))
 }
 
 /// Execute cd + opencode
 ///
 /// Security: Uses current_dir() instead of shell cd command
+/// Terminal: Restores terminal before execution for interactive CLI tools
 fn execute_cd_and_opencode(repo_path: &Path) -> AppResult<()> {
     // Use which to get full path
     let opencode_path =
         which::which("opencode").map_err(|_| ActionError::CommandNotFound("opencode".to_string()))?;
 
+    // Restore terminal to normal state before launching interactive CLI
+    let _ = disable_raw_mode();
+    let _ = execute!(io::stdout(), LeaveAlternateScreen);
+    let _ = io::stdout().flush();
+
+    // Clear the screen to avoid display artifacts
+    println!("\n\n");
+
     // Execute with current_dir (safer than shell cd)
-    let status = Command::new(opencode_path).current_dir(repo_path).status()?;
+    let status = Command::new(opencode_path)
+        .current_dir(repo_path)
+        .stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .status()?;
 
     if !status.success() {
         return Err(AppError::Action(ActionError::ExecutionFailed(format!(
@@ -116,7 +154,8 @@ fn execute_cd_and_opencode(repo_path: &Path) -> AppResult<()> {
         ))));
     }
 
-    Ok(())
+    // Return special error to signal terminal needs reinitialization
+    Err(AppError::Action(ActionError::TerminalNeedsReinit))
 }
 
 /// Execute editor with repository path

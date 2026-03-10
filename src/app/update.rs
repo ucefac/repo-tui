@@ -5,7 +5,7 @@ use crate::app::msg::AppMsg;
 use crate::app::state::{AppState, ViewMode};
 use crate::config;
 use crate::constants;
-use crate::error::ConfigError;
+use crate::error::{ActionError, ConfigError};
 use crate::repo::Repository;
 use crate::runtime::executor::Runtime;
 use crate::ui::Theme;
@@ -240,8 +240,15 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
         }
 
         AppMsg::ActionExecuted(result) => {
-            if let Err(e) = result {
-                app.error_message = Some(e.user_message());
+            match result {
+                Ok(()) => {}
+                Err(ActionError::TerminalNeedsReinit) => {
+                    // Signal that terminal needs reinitialization
+                    let _ = app.msg_tx.try_send(AppMsg::TerminalNeedsReinit);
+                }
+                Err(e) => {
+                    app.error_message = Some(e.user_message());
+                }
             }
         }
 

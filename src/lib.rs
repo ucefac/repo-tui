@@ -128,7 +128,14 @@ async fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Resul
 
         // Receive async messages
         if let Ok(msg) = msg_rx.try_recv() {
-            app::update::update(msg, &mut app, &runtime);
+            // Handle terminal reinitialization specially
+            if matches!(msg, AppMsg::TerminalNeedsReinit) {
+                // Reinitialize terminal
+                *terminal = init_terminal()?;
+                terminal.clear()?;
+            } else {
+                app::update::update(msg, &mut app, &runtime);
+            }
         }
 
         // Check for quit

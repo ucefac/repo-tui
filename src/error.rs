@@ -131,6 +131,11 @@ pub enum ActionError {
 
     #[error("Unsafe path detected: {0}")]
     UnsafePath(String),
+
+    /// Indicates that terminal needs reinitialization after action execution
+    /// This is used for interactive commands that take over the terminal
+    #[error("Terminal needs reinitialization")]
+    TerminalNeedsReinit,
 }
 
 /// Clone operation errors
@@ -313,6 +318,10 @@ impl ActionError {
             }
             ActionError::CommandNotAllowed(cmd) => {
                 format!("Command not allowed: {}", cmd)
+            }
+            ActionError::TerminalNeedsReinit => {
+                // This is not an error, just a signal - return empty string
+                String::new()
             }
             _ => self.to_string(),
         }
