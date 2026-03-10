@@ -120,6 +120,9 @@ pub struct App {
 
     /// Update notification dismissed
     pub update_notification_dismissed: bool,
+
+    /// Terminal needs reinitialization (after external TUI exit)
+    pub needs_terminal_reinit: bool,
 }
 
 impl App {
@@ -162,6 +165,7 @@ impl App {
             update_status: crate::update::UpdateStatus::NeverChecked,
             available_update: None,
             update_notification_dismissed: false,
+            needs_terminal_reinit: false,
         }
     }
 

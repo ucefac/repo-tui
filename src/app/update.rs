@@ -244,6 +244,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 Ok(()) => {}
                 Err(ActionError::TerminalNeedsReinit) => {
                     // Signal that terminal needs reinitialization
+                    app.needs_terminal_reinit = true;
                     let _ = app.msg_tx.try_send(AppMsg::TerminalNeedsReinit);
                 }
                 Err(e) => {
