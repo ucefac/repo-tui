@@ -102,10 +102,11 @@ impl HelpPanel {
 
         let scroll_offset = self.scroll_offset.min(max_scroll);
 
-        // Apply scroll offset to both columns
-        let visible_end = (scroll_offset + visible_height).min(total_lines);
-        let mut left_visible: Vec<Line> = left_column[scroll_offset..visible_end].to_vec();
-        let mut right_visible: Vec<Line> = right_column[scroll_offset..visible_end].to_vec();
+        // Apply scroll offset to both columns - each column uses its own bounds
+        let left_end = (scroll_offset + visible_height).min(left_column.len());
+        let right_end = (scroll_offset + visible_height).min(right_column.len());
+        let mut left_visible: Vec<Line> = left_column[scroll_offset..left_end].to_vec();
+        let mut right_visible: Vec<Line> = right_column[scroll_offset..right_end].to_vec();
 
         // Add scroll indicators
         if scroll_offset > 0 {
@@ -113,7 +114,7 @@ impl HelpPanel {
             left_visible.insert(0, indicator.clone());
             right_visible.insert(0, indicator);
         }
-        if visible_end < total_lines {
+        if left_end < left_column.len() || right_end < right_column.len() {
             let indicator = Line::from(Span::styled("▼", Style::default().fg(Color::Gray)));
             left_visible.push(indicator.clone());
             right_visible.push(indicator);
