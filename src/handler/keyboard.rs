@@ -55,7 +55,7 @@ pub fn handle_key_event(key: KeyEvent, app: &mut App, runtime: &Runtime) {
 /// Handle keys in action menu
 fn handle_action_menu_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
     match key.code {
-        KeyCode::Char('q') | KeyCode::Esc => {
+        KeyCode::Esc => {
             let _ = app.msg_tx.try_send(AppMsg::CloseActions);
         }
         KeyCode::Char('1') => {
@@ -169,7 +169,7 @@ fn handle_help_keys(key: KeyEvent, app: &mut App) {
 /// Handle keys in theme selector
 fn handle_theme_selector_keys(key: KeyEvent, app: &mut App) {
     match key.code {
-        KeyCode::Esc | KeyCode::Char('q') => {
+        KeyCode::Esc => {
             let _ = app.msg_tx.try_send(AppMsg::CloseThemeSelector);
         }
         KeyCode::Char('j') | KeyCode::Down => {
@@ -530,7 +530,7 @@ fn handle_main_dir_manager_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime
 
     // Normal mode - handle regular keys
     match key.code {
-        KeyCode::Esc | KeyCode::Char('q') => {
+        KeyCode::Esc => {
             let _ = app.msg_tx.try_send(AppMsg::CloseMainDirectoryManager);
         }
         KeyCode::Char('a') => {
@@ -684,7 +684,7 @@ mod tests {
 
         // Test close action menu
         handle_action_menu_keys(
-            create_test_key(KeyCode::Char('q')),
+            create_test_key(KeyCode::Esc),
             &mut app,
             &Runtime::new(tx.clone()),
         );
@@ -840,7 +840,6 @@ mod tests {
 
         // Test close
         handle_theme_selector_keys(create_test_key(KeyCode::Esc), &mut app);
-        handle_theme_selector_keys(create_test_key(KeyCode::Char('q')), &mut app);
 
         // Test navigation
         handle_theme_selector_keys(create_test_key(KeyCode::Char('j')), &mut app);
