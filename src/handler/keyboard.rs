@@ -342,7 +342,7 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
             let _ = app.msg_tx.try_send(AppMsg::ShowMainDirectoryManager);
         }
 
-        // Direct action triggers (1-6 keys)
+        // Direct action triggers (1-7 keys)
         KeyCode::Char('1') => {
             let action = crate::action::Action::CdAndCloud;
             if app.selected_repository().is_some() {
@@ -395,6 +395,16 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
         }
         KeyCode::Char('6') => {
             let action = crate::action::Action::OpenOpenCode;
+            if app.selected_repository().is_some() {
+                if app.selection_mode && app.selected_count() > 0 {
+                    let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
+                } else {
+                    let _ = app.msg_tx.try_send(AppMsg::ExecuteAction(action));
+                }
+            }
+        }
+        KeyCode::Char('7') => {
+            let action = crate::action::Action::OpenLazyGit;
             if app.selected_repository().is_some() {
                 if app.selection_mode && app.selected_count() > 0 {
                     let _ = app.msg_tx.try_send(AppMsg::ExecuteBatchAction(action));
@@ -647,13 +657,14 @@ mod tests {
         app.filtered_indices = vec![0];
         app.set_selected_index(Some(0));
 
-        // Test direct action shortcuts (1-6 keys)
+        // Test direct action shortcuts (1-7 keys)
         handle_running_keys(create_test_key(KeyCode::Char('1')), &mut app, &runtime);
         handle_running_keys(create_test_key(KeyCode::Char('2')), &mut app, &runtime);
         handle_running_keys(create_test_key(KeyCode::Char('3')), &mut app, &runtime);
         handle_running_keys(create_test_key(KeyCode::Char('4')), &mut app, &runtime);
         handle_running_keys(create_test_key(KeyCode::Char('5')), &mut app, &runtime);
         handle_running_keys(create_test_key(KeyCode::Char('6')), &mut app, &runtime);
+        handle_running_keys(create_test_key(KeyCode::Char('7')), &mut app, &runtime);
     }
 
     #[test]

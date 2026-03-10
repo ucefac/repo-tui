@@ -22,6 +22,9 @@ pub enum Action {
 
     /// Open in OpenCode
     OpenOpenCode,
+
+    /// Open in LazyGit
+    OpenLazyGit,
 }
 
 impl Action {
@@ -34,18 +37,20 @@ impl Action {
             Action::OpenFileManager => '4',
             Action::OpenIntelliJ => '5',
             Action::OpenOpenCode => '6',
+            Action::OpenLazyGit => '7',
         }
     }
 
     /// Get action description
     pub fn description(&self) -> &'static str {
         match self {
-            Action::CdAndCloud => "Open in Claude Code",
-            Action::OpenWebStorm => "Open in WebStorm",
-            Action::OpenVsCode => "Open in VS Code",
-            Action::OpenFileManager => "Open in Finder/Explorer",
-            Action::OpenIntelliJ => "Open in IntelliJ IDEA",
-            Action::OpenOpenCode => "Open in OpenCode",
+            Action::CdAndCloud => "Claude Code",
+            Action::OpenWebStorm => "WebStorm",
+            Action::OpenVsCode => "VS Code",
+            Action::OpenFileManager => "Finder/Explorer",
+            Action::OpenIntelliJ => "IntelliJ IDEA",
+            Action::OpenOpenCode => "OpenCode",
+            Action::OpenLazyGit => "LazyGit",
         }
     }
 
@@ -58,6 +63,7 @@ impl Action {
             Action::OpenFileManager,
             Action::OpenIntelliJ,
             Action::OpenOpenCode,
+            Action::OpenLazyGit,
         ]
     }
 }
@@ -74,17 +80,23 @@ mod tests {
         assert_eq!(Action::OpenFileManager.shortcut(), '4');
         assert_eq!(Action::OpenIntelliJ.shortcut(), '5');
         assert_eq!(Action::OpenOpenCode.shortcut(), '6');
+        assert_eq!(Action::OpenLazyGit.shortcut(), '7');
     }
 
     #[test]
     fn test_action_description() {
-        assert!(Action::CdAndCloud.description().contains("Claude Code"));
-        assert!(Action::OpenWebStorm.description().contains("WebStorm"));
+        assert_eq!(Action::CdAndCloud.description(), "Claude Code");
+        assert_eq!(Action::OpenWebStorm.description(), "WebStorm");
+        assert_eq!(Action::OpenVsCode.description(), "VS Code");
+        assert_eq!(Action::OpenFileManager.description(), "Finder/Explorer");
+        assert_eq!(Action::OpenIntelliJ.description(), "IntelliJ IDEA");
+        assert_eq!(Action::OpenOpenCode.description(), "OpenCode");
+        assert_eq!(Action::OpenLazyGit.description(), "LazyGit");
     }
 
     #[test]
     fn test_action_all() {
         let actions = Action::all();
-        assert_eq!(actions.len(), 6);
+        assert_eq!(actions.len(), 7);
     }
 }

@@ -40,6 +40,10 @@ pub fn execute_action(action: &Action, repo: &Repository) -> AppResult<()> {
             execute_cd_and_opencode(&repo.path)?;
         }
 
+        Action::OpenLazyGit => {
+            execute_cd_and_lazygit(&repo.path)?;
+        }
+
         Action::OpenFileManager => {
             open_file_manager(&repo.path)?;
         }
@@ -174,6 +178,57 @@ fn execute_cd_and_opencode(repo_path: &Path) -> AppResult<()> {
     {
         // Windows: spawn and signal repotui to exit
         let _child = Command::new(&opencode_path)
+            .current_dir(repo_path)
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .spawn()?;
+
+        Err(AppError::Action(ActionError::ExitAfterExecution))
+    }
+}
+
+/// Execute cd + lazygit
+///
+/// Security: Uses current_dir() instead of shell cd command
+/// Terminal: Restores terminal before execution for interactive CLI tools
+/// Note: On Unix, this function replaces the current process with lazygit (exec)
+/// On Windows, it spawns lazygit and signals repotui to exit
+fn execute_cd_and_lazygit(repo_path: &Path) -> AppResult<()> {
+    let lazygit_path =
+        which::which("lazygit").map_err(|_| ActionError::CommandNotFound("lazygit".to_string()))?;
+
+    // Restore terminal to normal state before launching interactive CLI
+    let _ = disable_raw_mode();
+    let _ = execute!(io::stdout(), LeaveAlternateScreen);
+    let _ = io::stdout().flush();
+
+    // Clear the screen to avoid display artifacts
+    println!("\n\n");
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::process::CommandExt;
+
+        // exec replaces the current process with lazygit
+        // This does not return on success
+        let _ = Command::new(&lazygit_path)
+            .current_dir(repo_path)
+            .stdin(Stdio::inherit())
+            .stdout(Stdio::inherit())
+            .stderr(Stdio::inherit())
+            .exec();
+
+        // exec only returns on error
+        Err(AppError::Action(ActionError::ExecutionFailed(
+            "Failed to execute lazygit".to_string()
+        )))
+    }
+
+    #[cfg(windows)]
+    {
+        // Windows: spawn and signal repotui to exit
+        let _child = Command::new(&lazygit_path)
             .current_dir(repo_path)
             .stdin(Stdio::inherit())
             .stdout(Stdio::inherit())

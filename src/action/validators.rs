@@ -100,6 +100,20 @@ pub fn validate_action(action: &Action) -> AppResult<()> {
                 // Windows explorer is always available
             }
         }
+
+        Action::OpenLazyGit => {
+            if !is_command_allowed("lazygit") {
+                return Err(AppError::Action(ActionError::CommandNotAllowed(
+                    "lazygit".to_string(),
+                )));
+            }
+
+            if which::which("lazygit").is_err() {
+                return Err(AppError::Action(ActionError::CommandNotFound(
+                    "lazygit".to_string(),
+                )));
+            }
+        }
     }
 
     Ok(())

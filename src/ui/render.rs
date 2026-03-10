@@ -235,6 +235,7 @@ fn render_action_hints(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) 
         ('4', "Finder"),
         ('5', "IntelliJ"),
         ('6', "OpenCode"),
+        ('7', "LazyGit"),
     ];
 
     // Build styled spans with key hints highlighted (same style as status bar)
