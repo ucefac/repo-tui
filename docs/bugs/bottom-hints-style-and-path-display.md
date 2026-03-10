@@ -3,10 +3,11 @@
 **日期**: 2026-03-10
 **关联 Commit**: 55043d5e00a735f8dd5042254f8a1c0118458e23
 **严重程度**: 中（UI 显示问题）
+**状态**: 已完成（包含后续优化）
 
 ---
 
-## 问题描述
+## 问题描述（bottom3.png）
 
 根据用户报告（见 bottom3.png），底部快捷键帮助区域存在两个显示问题：
 
@@ -21,6 +22,32 @@
 **现象**: 第三行（操作快捷键提示）的样式与第一行不一致，快捷键没有被高亮显示
 
 **预期**: 应该与第一行保持一致，使用主题色高亮快捷键部分（如 `[1]`、`[2]` 等）
+
+---
+
+## 后续优化（bottom4.png）
+
+在修复 bottom3.png 问题后，用户又报告了新的问题和优化需求：
+
+### 问题 3：第三行没有左对齐
+
+**现象**: 第三行（操作快捷键提示）居中对齐，与第一行（左对齐）不一致
+
+**预期**: 应该与第一行保持一致，使用左对齐
+
+### 优化 4：第二行与第三行交换
+
+**当前顺序**:
+1. 第一行：导航快捷键
+2. 第二行：仓库路径
+3. 第三行：操作快捷键
+
+**期望顺序**:
+1. 第一行：导航快捷键
+2. 第二行：操作快捷键
+3. 第三行：仓库路径
+
+**理由**: 路径信息较长，放在最后一行更合理；操作快捷键与导航快捷键相邻更便于用户理解
 
 ---
 
@@ -106,7 +133,39 @@ for (i, (key, desc)) in hints.iter().enumerate() {
 
 let paragraph = Paragraph::new(Line::from(spans))
     .style(Style::default().fg(theme.colors.text_muted.into()))
-    .alignment(Alignment::Center);
+    .alignment(Alignment::Center);  // 后续优化中改为 Left
+```
+
+### 修复 3: 左对齐操作快捷键（后续优化）
+
+修改 `render_action_hints` 函数的对齐方式：
+
+```rust
+let paragraph = Paragraph::new(Line::from(spans))
+    .style(Style::default().fg(theme.colors.text_muted.into()))
+    .alignment(Alignment::Left);  // 从 Center 改为 Left
+```
+
+### 优化 4: 交换第二行和第三行顺序（后续优化）
+
+修改 `render_main_ui` 函数中的布局约束和渲染顺序：
+
+```rust
+// 布局约束
+let chunks = Layout::default()
+    .direction(Direction::Vertical)
+    .constraints([
+        Constraint::Length(1), // Title bar
+        Constraint::Length(3), // Search box
+        Constraint::Min(5),    // Repository list
+        Constraint::Length(1), // Action hints (移到上面)
+        Constraint::Length(2), // Status bar (移到底部)
+    ])
+    .split(area);
+
+// 渲染顺序
+render_action_hints(frame, chunks[3], app, theme);      // 第二行
+render_status_bar_with_path(frame, app, chunks[4], theme); // 第三行
 ```
 
 ---
@@ -137,18 +196,46 @@ cargo test --lib
 
 1. 运行 `cargo run`
 2. 观察底部显示：
-   - **第一行**: `↑↓ navigate   / search   r refresh   ? help   Ctrl+C quit`（快捷键高亮）
-   - **第二行**: 当前选中仓库的完整路径（如 `/Users/user/projects/my-repo`）
-   - **第三行**: `[1] Claude Code   [2] WebStorm ...`（数字部分高亮，与第一行样式一致）
+   - **第一行**: `↑↓ navigate   / search   r refresh   ? help   Ctrl+C quit`（左对齐，快捷键高亮）
+   - **第二行**: `[1] Claude Code   [2] WebStorm ...`（左对齐，数字部分高亮）
+   - **第三行**: `📂 /Users/.../repo (24 repos)`（路径，在最后一行）
 
 ---
 
 ## 测试结果
 
+### bottom3.png 修复
+
 - ✅ 编译通过
-- ✅ 单元测试通过（292 个库测试）
+- ✅ 单元测试通过（296 个库测试）
 - ✅ 键盘处理测试通过（14 个测试）
 - ✅ 状态栏组件测试通过（4 个测试）
+
+### bottom4.png 优化
+
+- ✅ 编译通过
+- ✅ 单元测试通过（296 个库测试）
+- ✅ 左对齐修改完成
+- ✅ 行顺序交换完成
+
+---
+
+## 提交记录
+
+| Commit | 修改内容 |
+|--------|----------|
+| 0068302 | fix(ui): display selected repo path and highlight action hints |
+| 85c59ff | fix(ui): align action hints left and reorder bottom rows |
+
+---
+
+## 最终效果
+
+```
+↑↓ navigate   / search   r refresh   ? help   Ctrl+C quit
+[1] Claude Code   [2] WebStorm   [3] VS Code   [4] Finder   [5] IntelliJ   [6] OpenCode
+📂 /Users/yyyyyyh/Developer/repo/github.com_HKUDS_nanobot (24 repos)
+```
 
 ---
 
