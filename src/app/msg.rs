@@ -49,6 +49,9 @@ pub enum Cmd {
         /// Target path
         target_path: PathBuf,
     },
+
+    /// Check for updates
+    CheckForUpdate,
 }
 
 /// Application messages
@@ -310,6 +313,19 @@ pub enum AppMsg {
 
     /// Cancel directory chooser and return
     CancelDirectoryChooser,
+
+    // === Update Operations ===
+    /// Trigger update check
+    TriggerUpdateCheck,
+
+    /// Update check completed
+    UpdateCheckCompleted(Box<std::result::Result<crate::update::UpdateCheckResult, crate::error::UpdateError>>),
+
+    /// Dismiss update notification
+    DismissUpdateNotification,
+
+    /// Ignore update version
+    IgnoreUpdateVersion(String),
 }
 
 impl AppMsg {

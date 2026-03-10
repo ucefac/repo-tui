@@ -51,6 +51,7 @@
 | [multi-directory-test-plan.md](./multi-directory-test-plan.md) | 多主目录管理功能测试策略 | 主目录管理 |
 | [test-completion-report.md](./test-completion-report.md) | 测试完成报告 | - |
 | [test-supplement-plan.md](./test-supplement-plan.md) | 测试补充计划 | - |
+| [auto-update-test-plan.md](./auto-update-test-plan.md) | 自动检测更新功能测试策略 | 自动更新检测 |
 
 ### 重构计划
 | 文档 | 说明 | 关联 |
@@ -96,4 +97,4 @@
 
 ---
 
-**最后更新**: 2026-03-08
+**最后更新**: 2026-03-10

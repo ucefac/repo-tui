@@ -30,6 +30,7 @@ pub mod recent;
 pub mod repo;
 pub mod runtime;
 pub mod ui;
+pub mod update;
 
 mod constants;
 
@@ -99,7 +100,21 @@ async fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Resul
     // Load configuration
     runtime.dispatch(app::msg::Cmd::LoadConfig);
 
-    let mut app = App::new(msg_tx);
+    let mut app = App::new(msg_tx.clone());
+
+    // Start update scheduler if enabled
+    let update_config = config::load_or_create_config()
+        .ok()
+        .map(|c| c.update)
+        .unwrap_or_default();
+
+    if update_config.auto_check_enabled {
+        let scheduler = update::UpdateScheduler::new(
+            msg_tx.clone(),
+            update_config.check_interval_hours,
+        );
+        tokio::spawn(scheduler.run());
+    }
 
     loop {
         // Render

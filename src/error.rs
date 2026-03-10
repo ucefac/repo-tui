@@ -196,6 +196,25 @@ pub enum CloneError {
     Io(String),
 }
 
+/// Update check errors
+#[derive(Error, Debug, Clone)]
+pub enum UpdateError {
+    #[error("Network error: {0}")]
+    Network(String),
+
+    #[error("API error: {0}")]
+    ApiError(String),
+
+    #[error("Version parse error: {0}")]
+    VersionParseError(String),
+
+    #[error("No releases found")]
+    NoReleasesFound,
+
+    #[error("Rate limit exceeded")]
+    RateLimitExceeded,
+}
+
 impl AppError {
     /// Get user-friendly error message
     pub fn user_message(&self) -> String {

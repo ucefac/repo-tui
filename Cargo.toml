@@ -58,6 +58,10 @@ arboard = "3.3"
 # Random theme selection
 rand = "0.8"
 
+# Update checking
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+semver = { version = "1.0", features = ["serde"] }
+
 [dev-dependencies]
 # Testing
 tempfile = "3"

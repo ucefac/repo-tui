@@ -14,6 +14,7 @@
 | [clone-feature-prd-v1.md](./clone-feature-prd-v1.md) | v1 | Git Clone 功能 PRD | 📝 已审查 | Clone 功能 |
 | [clone-feature-prd-v2.md](./clone-feature-prd-v2.md) | v2 | Git Clone 功能 PRD（基于审查修复） | 📝 已审查 | Clone 功能 |
 | [clone-feature-prd-v3.md](./clone-feature-prd-v3.md) | v3-final | Git Clone 功能 PRD（审查通过） | ✅ **定稿** | Clone 功能 |
+| [auto-update-prd-v1.md](./auto-update-prd-v1.md) | v1 | 自动检测更新功能 PRD | 📝 待审查 | 版本管理 |
 
 ---
 
@@ -48,6 +49,7 @@
 
 | 日期 | 版本 | 变更内容 |
 |------|------|----------|
+| 2026-03-10 | - | 新增自动检测更新功能 PRD |
 | 2026-03-09 | v3 | Git Clone 功能 PRD v3（修复所有 High Priority 审查问题） |
 | 2026-03-09 | v2 | Git Clone 功能 PRD 定稿（基于审查意见修复） |
 | 2026-03-09 | v1 | 新增 Git Clone 功能 PRD |
@@ -57,4 +59,6 @@
 
 ---
 
-**最后更新**: 2026-03-08
+**最后更新**: 2026-03-10
+**维护者**: repotui Team
+

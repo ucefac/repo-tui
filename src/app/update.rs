@@ -1,7 +1,7 @@
 //! Application update logic
 
 use crate::app::model::App;
-use crate::app::msg::AppMsg;
+use crate::app::msg::{AppMsg, Cmd};
 use crate::app::state::{AppState, ViewMode};
 use crate::config;
 use crate::constants;
@@ -1259,6 +1259,48 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 clone_state.cancel();
             }
             app.state = AppState::Running;
+        }
+
+        AppMsg::TerminalNeedsReinit => {
+            // Terminal needs reinitialization - this is handled by the main loop
+            // Just ignore it here as it's a signal to the main loop
+        }
+
+        // === Update Operations ===
+        AppMsg::TriggerUpdateCheck => {
+            app.update_status = crate::update::UpdateStatus::Checking;
+            runtime.dispatch(Cmd::CheckForUpdate);
+        }
+
+        AppMsg::UpdateCheckCompleted(result) => {
+            match *result {
+                Ok(check_result) => {
+                    app.update_status = check_result.status.clone();
+                    if let crate::update::UpdateStatus::UpdateAvailable { .. } = check_result.status {
+                        app.available_update = check_result.info;
+                        app.update_notification_dismissed = false;
+                    }
+                }
+                Err(e) => {
+                    app.update_status = crate::update::UpdateStatus::CheckFailed {
+                        error: e.to_string(),
+                    };
+                }
+            }
+        }
+
+        AppMsg::DismissUpdateNotification => {
+            app.update_notification_dismissed = true;
+        }
+
+        AppMsg::IgnoreUpdateVersion(version) => {
+            app.update_notification_dismissed = true;
+            // Persist to config
+            if let Some(ref mut config) = app.config {
+                config.update.ignored_version = Some(version);
+                // Trigger config save
+                runtime.dispatch(Cmd::SaveConfig(config.clone()));
+            }
         }
     }
 }

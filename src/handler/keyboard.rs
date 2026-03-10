@@ -495,6 +495,11 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
             let _ = app.msg_tx.try_send(AppMsg::StartClone);
         }
 
+        KeyCode::Char('U') => {
+            // U: Trigger manual update check
+            let _ = app.msg_tx.try_send(AppMsg::TriggerUpdateCheck);
+        }
+
         _ => {}
     }
 }

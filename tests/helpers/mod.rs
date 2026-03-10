@@ -113,6 +113,7 @@ pub fn create_test_config(main_dir: PathBuf) -> Config {
         ui: repotui::config::UiConfig::default(),
         favorites: FavoritesConfig::default(),
         recent: RecentConfig::default(),
+        update: repotui::update::UpdateConfig::default(),
         version: "2.0".to_string(),
     }
 }

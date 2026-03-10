@@ -111,6 +111,15 @@ pub struct App {
 
     /// Active main directory index
     pub active_main_dir_index: Option<usize>,
+
+    /// Update check status
+    pub update_status: crate::update::UpdateStatus,
+
+    /// Available update information
+    pub available_update: Option<crate::update::UpdateInfo>,
+
+    /// Update notification dismissed
+    pub update_notification_dismissed: bool,
 }
 
 impl App {
@@ -150,6 +159,9 @@ impl App {
             main_directories: Vec::new(),
             single_repositories: Vec::new(),
             active_main_dir_index: None,
+            update_status: crate::update::UpdateStatus::NeverChecked,
+            available_update: None,
+            update_notification_dismissed: false,
         }
     }
 
