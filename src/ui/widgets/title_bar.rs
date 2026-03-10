@@ -7,6 +7,7 @@ use ratatui::widgets::{Block, Borders};
 
 use crate::app::state::ViewMode;
 use crate::ui::theme::Theme;
+use crate::update::UpdateStatus;
 
 /// Title bar widget
 #[derive(Debug, Clone)]
@@ -19,16 +20,22 @@ pub struct TitleBar<'a> {
     selection_mode: bool,
     /// Number of selected repositories
     selected_count: usize,
+    /// Update status
+    update_status: &'a UpdateStatus,
+    /// Update notification dismissed
+    update_dismissed: bool,
 }
 
 impl<'a> TitleBar<'a> {
     /// Create a new title bar
-    pub fn new(view_mode: &'a ViewMode, theme: &'a Theme) -> Self {
+    pub fn new(view_mode: &'a ViewMode, theme: &'a Theme, update_status: &'a UpdateStatus) -> Self {
         Self {
             view_mode,
             theme,
             selection_mode: false,
             selected_count: 0,
+            update_status,
+            update_dismissed: false,
         }
     }
 
@@ -36,6 +43,12 @@ impl<'a> TitleBar<'a> {
     pub fn selection_info(mut self, selected_count: usize) -> Self {
         self.selection_mode = true;
         self.selected_count = selected_count;
+        self
+    }
+
+    /// Set update dismissed state
+    pub fn update_dismissed(mut self, dismissed: bool) -> Self {
+        self.update_dismissed = dismissed;
         self
     }
 
@@ -52,22 +65,49 @@ impl<'a> TitleBar<'a> {
             format!("repotui — {}", view_text)
         }
     }
+
+    /// Get update indicator text
+    fn get_update_text(&self) -> Option<String> {
+        if self.update_dismissed {
+            return None;
+        }
+        match self.update_status {
+            UpdateStatus::UpdateAvailable { version } => {
+                Some(format!("⬆ {}", version))
+            }
+            _ => None,
+        }
+    }
 }
 
 impl<'a> Widget for TitleBar<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
         // Get title text
         let title_text = self.get_title_text();
+        let update_text = self.get_update_text();
 
-        // Create block with styled border and title
+        // Create block with styled border
         let block = Block::default()
-            .title(title_text)
             .borders(Borders::ALL)
             .border_style(self.theme.focused_border_style())
-            .title_style(self.theme.title_style())
             .style(Style::default().bg(self.theme.colors.title_bg.into()));
 
-        Widget::render(block, area, buf);
+        // If there's an update available, add it to the right side
+        if let Some(update_text) = update_text {
+            // Create title with left and right parts
+            let left_title = ratatui::widgets::block::Title::from(title_text)
+                .alignment(Alignment::Left);
+            let right_title = ratatui::widgets::block::Title::from(
+                Span::styled(update_text, Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
+            );
+            let block = block.title(left_title).title(right_title);
+            Widget::render(block, area, buf);
+        } else {
+            let title = ratatui::widgets::block::Title::from(title_text)
+                .alignment(Alignment::Left);
+            let block = block.title(title);
+            Widget::render(block, area, buf);
+        }
     }
 }
 
@@ -82,11 +122,12 @@ mod tests {
         let mut terminal = Terminal::new(backend).unwrap();
         let theme = Theme::dark();
         let view_mode = ViewMode::All;
+        let update_status = UpdateStatus::NeverChecked;
 
         terminal
             .draw(|f| {
                 let area = f.area();
-                let title = TitleBar::new(&view_mode, &theme);
+                let title = TitleBar::new(&view_mode, &theme, &update_status);
                 f.render_widget(title, area);
             })
             .unwrap();
@@ -98,11 +139,12 @@ mod tests {
         let mut terminal = Terminal::new(backend).unwrap();
         let theme = Theme::dark();
         let view_mode = ViewMode::Favorites;
+        let update_status = UpdateStatus::NeverChecked;
 
         terminal
             .draw(|f| {
                 let area = f.area();
-                let title = TitleBar::new(&view_mode, &theme);
+                let title = TitleBar::new(&view_mode, &theme, &update_status);
                 f.render_widget(title, area);
             })
             .unwrap();
@@ -114,11 +156,12 @@ mod tests {
         let mut terminal = Terminal::new(backend).unwrap();
         let theme = Theme::dark();
         let view_mode = ViewMode::Recent;
+        let update_status = UpdateStatus::NeverChecked;
 
         terminal
             .draw(|f| {
                 let area = f.area();
-                let title = TitleBar::new(&view_mode, &theme);
+                let title = TitleBar::new(&view_mode, &theme, &update_status);
                 f.render_widget(title, area);
             })
             .unwrap();
@@ -130,11 +173,31 @@ mod tests {
         let mut terminal = Terminal::new(backend).unwrap();
         let theme = Theme::dark();
         let view_mode = ViewMode::All;
+        let update_status = UpdateStatus::NeverChecked;
 
         terminal
             .draw(|f| {
                 let area = f.area();
-                let title = TitleBar::new(&view_mode, &theme).selection_info(3);
+                let title = TitleBar::new(&view_mode, &theme, &update_status).selection_info(3);
+                f.render_widget(title, area);
+            })
+            .unwrap();
+    }
+
+    #[test]
+    fn test_title_bar_update_available() {
+        let backend = TestBackend::new(80, 24);
+        let mut terminal = Terminal::new(backend).unwrap();
+        let theme = Theme::dark();
+        let view_mode = ViewMode::All;
+        let update_status = UpdateStatus::UpdateAvailable {
+            version: "v0.2.0".to_string(),
+        };
+
+        terminal
+            .draw(|f| {
+                let area = f.area();
+                let title = TitleBar::new(&view_mode, &theme, &update_status);
                 f.render_widget(title, area);
             })
             .unwrap();

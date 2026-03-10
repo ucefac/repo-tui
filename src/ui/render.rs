@@ -139,7 +139,8 @@ fn render_main_ui(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
         .split(area);
 
     // Render title bar
-    let title_bar = TitleBar::new(&app.view_mode, theme);
+    let title_bar = TitleBar::new(&app.view_mode, theme, &app.update_status)
+        .update_dismissed(app.update_notification_dismissed);
     let title_bar = if app.selection_mode {
         title_bar.selection_info(app.selected_count())
     } else {

@@ -44,6 +44,10 @@ pub struct Config {
     /// Recent repositories configuration
     #[serde(default)]
     pub recent: RecentConfig,
+
+    /// Update configuration
+    #[serde(default)]
+    pub update: crate::update::UpdateConfig,
 }
 
 impl Default for Config {
@@ -59,6 +63,7 @@ impl Default for Config {
             security: SecurityConfig::default(),
             favorites: FavoritesConfig::default(),
             recent: RecentConfig::default(),
+            update: crate::update::UpdateConfig::default(),
         }
     }
 }

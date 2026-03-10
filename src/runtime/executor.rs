@@ -312,6 +312,25 @@ impl Runtime {
                     }
                 });
             }
+
+            Cmd::CheckForUpdate => {
+                tokio::spawn(async move {
+                    // Get config for GitHub repo info
+                    let config = config::load_or_create_config();
+                    let (owner, repo) = match config {
+                        Ok(ref cfg) => (
+                            cfg.update.github_owner.clone(),
+                            cfg.update.github_repo.clone(),
+                        ),
+                        Err(_) => ("yyyyyyh".to_string(), "ghclone".to_string()),
+                    };
+
+                    let result = crate::update::check_for_update(&owner, &repo).await;
+                    let _ = msg_tx
+                        .send(AppMsg::UpdateCheckCompleted(Box::new(result)))
+                        .await;
+                });
+            }
         }
     }
 

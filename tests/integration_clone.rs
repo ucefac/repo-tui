@@ -326,6 +326,7 @@ fn test_clone_with_multiple_main_dirs() {
         security: SecurityConfig::default(),
         favorites: FavoritesConfig::default(),
         recent: RecentConfig::default(),
+        update: repotui::update::UpdateConfig::default(),
         version: "2.0".to_string(),
     };
 
