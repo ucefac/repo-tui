@@ -454,9 +454,14 @@ fn render_clone_dialog(frame: &mut Frame, area: Rect, app: &mut App, theme: &The
     });
 
     // Create and render the dialog
+    let validation_error = clone_state
+        .validation_error
+        .as_ref()
+        .map(|e| e.user_message());
+
     let dialog = CloneDialog::new(clone_state, theme, &main_dirs)
         .folder_preview(folder_preview)
-        .validation_error(None); // TODO: Add validation error from state
+        .validation_error(validation_error);
 
     frame.render_widget(dialog, popup_area);
 }

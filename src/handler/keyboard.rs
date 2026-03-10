@@ -1001,9 +1001,6 @@ fn handle_cloning_keys(key: KeyEvent, app: &mut App) {
                 KeyCode::Esc => {
                     let _ = app.msg_tx.try_send(AppMsg::CancelClone);
                 }
-                KeyCode::Char('r') | KeyCode::Char('R') => {
-                    let _ = app.msg_tx.try_send(AppMsg::CloneRetry);
-                }
                 _ => {}
             }
         }

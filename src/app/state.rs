@@ -42,6 +42,8 @@ pub struct CloneState {
     pub main_dir_list_state: ListState,
     /// Cancel flag for async operation
     pub cancel_flag: Arc<AtomicBool>,
+    /// Validation error for URL input (real-time validation)
+    pub validation_error: Option<crate::error::CloneError>,
 }
 
 impl PartialEq for CloneState {
@@ -53,6 +55,7 @@ impl PartialEq for CloneState {
             && self.stage == other.stage
             && self.progress_lines == other.progress_lines
             && self.selected_main_dir() == other.selected_main_dir()
+            && self.validation_error == other.validation_error
         // Note: cancel_flag and main_dir_list_state are not compared
     }
 }
@@ -74,6 +77,7 @@ impl CloneState {
             progress_lines: Vec::new(),
             main_dir_list_state: list_state,
             cancel_flag: Arc::new(AtomicBool::new(false)),
+            validation_error: None,
         }
     }
 
@@ -87,6 +91,7 @@ impl CloneState {
         self.progress_lines.clear();
         self.main_dir_list_state.select(Some(0));
         self.cancel_flag.store(false, std::sync::atomic::Ordering::Relaxed);
+        self.validation_error = None;
     }
 
     /// Insert character at cursor position
