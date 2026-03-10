@@ -192,7 +192,7 @@ fn render_status_bar_with_path(frame: &mut Frame, app: &mut App, area: Rect, the
     } else if let Some(ref error) = app.error_message {
         error
     } else {
-        "↑↓ navigate   / search   r refresh   ? help   Ctrl+C quit"
+        "↑↓ navigate   / search   c clone   ? help   Ctrl+C quit"
     };
 
     let mut status_bar = StatusBar::new(status_text, theme)
