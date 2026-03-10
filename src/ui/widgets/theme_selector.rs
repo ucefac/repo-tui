@@ -71,16 +71,28 @@ impl<'a> ThemeSelector<'a> {
 
 impl<'a> Widget for ThemeSelector<'a> {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        // Create vertical layout
+        // Create outer block with focused border for visual distinction
+        let outer_block = Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(self.preview_theme.colors.border_focused.into()))
+            .style(Style::default().bg(self.preview_theme.colors.background.into()));
+
+        // Get inner area for content (must be done before rendering the block)
+        let inner_area = outer_block.inner(area);
+
+        // Render outer block
+        outer_block.render(area, buf);
+
+        // Create vertical layout inside the bordered area
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(3), // Title
+                Constraint::Length(2), // Title (reduced from 3)
                 Constraint::Length(7), // Theme preview
                 Constraint::Min(5),    // Theme list
-                Constraint::Length(3), // Help text
+                Constraint::Length(1), // Help text (reduced from 3)
             ])
-            .split(area);
+            .split(inner_area);
 
         // Render title
         render_title(chunks[0], buf, &self.preview_theme);
@@ -281,22 +293,23 @@ fn render_theme_list(
     Widget::render(list, area, buf);
 }
 
-/// Render help text
+/// Render help text - 重构后，符合 UI 设计规范
+/// 参考: StatusBar 组件设计 (无背景色、左对齐)
 fn render_help(area: Rect, buf: &mut Buffer, theme: &Theme) {
-    let help_text = "↑↓ navigate   ENTER select   ESC cancel";
+    // 使用 Line + Span 构建帮助文本，按键使用 primary 色高亮
+    let help_line = Line::from(vec![
+        Span::styled("↑↓", Style::default().fg(theme.colors.primary.into())),
+        Span::styled(" navigate  ", Style::default().fg(theme.colors.text_muted.into())),
+        Span::styled("ENTER", Style::default().fg(theme.colors.primary.into())),
+        Span::styled(" select  ", Style::default().fg(theme.colors.text_muted.into())),
+        Span::styled("ESC", Style::default().fg(theme.colors.primary.into())),
+        Span::styled(" cancel", Style::default().fg(theme.colors.text_muted.into())),
+    ]);
 
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.colors.border.into()));
-
-    let paragraph = Paragraph::new(help_text)
-        .block(block)
-        .alignment(Alignment::Center)
-        .style(
-            Style::default()
-                .fg(theme.colors.text_muted.into())
-                .bg(Color::DarkGray),
-        );
+    let paragraph = Paragraph::new(help_line)
+        .alignment(Alignment::Left);
+        // ❌ 移除 .bg(Color::DarkGray) - 硬编码背景色
+        // ❌ 移除 .block(...) - 过时边框设计
 
     paragraph.render(area, buf);
 }
