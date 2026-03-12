@@ -153,7 +153,7 @@ impl Runtime {
 
                             // Load from main directories
                             for (dir_index, (path, _max_depth)) in main_dirs.iter().enumerate() {
-                                match repo::discover_repositories(&path) {
+                                match repo::discover_repositories(path) {
                                     Ok(repos) => {
                                         for mut repo in repos {
                                             if seen_paths.insert(repo.path.clone()) {

@@ -4,9 +4,10 @@ use serde::Deserialize;
 use std::time::SystemTime;
 
 /// Update check status
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum UpdateStatus {
     /// Never checked
+    #[default]
     NeverChecked,
     /// Currently checking
     Checking,
@@ -16,12 +17,6 @@ pub enum UpdateStatus {
     UpdateAvailable { version: String },
     /// Check failed
     CheckFailed { error: String },
-}
-
-impl Default for UpdateStatus {
-    fn default() -> Self {
-        Self::NeverChecked
-    }
 }
 
 /// Update information from GitHub

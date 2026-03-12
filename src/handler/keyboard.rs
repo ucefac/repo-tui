@@ -1003,20 +1003,16 @@ fn handle_cloning_keys(key: KeyEvent, app: &mut App) {
             }
         }
         Some(CloneStage::Executing) => {
-            match key.code {
-                KeyCode::Esc => {
-                    // Cancel clone operation
-                    let _ = app.msg_tx.try_send(AppMsg::CancelClone);
-                }
-                _ => {}
-            }
-        }
-        Some(CloneStage::Error(_)) => match key.code {
-            KeyCode::Esc => {
+            if key.code == KeyCode::Esc {
+                // Cancel clone operation
                 let _ = app.msg_tx.try_send(AppMsg::CancelClone);
             }
-            _ => {}
-        },
+        }
+        Some(CloneStage::Error(_)) => {
+            if key.code == KeyCode::Esc {
+                let _ = app.msg_tx.try_send(AppMsg::CancelClone);
+            }
+        }
         None => {}
     }
 }

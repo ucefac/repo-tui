@@ -136,9 +136,9 @@ impl HelpPanel {
         // Combine columns side by side
         let combined_lines: Vec<Line> = left_visible
             .into_iter()
-            .zip(right_visible.into_iter())
+            .zip(right_visible)
             .map(|(left, right)| {
-                let spacer = " ".repeat(left_width.saturating_sub(left.width() as usize) + 2);
+                let spacer = " ".repeat(left_width.saturating_sub(left.width()) + 2);
                 Line::from(vec![
                     Span::raw(left.to_string()),
                     Span::raw(spacer),
