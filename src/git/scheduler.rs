@@ -2,7 +2,7 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use tokio::sync::mpsc;
+use tokio::sync::{mpsc, Semaphore};
 
 use crate::app::msg::AppMsg;
 use crate::git::cache::StatusCache;
@@ -63,22 +63,58 @@ impl GitStatusScheduler {
     }
 
     /// Schedule batch Git status checks with concurrency limit
+    ///
+    /// All tasks are spawned immediately, but only up to `CONCURRENT_LIMIT` tasks
+    /// will be executing at any given time. As each task completes, it sends
+    /// the result to the UI, so the UI updates incrementally without blocking.
     pub async fn schedule_batch(&self, repos: Vec<(usize, Repository)>) {
         if repos.is_empty() {
             return;
         }
 
-        // Process in batches to limit concurrency
-        const BATCH_SIZE: usize = 10;
+        // Use semaphore to limit concurrency without batching
+        // This allows tasks to complete and update UI incrementally
+        const CONCURRENT_LIMIT: usize = 10;
+        let semaphore = Arc::new(Semaphore::new(CONCURRENT_LIMIT));
 
-        for chunk in repos.chunks(BATCH_SIZE) {
-            let futures: Vec<_> = chunk
-                .iter()
-                .map(|(idx, repo)| self.schedule_check(*idx, repo.path.clone()))
-                .collect();
+        // Spawn all tasks immediately - they will compete for semaphore permits
+        for (idx, repo) in repos {
+            let cache = Arc::clone(&self.cache);
+            let msg_tx = self.msg_tx.clone();
+            let permit = Arc::clone(&semaphore);
 
-            // Wait for this batch to complete
-            futures::future::join_all(futures).await;
+            tokio::spawn(async move {
+                // Acquire permit - this limits concurrency
+                let _permit = permit.acquire_owned().await;
+
+                // Check cache first
+                if let Some(cached) = cache.get(&repo.path) {
+                    let _ = msg_tx
+                        .send(AppMsg::GitStatusChecked(idx, Ok(cached.status)))
+                        .await;
+                    return;
+                }
+
+                // Cache miss - check git status
+                match check_git_status(&repo.path).await {
+                    Ok(status) => {
+                        // Cache the result
+                        cache.insert(repo.path.clone(), status.clone());
+
+                        // Send to UI
+                        let _ = msg_tx
+                            .send(AppMsg::GitStatusChecked(idx, Ok(status)))
+                            .await;
+                    }
+                    Err(e) => {
+                        // Send error to UI (non-fatal)
+                        let repo_error = crate::error::RepoError::GitError(e.to_string());
+                        let _ = msg_tx
+                            .send(AppMsg::GitStatusChecked(idx, Err(repo_error)))
+                            .await;
+                    }
+                }
+            });
         }
     }
 
@@ -244,7 +280,7 @@ mod tests {
 
         assert_eq!(scheduler.cache_len(), 0);
 
-        cache.insert(PathBuf::from("/tmp/repo1"), GitStatus::clean());
+        cache.insert(std::path::PathBuf::from("/tmp/repo1"), GitStatus::clean());
         assert_eq!(scheduler.cache_len(), 1);
     }
 
@@ -254,10 +290,59 @@ mod tests {
         let (tx, _rx) = mpsc::channel::<AppMsg>(100);
         let scheduler = GitStatusScheduler::new(cache.clone(), tx);
 
-        cache.insert(PathBuf::from("/tmp/repo1"), GitStatus::clean());
+        cache.insert(std::path::PathBuf::from("/tmp/repo1"), GitStatus::clean());
         std::thread::sleep(Duration::from_secs(2));
 
         scheduler.cleanup_cache();
         assert_eq!(scheduler.cache_len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_schedule_batch_concurrent() {
+        use std::time::Instant;
+
+        let cache = Arc::new(StatusCache::new(60));
+        let (tx, mut rx) = mpsc::channel::<AppMsg>(100);
+        let scheduler = GitStatusScheduler::new(cache, tx);
+
+        let temp_dir = TempDir::new().unwrap();
+        // Create 20 repositories (more than CONCURRENT_LIMIT of 10)
+        let repos: Vec<(usize, Repository)> = (0..20)
+            .map(|i| {
+                (
+                    i,
+                    Repository {
+                        name: format!("repo{}", i),
+                        path: temp_dir.path().join(format!("repo{}", i)),
+                        last_modified: None,
+                        is_dirty: false,
+                        branch: None,
+                        is_git_repo: false,
+                        source: RepoSource::Standalone,
+                    },
+                )
+            })
+            .collect();
+
+        let start = Instant::now();
+
+        // Schedule all at once - should return immediately since tasks are spawned
+        scheduler.schedule_batch(repos).await;
+
+        // The method should return immediately, not wait for all tasks
+        let elapsed = start.elapsed();
+        assert!(elapsed.as_millis() < 100, "schedule_batch should return immediately");
+
+        // Give async tasks time to complete
+        tokio::time::sleep(Duration::from_millis(500)).await;
+
+        // Should have received 20 messages
+        let mut count = 0;
+        while let Ok(msg) = rx.try_recv() {
+            if let AppMsg::GitStatusChecked(_, _) = msg {
+                count += 1;
+            }
+        }
+        assert_eq!(count, 20);
     }
 }
