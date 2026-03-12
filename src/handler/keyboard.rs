@@ -532,6 +532,7 @@ fn handle_main_dir_manager_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime
                 crate::app::state::DirectoryChooserMode::SelectMainDirectory {
                     allow_multiple: false,
                     edit_mode: false,
+                    return_to: crate::app::state::ReturnTarget::ManagingDirs,
                 },
             ));
         }
@@ -772,6 +773,7 @@ mod tests {
         let mode = crate::app::state::DirectoryChooserMode::SelectMainDirectory {
             allow_multiple: false,
             edit_mode: false,
+            return_to: crate::app::state::ReturnTarget::Running,
         };
         handle_chooser_keys(
             create_test_key(KeyCode::Left),

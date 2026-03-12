@@ -8,7 +8,7 @@ use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
 use std::path::PathBuf;
 
-use crate::app::state::DirectoryChooserMode;
+use crate::app::state::{DirectoryChooserMode, ReturnTarget};
 use crate::ui::theme::Theme;
 
 /// Directory chooser state
@@ -51,6 +51,25 @@ impl DirectoryChooserState {
         match &self.mode {
             DirectoryChooserMode::SelectMainDirectory { .. } => "📁",
             DirectoryChooserMode::AddSingleRepository => "📦",
+        }
+    }
+
+    /// Get subtitle based on mode
+    pub fn subtitle(&self) -> &'static str {
+        match &self.mode {
+            DirectoryChooserMode::SelectMainDirectory { return_to, .. } => {
+                match return_to {
+                    ReturnTarget::ManagingDirs => {
+                        "Select a folder to serve as root for multiple git repositories"
+                    }
+                    ReturnTarget::Running => {
+                        "Select a git-managed folder to add to the repository list"
+                    }
+                }
+            }
+            DirectoryChooserMode::AddSingleRepository => {
+                "Select a git-managed folder to add to the repository list"
+            }
         }
     }
 
@@ -129,7 +148,7 @@ impl<'a> Widget for DirectoryChooser<'a> {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
-                Constraint::Length(3), // Title
+                Constraint::Length(3), // Title + Subtitle
                 Constraint::Length(3), // Current path
                 Constraint::Length(2), // Stats
                 Constraint::Min(5),    // Directory list
@@ -148,14 +167,29 @@ impl<'a> Widget for DirectoryChooser<'a> {
 
 impl<'a> DirectoryChooser<'a> {
     fn render_title(&self, area: Rect, buf: &mut Buffer) {
-        let text = format!("{} {}", self.state.icon(), self.state.title());
+        let title_layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(1), // Title
+                Constraint::Length(1), // Subtitle
+            ])
+            .split(area);
 
-        let title = Paragraph::new(text).alignment(Alignment::Center).style(
-            Style::default()
-                .fg(self.theme.colors.primary.into())
-                .add_modifier(Modifier::BOLD),
-        );
-        title.render(area, buf);
+        let title_text = format!("{} {}", self.state.icon(), self.state.title());
+
+        let title = Paragraph::new(title_text)
+            .alignment(Alignment::Center)
+            .style(
+                Style::default()
+                    .fg(self.theme.colors.primary.into())
+                    .add_modifier(Modifier::BOLD),
+            );
+        title.render(title_layout[0], buf);
+
+        let subtitle = Paragraph::new(self.state.subtitle())
+            .alignment(Alignment::Center)
+            .style(Style::default().fg(self.theme.colors.text_muted.into()));
+        subtitle.render(title_layout[1], buf);
     }
 
     fn render_current_path(&self, area: Rect, buf: &mut Buffer) {
@@ -337,6 +371,7 @@ mod tests {
             DirectoryChooserMode::SelectMainDirectory {
                 allow_multiple: false,
                 edit_mode: false,
+                return_to: ReturnTarget::Running,
             },
         );
 
@@ -380,6 +415,7 @@ mod tests {
             DirectoryChooserMode::SelectMainDirectory {
                 allow_multiple: false,
                 edit_mode: false,
+                return_to: ReturnTarget::Running,
             },
         );
         state.entries = vec![
@@ -409,6 +445,7 @@ mod tests {
             DirectoryChooserMode::SelectMainDirectory {
                 allow_multiple: true,
                 edit_mode: false,
+                return_to: ReturnTarget::Running,
             },
         );
         state.entries = vec![
@@ -436,6 +473,7 @@ mod tests {
             DirectoryChooserMode::SelectMainDirectory {
                 allow_multiple: false,
                 edit_mode: false,
+                return_to: ReturnTarget::Running,
             },
         );
         assert_eq!(state.title(), "Select Main Directory");
@@ -454,6 +492,7 @@ mod tests {
             DirectoryChooserMode::SelectMainDirectory {
                 allow_multiple: false,
                 edit_mode: false,
+                return_to: ReturnTarget::Running,
             },
         );
         assert_eq!(state.icon(), "📁");
@@ -463,5 +502,46 @@ mod tests {
             DirectoryChooserMode::AddSingleRepository,
         );
         assert_eq!(state2.icon(), "📦");
+    }
+
+    #[test]
+    fn test_state_subtitle() {
+        // Test subtitle when opened from Running state (repo list)
+        let state_from_running = DirectoryChooserState::new(
+            PathBuf::from("/tmp"),
+            DirectoryChooserMode::SelectMainDirectory {
+                allow_multiple: false,
+                edit_mode: false,
+                return_to: ReturnTarget::Running,
+            },
+        );
+        assert_eq!(
+            state_from_running.subtitle(),
+            "Select a git-managed folder to add to the repository list"
+        );
+
+        // Test subtitle when opened from ManagingDirs state
+        let state_from_managing = DirectoryChooserState::new(
+            PathBuf::from("/tmp"),
+            DirectoryChooserMode::SelectMainDirectory {
+                allow_multiple: false,
+                edit_mode: false,
+                return_to: ReturnTarget::ManagingDirs,
+            },
+        );
+        assert_eq!(
+            state_from_managing.subtitle(),
+            "Select a folder to serve as root for multiple git repositories"
+        );
+
+        // Test subtitle for AddSingleRepository mode
+        let state_single = DirectoryChooserState::new(
+            PathBuf::from("/tmp"),
+            DirectoryChooserMode::AddSingleRepository,
+        );
+        assert_eq!(
+            state_single.subtitle(),
+            "Select a git-managed folder to add to the repository list"
+        );
     }
 }
