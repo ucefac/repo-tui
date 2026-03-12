@@ -4,4 +4,4 @@
 |---------|------|---------|------|
 | subtitle-analysis.md | Analysis | 2026-03-12 | complete |
 | subtitle-changes.md | Changes | 2026-03-12 | complete |
-| subtitle-verification.md | Verification | 2026-03-12 | pending |
+| subtitle-verification.md | Verification | 2026-03-12 | complete |
