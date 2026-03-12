@@ -72,9 +72,7 @@ impl<'a> TitleBar<'a> {
             return None;
         }
         match self.update_status {
-            UpdateStatus::UpdateAvailable { version } => {
-                Some(format!("⬆ {}", version))
-            }
+            UpdateStatus::UpdateAvailable { version } => Some(format!("⬆ {}", version)),
             _ => None,
         }
     }
@@ -95,17 +93,19 @@ impl<'a> Widget for TitleBar<'a> {
         // If there's an update available, add it to the right side
         if let Some(update_text) = update_text {
             // Create title with left and right parts
-            let left_title = ratatui::widgets::block::Title::from(title_text)
-                .alignment(Alignment::Left);
-            let right_title = ratatui::widgets::block::Title::from(
-                Span::styled(update_text, Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
-            );
-            let block = block.title(left_title).title(right_title);
+            let left_title = Line::from(title_text).left_aligned();
+            let right_title = Line::from(Span::styled(
+                update_text,
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            ))
+            .right_aligned();
+            let block = block.title_top(left_title).title_top(right_title);
             Widget::render(block, area, buf);
         } else {
-            let title = ratatui::widgets::block::Title::from(title_text)
-                .alignment(Alignment::Left);
-            let block = block.title(title);
+            let title = Line::from(title_text).left_aligned();
+            let block = block.title_top(title);
             Widget::render(block, area, buf);
         }
     }

@@ -75,7 +75,9 @@ pub async fn check_for_update(owner: &str, repo: &str) -> Result<UpdateCheckResu
     let checked_at = SystemTime::now();
 
     match comparison {
-        VersionComparison::UpdateAvailable => Ok(UpdateCheckResult::update_available(release, checked_at)),
+        VersionComparison::UpdateAvailable => {
+            Ok(UpdateCheckResult::update_available(release, checked_at))
+        }
         VersionComparison::CurrentIsNewerOrEqual => Ok(UpdateCheckResult::up_to_date(checked_at)),
         VersionComparison::Incomparable => Err(UpdateError::VersionParseError(
             "Failed to parse version".to_string(),

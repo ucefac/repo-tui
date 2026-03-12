@@ -319,7 +319,9 @@ pub enum AppMsg {
     TriggerUpdateCheck,
 
     /// Update check completed
-    UpdateCheckCompleted(Box<std::result::Result<crate::update::UpdateCheckResult, crate::error::UpdateError>>),
+    UpdateCheckCompleted(
+        Box<std::result::Result<crate::update::UpdateCheckResult, crate::error::UpdateError>>,
+    ),
 
     /// Dismiss update notification
     DismissUpdateNotification,

@@ -14,8 +14,8 @@ pub mod ui_assertions;
 
 use repotui::app::model::App;
 use repotui::app::msg::AppMsg;
+use repotui::config::types::{EditorConfig, FavoritesConfig, RecentConfig, SecurityConfig};
 use repotui::config::Config;
-use repotui::config::types::{EditorConfig, SecurityConfig, FavoritesConfig, RecentConfig};
 use repotui::repo::Repository;
 use std::path::PathBuf;
 use tokio::sync::mpsc;

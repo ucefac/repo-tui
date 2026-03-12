@@ -119,7 +119,7 @@ fn execute_cd_and_cloud(repo_path: &Path) -> AppResult<()> {
 
         // exec only returns on error
         Err(AppError::Action(ActionError::ExecutionFailed(
-            "Failed to execute claude".to_string()
+            "Failed to execute claude".to_string(),
         )))
     }
 
@@ -144,8 +144,8 @@ fn execute_cd_and_cloud(repo_path: &Path) -> AppResult<()> {
 /// Note: On Unix, this function replaces the current process with opencode (exec)
 /// On Windows, it spawns opencode and signals repotui to exit
 fn execute_cd_and_opencode(repo_path: &Path) -> AppResult<()> {
-    let opencode_path =
-        which::which("opencode").map_err(|_| ActionError::CommandNotFound("opencode".to_string()))?;
+    let opencode_path = which::which("opencode")
+        .map_err(|_| ActionError::CommandNotFound("opencode".to_string()))?;
 
     // Restore terminal to normal state before launching interactive CLI
     let _ = disable_raw_mode();
@@ -170,7 +170,7 @@ fn execute_cd_and_opencode(repo_path: &Path) -> AppResult<()> {
 
         // exec only returns on error
         Err(AppError::Action(ActionError::ExecutionFailed(
-            "Failed to execute opencode".to_string()
+            "Failed to execute opencode".to_string(),
         )))
     }
 
@@ -221,7 +221,7 @@ fn execute_cd_and_lazygit(repo_path: &Path) -> AppResult<()> {
 
         // exec only returns on error
         Err(AppError::Action(ActionError::ExecutionFailed(
-            "Failed to execute lazygit".to_string()
+            "Failed to execute lazygit".to_string(),
         )))
     }
 

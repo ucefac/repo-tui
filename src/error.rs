@@ -375,26 +375,24 @@ impl CloneError {
                 format!("Repository already exists at: {}", path.display())
             }
             CloneError::GitFailed(code) => {
-                format!("Git clone failed (code: {:?}). Check the URL and your permissions", code)
+                format!(
+                    "Git clone failed (code: {:?}). Check the URL and your permissions",
+                    code
+                )
             }
             CloneError::Network(msg) => {
                 format!("Network error: {}. Check your connection", msg)
             }
             CloneError::PermissionDenied(path) => {
-                format!("Permission denied: {}. Check directory permissions", path.display())
+                format!(
+                    "Permission denied: {}. Check directory permissions",
+                    path.display()
+                )
             }
-            CloneError::DiskFull => {
-                "Not enough disk space".to_string()
-            }
-            CloneError::GitNotFound => {
-                "Git not found. Please install Git".to_string()
-            }
-            CloneError::Cancelled => {
-                "Clone operation cancelled".to_string()
-            }
-            CloneError::NotAGitRepository => {
-                "Target is not a Git repository".to_string()
-            }
+            CloneError::DiskFull => "Not enough disk space".to_string(),
+            CloneError::GitNotFound => "Git not found. Please install Git".to_string(),
+            CloneError::Cancelled => "Clone operation cancelled".to_string(),
+            CloneError::NotAGitRepository => "Target is not a Git repository".to_string(),
             CloneError::ProtectedPath(path) => {
                 format!("Cannot remove protected path: {}", path.display())
             }

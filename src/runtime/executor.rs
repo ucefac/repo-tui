@@ -117,8 +117,7 @@ impl Runtime {
                                             let file_name = entry.file_name();
                                             let name = file_name.to_string_lossy();
                                             // Filter hidden folders (starting with ".")
-                                            (entry.path().is_dir()
-                                                && !name.starts_with('.'))
+                                            (entry.path().is_dir() && !name.starts_with('.'))
                                                 .then(|| name.to_string())
                                         })
                                     })
@@ -232,9 +231,9 @@ impl Runtime {
                     if let Some(parent) = target_path.parent() {
                         if let Err(e) = tokio::fs::create_dir_all(parent).await {
                             let _ = msg_tx
-                                .send(AppMsg::CloneCompleted(Err(
-                                    crate::error::CloneError::Io(e.to_string()),
-                                )))
+                                .send(AppMsg::CloneCompleted(Err(crate::error::CloneError::Io(
+                                    e.to_string(),
+                                ))))
                                 .await;
                             return;
                         }
@@ -242,7 +241,12 @@ impl Runtime {
 
                     // Spawn git clone process
                     let mut child = match Command::new("git")
-                        .args(["clone", "--progress", &url, target_path.to_string_lossy().as_ref()])
+                        .args([
+                            "clone",
+                            "--progress",
+                            &url,
+                            target_path.to_string_lossy().as_ref(),
+                        ])
                         .stderr(std::process::Stdio::piped())
                         .stdout(std::process::Stdio::null())
                         .spawn()
@@ -293,7 +297,10 @@ impl Runtime {
                                 let repo = crate::repo::Repository::from_path(target_path);
                                 let _ = msg_tx.send(AppMsg::CloneCompleted(Ok(repo))).await;
                             } else {
-                                tracing::error!("git clone failed with status: {:?}", status.code());
+                                tracing::error!(
+                                    "git clone failed with status: {:?}",
+                                    status.code()
+                                );
                                 let _ = msg_tx
                                     .send(AppMsg::CloneCompleted(Err(
                                         crate::error::CloneError::GitFailed(status.code()),
@@ -304,9 +311,9 @@ impl Runtime {
                         Err(e) => {
                             tracing::error!("Failed to wait for git clone: {}", e);
                             let _ = msg_tx
-                                .send(AppMsg::CloneCompleted(Err(
-                                    crate::error::CloneError::Io(e.to_string()),
-                                )))
+                                .send(AppMsg::CloneCompleted(Err(crate::error::CloneError::Io(
+                                    e.to_string(),
+                                ))))
                                 .await;
                         }
                     }

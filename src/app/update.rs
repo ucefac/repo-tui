@@ -820,7 +820,10 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                     let _ = config::save_config(config);
                     runtime.dispatch(crate::app::msg::Cmd::LoadConfig);
                     // Reset confirmation state after successful deletion
-                    if let AppState::ManagingDirs { confirming_delete, .. } = &mut app.state {
+                    if let AppState::ManagingDirs {
+                        confirming_delete, ..
+                    } = &mut app.state
+                    {
                         *confirming_delete = false;
                     }
                 }
@@ -928,13 +931,19 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
         }
 
         AppMsg::ShowDeleteMainDirConfirmation => {
-            if let AppState::ManagingDirs { confirming_delete, .. } = &mut app.state {
+            if let AppState::ManagingDirs {
+                confirming_delete, ..
+            } = &mut app.state
+            {
                 *confirming_delete = true;
             }
         }
 
         AppMsg::CancelDeleteMainDirConfirmation => {
-            if let AppState::ManagingDirs { confirming_delete, .. } = &mut app.state {
+            if let AppState::ManagingDirs {
+                confirming_delete, ..
+            } = &mut app.state
+            {
                 *confirming_delete = false;
             }
         }
@@ -1115,7 +1124,9 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 }
 
                 // Validate URL
-                if let Err(e) = crate::repo::clone::validate_git_url(&url, crate::constants::MAX_URL_LENGTH) {
+                if let Err(e) =
+                    crate::repo::clone::validate_git_url(&url, crate::constants::MAX_URL_LENGTH)
+                {
                     clone_state.validation_error = Some(e);
                     return;
                 }
@@ -1199,7 +1210,9 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
             if confirmed {
                 // User confirmed replacement - delete old folder and clone
                 if let Some(clone_state) = app.state.clone_state_mut() {
-                    if let crate::app::state::CloneStage::ConfirmReplace { existing_path } = clone_state.stage.clone() {
+                    if let crate::app::state::CloneStage::ConfirmReplace { existing_path } =
+                        clone_state.stage.clone()
+                    {
                         // Delete the existing folder
                         if let Err(e) = std::fs::remove_dir_all(&existing_path) {
                             clone_state.stage = crate::app::state::CloneStage::Error(
@@ -1297,22 +1310,20 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
             runtime.dispatch(Cmd::CheckForUpdate);
         }
 
-        AppMsg::UpdateCheckCompleted(result) => {
-            match *result {
-                Ok(check_result) => {
-                    app.update_status = check_result.status.clone();
-                    if let crate::update::UpdateStatus::UpdateAvailable { .. } = check_result.status {
-                        app.available_update = check_result.info;
-                        app.update_notification_dismissed = false;
-                    }
-                }
-                Err(e) => {
-                    app.update_status = crate::update::UpdateStatus::CheckFailed {
-                        error: e.to_string(),
-                    };
+        AppMsg::UpdateCheckCompleted(result) => match *result {
+            Ok(check_result) => {
+                app.update_status = check_result.status.clone();
+                if let crate::update::UpdateStatus::UpdateAvailable { .. } = check_result.status {
+                    app.available_update = check_result.info;
+                    app.update_notification_dismissed = false;
                 }
             }
-        }
+            Err(e) => {
+                app.update_status = crate::update::UpdateStatus::CheckFailed {
+                    error: e.to_string(),
+                };
+            }
+        },
 
         AppMsg::DismissUpdateNotification => {
             app.update_notification_dismissed = true;

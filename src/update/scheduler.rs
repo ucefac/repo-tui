@@ -58,19 +58,13 @@ impl UpdateScheduler {
         tokio::time::sleep(Duration::from_secs(self.initial_delay_secs)).await;
 
         // Send first update check trigger
-        let _ = self
-            .msg_tx
-            .send(AppMsg::TriggerUpdateCheck)
-            .await;
+        let _ = self.msg_tx.send(AppMsg::TriggerUpdateCheck).await;
 
         // Loop for subsequent checks
         loop {
             self.interval.tick().await;
             if self.enabled {
-                let _ = self
-                    .msg_tx
-                    .send(AppMsg::TriggerUpdateCheck)
-                    .await;
+                let _ = self.msg_tx.send(AppMsg::TriggerUpdateCheck).await;
             }
         }
     }

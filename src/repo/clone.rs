@@ -72,7 +72,9 @@ pub fn parse_git_url(url: &str) -> Result<ParsedGitUrl, CloneError> {
 fn parse_https_url(url: &str) -> Option<ParsedGitUrl> {
     // Remove protocol prefix
     let without_scheme = url.strip_prefix("https://")?;
-    let without_scheme = without_scheme.strip_prefix("http://").unwrap_or(without_scheme);
+    let without_scheme = without_scheme
+        .strip_prefix("http://")
+        .unwrap_or(without_scheme);
 
     // Remove auth info if present (user:pass@host)
     let host_and_path = if let Some(at_pos) = without_scheme.find('@') {
@@ -170,10 +172,9 @@ fn parse_path_components(original_url: &str, domain: &str, path: &str) -> Option
 fn strip_tld(domain: &str) -> String {
     // List of common TLDs to strip
     const TLDS: &[&str] = &[
-        ".com", ".org", ".net", ".io", ".co", ".dev", ".app",
-        ".info", ".biz", ".us", ".uk", ".eu", ".de", ".fr",
-        ".jp", ".cn", ".ru", ".in", ".au", ".br", ".mx",
-        ".co.uk", ".com.cn", ".co.jp", ".com.au",
+        ".com", ".org", ".net", ".io", ".co", ".dev", ".app", ".info", ".biz", ".us", ".uk", ".eu",
+        ".de", ".fr", ".jp", ".cn", ".ru", ".in", ".au", ".br", ".mx", ".co.uk", ".com.cn",
+        ".co.jp", ".com.au",
     ];
 
     let domain_lower = domain.to_lowercase();
@@ -256,10 +257,7 @@ pub fn validate_git_url(url: &str, max_length: usize) -> Result<(), CloneError> 
 /// # Returns
 /// * `Ok(())` if the path is valid
 /// * `Err(CloneError)` if the path is invalid
-pub fn validate_clone_target(
-    path: &Path,
-    allowed_dirs: &[PathBuf],
-) -> Result<(), CloneError> {
+pub fn validate_clone_target(path: &Path, allowed_dirs: &[PathBuf]) -> Result<(), CloneError> {
     use std::fs;
 
     // Check if path exists
@@ -271,8 +269,7 @@ pub fn validate_clone_target(
 
         // If it's a directory, check if empty
         if path.is_dir() {
-            let entries = fs::read_dir(path)
-                .map_err(|e| CloneError::Io(e.to_string()))?;
+            let entries = fs::read_dir(path).map_err(|e| CloneError::Io(e.to_string()))?;
             if entries.count() > 0 {
                 return Err(CloneError::AlreadyExists(path.to_path_buf()));
             }
@@ -309,10 +306,7 @@ pub fn validate_clone_target(
 /// # Returns
 /// * `Ok(())` if the folder can be replaced
 /// * `Err(CloneError)` if the folder cannot be replaced
-pub fn validate_folder_replace(
-    path: &Path,
-    allowed_dirs: &[PathBuf],
-) -> Result<(), CloneError> {
+pub fn validate_folder_replace(path: &Path, allowed_dirs: &[PathBuf]) -> Result<(), CloneError> {
     // Path must exist and be a directory
     if !path.exists() || !path.is_dir() {
         return Err(CloneError::NotAGitRepository);
@@ -583,7 +577,7 @@ mod tests {
         assert_eq!(strip_tld("my-site.net"), "my-site");
         assert_eq!(strip_tld("example.co.uk"), "example");
         assert_eq!(strip_tld("no-tld"), "no-tld");
-        assert_eq!(strip_tld("GitHub.COM"), "github");  // Case insensitive
+        assert_eq!(strip_tld("GitHub.COM"), "github"); // Case insensitive
     }
 
     #[test]

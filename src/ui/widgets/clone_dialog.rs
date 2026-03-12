@@ -127,7 +127,10 @@ fn render_input_url(dialog: &CloneDialog, area: Rect, buf: &mut Buffer) {
         format!("{}", "▌")
     } else {
         // Insert cursor at cursor_position
-        let pos = dialog.state.cursor_position.min(dialog.state.url_input.len());
+        let pos = dialog
+            .state
+            .cursor_position
+            .min(dialog.state.url_input.len());
         let before = &dialog.state.url_input[..pos];
         let after = &dialog.state.url_input[pos..];
         format!("{}▌{}", before, after)
@@ -237,8 +240,8 @@ fn render_confirm_replace(
 
     // Path
     let path_text = format!("   {}", existing_path.display());
-    let path_para = Paragraph::new(path_text)
-        .style(Style::default().fg(dialog.theme.colors.foreground.into()));
+    let path_para =
+        Paragraph::new(path_text).style(Style::default().fg(dialog.theme.colors.foreground.into()));
     path_para.render(chunks[1], buf);
 
     // Question
@@ -248,8 +251,8 @@ fn render_confirm_replace(
 
     // Options
     let options_text = "[Y] Yes, remove and re-clone\n[N] No, cancel";
-    let options = Paragraph::new(options_text)
-        .style(Style::default().fg(dialog.theme.colors.primary.into()));
+    let options =
+        Paragraph::new(options_text).style(Style::default().fg(dialog.theme.colors.primary.into()));
     options.render(chunks[3], buf);
 
     // Help
@@ -273,8 +276,8 @@ fn render_executing(dialog: &CloneDialog, area: Rect, buf: &mut Buffer) {
 
     // URL info
     let url_info = format!("URL: {}", dialog.state.url_input);
-    let url_para = Paragraph::new(url_info)
-        .style(Style::default().fg(dialog.theme.colors.foreground.into()));
+    let url_para =
+        Paragraph::new(url_info).style(Style::default().fg(dialog.theme.colors.foreground.into()));
     url_para.render(chunks[0], buf);
 
     // Target info (if available)
@@ -403,10 +406,7 @@ mod tests {
         let dialog = CloneDialog::new(&state, &theme, &main_dirs)
             .folder_preview(Some("github_user_repo".to_string()));
 
-        assert_eq!(
-            dialog.folder_preview,
-            Some("github_user_repo".to_string())
-        );
+        assert_eq!(dialog.folder_preview, Some("github_user_repo".to_string()));
     }
 
     #[test]
@@ -434,9 +434,7 @@ mod tests {
         let backend = TestBackend::new(80, 24);
         let mut terminal = Terminal::new(backend).unwrap();
         let mut state = create_test_clone_state();
-        state.stage = CloneStage::Error(crate::error::CloneError::InvalidUrl(
-            "test".to_string(),
-        ));
+        state.stage = CloneStage::Error(crate::error::CloneError::InvalidUrl("test".to_string()));
         let theme = Theme::dark();
         let main_dirs: Vec<(PathBuf, String)> = vec![];
 

@@ -4,9 +4,8 @@ use crate::app::model::App;
 use crate::app::state::AppState;
 use crate::ui::theme::Theme;
 use crate::ui::widgets::{
-    centered_help_popup, centered_popup, centered_rect, CloneDialog,
-    DirectoryChooser, DirectoryChooserState, HelpPanel, MainDirManager, RepoList, SearchBox,
-    ThemeSelector, TitleBar,
+    centered_help_popup, centered_popup, centered_rect, CloneDialog, DirectoryChooser,
+    DirectoryChooserState, HelpPanel, MainDirManager, RepoList, SearchBox, ThemeSelector, TitleBar,
 };
 use ratatui::prelude::*;
 use ratatui::widgets::{Clear, Paragraph};
@@ -306,7 +305,10 @@ fn render_directory_chooser(
 /// Render main directory manager
 fn render_main_dir_manager(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
     // Check if we're in delete confirmation mode
-    let is_confirming = if let AppState::ManagingDirs { confirming_delete, .. } = &app.state {
+    let is_confirming = if let AppState::ManagingDirs {
+        confirming_delete, ..
+    } = &app.state
+    {
         *confirming_delete
     } else {
         false
@@ -341,12 +343,7 @@ fn render_main_dir_manager(frame: &mut Frame, area: Rect, app: &mut App, theme: 
 }
 
 /// Render delete confirmation dialog
-fn render_delete_confirmation_dialog(
-    frame: &mut Frame,
-    area: Rect,
-    app: &mut App,
-    theme: &Theme,
-) {
+fn render_delete_confirmation_dialog(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
     // Create a centered popup for the confirmation dialog
     let popup_area = centered_popup(50, 30, area);
 
@@ -354,7 +351,10 @@ fn render_delete_confirmation_dialog(
     frame.render_widget(Clear, popup_area);
 
     // Get the directory name being deleted
-    let dir_name = if let AppState::ManagingDirs { selected_dir_index, .. } = &app.state {
+    let dir_name = if let AppState::ManagingDirs {
+        selected_dir_index, ..
+    } = &app.state
+    {
         app.main_directories
             .get(*selected_dir_index)
             .map(|d| d.display_name.clone())

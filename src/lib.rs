@@ -36,7 +36,7 @@ mod constants;
 
 use anyhow::Result;
 use crossterm::{
-    event::{self, Event, EnableBracketedPaste},
+    event::{self, EnableBracketedPaste, Event},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -109,10 +109,8 @@ async fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Resul
         .unwrap_or_default();
 
     if update_config.auto_check_enabled {
-        let scheduler = update::UpdateScheduler::new(
-            msg_tx.clone(),
-            update_config.check_interval_hours,
-        );
+        let scheduler =
+            update::UpdateScheduler::new(msg_tx.clone(), update_config.check_interval_hours);
         tokio::spawn(scheduler.run());
     }
 

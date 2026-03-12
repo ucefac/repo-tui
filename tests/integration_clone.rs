@@ -9,7 +9,7 @@
 
 use repotui::app::msg::AppMsg;
 use repotui::app::state::{AppState, CloneStage};
-use repotui::config::types::{EditorConfig, SecurityConfig, FavoritesConfig, RecentConfig};
+use repotui::config::types::{EditorConfig, FavoritesConfig, RecentConfig, SecurityConfig};
 use repotui::repo::clone::{generate_folder_name, parse_git_url, validate_git_url};
 use std::path::PathBuf;
 
@@ -156,7 +156,10 @@ fn test_clone_url_paste() {
     repotui::app::update::update(AppMsg::CloneUrlPaste(url), &mut app, &runtime);
 
     if let AppState::Cloning { clone_state } = &app.state {
-        assert_eq!(clone_state.url_input, "https://github.com/anthropics/claude-code");
+        assert_eq!(
+            clone_state.url_input,
+            "https://github.com/anthropics/claude-code"
+        );
         assert_eq!(clone_state.cursor_position, 41);
     }
 }

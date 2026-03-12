@@ -489,7 +489,10 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
 // Main directory management functions
 fn handle_main_dir_manager_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
     // Check if we're in delete confirmation mode
-    let is_confirming = if let AppState::ManagingDirs { confirming_delete, .. } = &app.state {
+    let is_confirming = if let AppState::ManagingDirs {
+        confirming_delete, ..
+    } = &app.state
+    {
         *confirming_delete
     } else {
         false
@@ -500,7 +503,10 @@ fn handle_main_dir_manager_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime
         match key.code {
             KeyCode::Char('y') | KeyCode::Enter => {
                 // Confirm deletion
-                if let AppState::ManagingDirs { selected_dir_index, .. } = &app.state {
+                if let AppState::ManagingDirs {
+                    selected_dir_index, ..
+                } = &app.state
+                {
                     let _ = app
                         .msg_tx
                         .try_send(AppMsg::RemoveMainDirectory(*selected_dir_index));
@@ -959,32 +965,30 @@ fn handle_cloning_keys(key: KeyEvent, app: &mut App) {
     let stage = app.state.clone_state().map(|s| s.stage.clone());
 
     match stage {
-        Some(CloneStage::InputUrl) => {
-            match key.code {
-                KeyCode::Esc => {
-                    let _ = app.msg_tx.try_send(AppMsg::CancelClone);
-                }
-                KeyCode::Enter => {
-                    let _ = app.msg_tx.try_send(AppMsg::CloneUrlConfirm);
-                }
-                KeyCode::Backspace => {
-                    let _ = app.msg_tx.try_send(AppMsg::CloneUrlBackspace);
-                }
-                KeyCode::Char('k') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                    let _ = app.msg_tx.try_send(AppMsg::CloneUrlClear);
-                }
-                KeyCode::Up => {
-                    let _ = app.msg_tx.try_send(AppMsg::ClonePreviousMainDir);
-                }
-                KeyCode::Down => {
-                    let _ = app.msg_tx.try_send(AppMsg::CloneNextMainDir);
-                }
-                KeyCode::Char(c) => {
-                    let _ = app.msg_tx.try_send(AppMsg::CloneUrlInput(c));
-                }
-                _ => {}
+        Some(CloneStage::InputUrl) => match key.code {
+            KeyCode::Esc => {
+                let _ = app.msg_tx.try_send(AppMsg::CancelClone);
             }
-        }
+            KeyCode::Enter => {
+                let _ = app.msg_tx.try_send(AppMsg::CloneUrlConfirm);
+            }
+            KeyCode::Backspace => {
+                let _ = app.msg_tx.try_send(AppMsg::CloneUrlBackspace);
+            }
+            KeyCode::Char('k') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                let _ = app.msg_tx.try_send(AppMsg::CloneUrlClear);
+            }
+            KeyCode::Up => {
+                let _ = app.msg_tx.try_send(AppMsg::ClonePreviousMainDir);
+            }
+            KeyCode::Down => {
+                let _ = app.msg_tx.try_send(AppMsg::CloneNextMainDir);
+            }
+            KeyCode::Char(c) => {
+                let _ = app.msg_tx.try_send(AppMsg::CloneUrlInput(c));
+            }
+            _ => {}
+        },
         Some(CloneStage::ConfirmReplace { .. }) => {
             match key.code {
                 KeyCode::Esc | KeyCode::Char('2') => {
@@ -1007,14 +1011,12 @@ fn handle_cloning_keys(key: KeyEvent, app: &mut App) {
                 _ => {}
             }
         }
-        Some(CloneStage::Error(_)) => {
-            match key.code {
-                KeyCode::Esc => {
-                    let _ = app.msg_tx.try_send(AppMsg::CancelClone);
-                }
-                _ => {}
+        Some(CloneStage::Error(_)) => match key.code {
+            KeyCode::Esc => {
+                let _ = app.msg_tx.try_send(AppMsg::CancelClone);
             }
-        }
+            _ => {}
+        },
         None => {}
     }
 }

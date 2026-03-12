@@ -90,7 +90,8 @@ impl CloneState {
         self.stage = CloneStage::InputUrl;
         self.progress_lines.clear();
         self.main_dir_list_state.select(Some(0));
-        self.cancel_flag.store(false, std::sync::atomic::Ordering::Relaxed);
+        self.cancel_flag
+            .store(false, std::sync::atomic::Ordering::Relaxed);
         self.validation_error = None;
     }
 
@@ -187,7 +188,8 @@ impl CloneState {
 
     /// Request cancellation
     pub fn cancel(&self) {
-        self.cancel_flag.store(true, std::sync::atomic::Ordering::Relaxed);
+        self.cancel_flag
+            .store(true, std::sync::atomic::Ordering::Relaxed);
     }
 }
 

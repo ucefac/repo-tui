@@ -299,17 +299,25 @@ fn render_help(area: Rect, buf: &mut Buffer, theme: &Theme) {
     // 使用 Line + Span 构建帮助文本，按键使用 primary 色高亮
     let help_line = Line::from(vec![
         Span::styled("↑↓", Style::default().fg(theme.colors.primary.into())),
-        Span::styled(" navigate  ", Style::default().fg(theme.colors.text_muted.into())),
+        Span::styled(
+            " navigate  ",
+            Style::default().fg(theme.colors.text_muted.into()),
+        ),
         Span::styled("ENTER", Style::default().fg(theme.colors.primary.into())),
-        Span::styled(" select  ", Style::default().fg(theme.colors.text_muted.into())),
+        Span::styled(
+            " select  ",
+            Style::default().fg(theme.colors.text_muted.into()),
+        ),
         Span::styled("ESC", Style::default().fg(theme.colors.primary.into())),
-        Span::styled(" cancel", Style::default().fg(theme.colors.text_muted.into())),
+        Span::styled(
+            " cancel",
+            Style::default().fg(theme.colors.text_muted.into()),
+        ),
     ]);
 
-    let paragraph = Paragraph::new(help_line)
-        .alignment(Alignment::Left);
-        // ❌ 移除 .bg(Color::DarkGray) - 硬编码背景色
-        // ❌ 移除 .block(...) - 过时边框设计
+    let paragraph = Paragraph::new(help_line).alignment(Alignment::Left);
+    // ❌ 移除 .bg(Color::DarkGray) - 硬编码背景色
+    // ❌ 移除 .block(...) - 过时边框设计
 
     paragraph.render(area, buf);
 }
