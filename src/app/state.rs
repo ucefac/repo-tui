@@ -208,6 +208,8 @@ pub enum DirectoryChooserMode {
         allow_multiple: bool,
         /// Edit mode (replace existing or add new)
         edit_mode: bool,
+        /// Return target for subtitle display
+        return_to: ReturnTarget,
     },
     /// Add single repository (validates .git exists)
     AddSingleRepository,
@@ -218,6 +220,7 @@ impl Default for DirectoryChooserMode {
         DirectoryChooserMode::SelectMainDirectory {
             allow_multiple: false,
             edit_mode: false,
+            return_to: ReturnTarget::Running,
         }
     }
 }

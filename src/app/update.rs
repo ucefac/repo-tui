@@ -297,6 +297,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 mode: crate::app::state::DirectoryChooserMode::SelectMainDirectory {
                     allow_multiple: false,
                     edit_mode: false,
+                    return_to: crate::app::state::ReturnTarget::Running,
                 },
                 return_to: crate::app::state::ReturnTarget::Running,
             };
@@ -324,6 +325,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                     crate::app::state::DirectoryChooserMode::SelectMainDirectory {
                         allow_multiple: false,
                         edit_mode: false,
+                        return_to: crate::app::state::ReturnTarget::Running,
                     },
                     crate::app::state::ReturnTarget::Running,
                 )
@@ -1874,6 +1876,7 @@ mod tests {
             mode: crate::app::state::DirectoryChooserMode::SelectMainDirectory {
                 allow_multiple: false,
                 edit_mode: false,
+                return_to: crate::app::state::ReturnTarget::Running,
             },
             return_to: crate::app::state::ReturnTarget::Running,
         };
@@ -1923,6 +1926,7 @@ mod tests {
             mode: crate::app::state::DirectoryChooserMode::SelectMainDirectory {
                 allow_multiple: false,
                 edit_mode: false,
+                return_to: crate::app::state::ReturnTarget::Running,
             },
             return_to: crate::app::state::ReturnTarget::Running,
         };

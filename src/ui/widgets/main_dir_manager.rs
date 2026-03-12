@@ -70,6 +70,14 @@ impl<'a> Widget for MainDirManager<'a> {
 
 impl<'a> MainDirManager<'a> {
     fn render_title(&self, area: Rect, buf: &mut Buffer) {
+        let title_layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Length(1), // Title
+                Constraint::Length(1), // Subtitle
+            ])
+            .split(area);
+
         let title = Paragraph::new("🏠 Manage Main Directories")
             .alignment(Alignment::Center)
             .style(
@@ -77,7 +85,12 @@ impl<'a> MainDirManager<'a> {
                     .fg(self.theme.colors.primary.into())
                     .add_modifier(Modifier::BOLD),
             );
-        title.render(area, buf);
+        title.render(title_layout[0], buf);
+
+        let subtitle = Paragraph::new("Manage root directories that store multiple repositories")
+            .alignment(Alignment::Center)
+            .style(Style::default().fg(self.theme.colors.text_muted.into()));
+        subtitle.render(title_layout[1], buf);
     }
 
     fn render_directory_list(&self, area: Rect, buf: &mut Buffer) {
