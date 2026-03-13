@@ -57,30 +57,30 @@ fn test_clone_url_parsing_various_platforms() {
 /// Test folder name generation matches specification
 #[test]
 fn test_clone_folder_name_generation() {
-    // Standard case
+    // Standard case - domain TLD is stripped
     let parsed = parse_git_url("https://github.com/owner/repo").unwrap();
     let folder_name = generate_folder_name(&parsed);
-    assert_eq!(folder_name, "github.com_owner_repo");
+    assert_eq!(folder_name, "github_owner_repo");
 
     // With .git suffix
     let parsed = parse_git_url("https://github.com/owner/repo.git").unwrap();
     let folder_name = generate_folder_name(&parsed);
-    assert_eq!(folder_name, "github.com_owner_repo");
+    assert_eq!(folder_name, "github_owner_repo");
 
     // Organization with hyphen
     let parsed = parse_git_url("https://github.com/my-org/my-repo").unwrap();
     let folder_name = generate_folder_name(&parsed);
-    assert_eq!(folder_name, "github.com_my-org_my-repo");
+    assert_eq!(folder_name, "github_my-org_my-repo");
 
     // Nested GitLab groups
     let parsed = parse_git_url("https://gitlab.com/group/subgroup/project").unwrap();
     let folder_name = generate_folder_name(&parsed);
-    assert_eq!(folder_name, "gitlab.com_group-subgroup_project");
+    assert_eq!(folder_name, "gitlab_group-subgroup_project");
 
     // With port number
     let parsed = parse_git_url("https://github.com:8443/owner/repo").unwrap();
     let folder_name = generate_folder_name(&parsed);
-    assert_eq!(folder_name, "github.com_owner_repo");
+    assert_eq!(folder_name, "github_owner_repo");
 }
 
 /// Test URL validation
@@ -290,12 +290,13 @@ fn test_clone_sanitize_various_inputs() {
     // by using generate_folder_name
 
     // Test through generate_folder_name
+    // Domain TLD should be stripped (github.com -> github)
     let parsed = parse_git_url("https://github.com/normal/repo").unwrap();
-    assert_eq!(generate_folder_name(&parsed), "github.com_normal_repo");
+    assert_eq!(generate_folder_name(&parsed), "github_normal_repo");
 
-    // Test with dots (should be preserved for domains)
+    // Test with dots (should be preserved for repo names)
     let parsed = parse_git_url("https://github.com/user/repo.name").unwrap();
-    assert_eq!(generate_folder_name(&parsed), "github.com_user_repo.name");
+    assert_eq!(generate_folder_name(&parsed), "github_user_repo.name");
 }
 
 /// Test clone with multiple main directories configured

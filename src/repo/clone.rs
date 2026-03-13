@@ -171,10 +171,12 @@ fn parse_path_components(original_url: &str, domain: &str, path: &str) -> Option
 /// - "bitbucket.io" -> "bitbucket"
 fn strip_tld(domain: &str) -> String {
     // List of common TLDs to strip
+    // IMPORTANT: Longer TLDs must come first to match before shorter ones
+    // e.g., ".co.uk" must come before ".uk" or ".co"
     const TLDS: &[&str] = &[
-        ".com", ".org", ".net", ".io", ".co", ".dev", ".app", ".info", ".biz", ".us", ".uk", ".eu",
-        ".de", ".fr", ".jp", ".cn", ".ru", ".in", ".au", ".br", ".mx", ".co.uk", ".com.cn",
-        ".co.jp", ".com.au",
+        ".com.cn", ".com.au", ".co.uk", ".co.jp", ".com", ".org", ".net", ".io", ".co", ".dev",
+        ".app", ".info", ".biz", ".us", ".uk", ".eu", ".de", ".fr", ".jp", ".cn", ".ru", ".in",
+        ".au", ".br", ".mx",
     ];
 
     let domain_lower = domain.to_lowercase();
@@ -622,8 +624,6 @@ mod tests {
 
     #[test]
     fn test_validate_clone_target_nonexistent_path() {
-        use std::path::PathBuf;
-
         // Create a temporary path that doesn't exist
         // Use canonical temp dir to avoid symlink issues on macOS
         let temp_dir = std::env::temp_dir();
