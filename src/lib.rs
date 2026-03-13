@@ -139,8 +139,8 @@ async fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Resul
             }
         }
 
-        // Receive async messages
-        if let Ok(msg) = msg_rx.try_recv() {
+        // Receive async messages (batch processing)
+        while let Ok(msg) = msg_rx.try_recv() {
             app::update::update(msg, &mut app, &runtime);
         }
 
