@@ -15,6 +15,7 @@
 | [clone-feature-prd-v2.md](./clone-feature-prd-v2.md) | v2 | Git Clone 功能 PRD（基于审查修复） | 📝 已审查 | Clone 功能 |
 | [clone-feature-prd-v3.md](./clone-feature-prd-v3.md) | v3-final | Git Clone 功能 PRD（审查通过） | ✅ **定稿** | Clone 功能 |
 | [auto-update-prd-v1.md](./auto-update-prd-v1.md) | v1 | 自动检测更新功能 PRD | 📝 待审查 | 版本管理 |
+| [repo-delete-feature.md](./repo-delete-feature.md) | v1 | 仓库删除功能 PRD | ✅ 已完成 | 删除功能 |
 
 ---
 
