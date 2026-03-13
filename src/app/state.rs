@@ -226,18 +226,13 @@ impl Default for DirectoryChooserMode {
 }
 
 /// Return target for directory chooser
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum ReturnTarget {
     /// Return to running state (main repo list)
+    #[default]
     Running,
     /// Return to main directory manager
     ManagingDirs,
-}
-
-impl Default for ReturnTarget {
-    fn default() -> Self {
-        ReturnTarget::Running
-    }
 }
 
 /// Application state

@@ -8,7 +8,7 @@
 
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Wrap};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use crate::app::state::{CloneStage, CloneState};
 use crate::ui::theme::Theme;
@@ -124,7 +124,7 @@ fn render_input_url(dialog: &CloneDialog, area: Rect, buf: &mut Buffer) {
 
     // URL input box with cursor
     let url_display = if dialog.state.url_input.is_empty() {
-        format!("{}", "▌")
+        "▌".to_string()
     } else {
         // Insert cursor at cursor_position
         let pos = dialog
@@ -218,7 +218,7 @@ fn render_input_url(dialog: &CloneDialog, area: Rect, buf: &mut Buffer) {
 /// Render confirm replace stage
 fn render_confirm_replace(
     dialog: &CloneDialog,
-    existing_path: &PathBuf,
+    existing_path: &Path,
     area: Rect,
     buf: &mut Buffer,
 ) {
