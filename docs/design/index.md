@@ -27,6 +27,7 @@
 | 文档 | 类型 | 说明 | 状态 | 关联 |
 |------|------|------|------|------|
 | [auto-update-design.md](./auto-update-design.md) | 功能设计 | 自动检测更新功能技术架构设计 | 📝 待实施 | 自动更新 |
+| [repo-delete-dialog.md](./repo-delete-dialog.md) | 功能设计 | 仓库删除确认对话框设计规范 | ✅ 已实施 | 删除功能 |
 
 ---
 

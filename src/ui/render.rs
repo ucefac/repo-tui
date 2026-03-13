@@ -6,7 +6,7 @@ use crate::ui::theme::Theme;
 use crate::ui::widgets::{
     centered_help_popup, centered_popup, centered_rect, CloneDialog, DirectoryChooser,
     DirectoryChooserState, HelpPanel, MainDirManager, MoveTargetSelector, MoveTargetSelectorState,
-    RepoList, SearchBox, ThemeSelector, TitleBar, ToastWidget, calculate_toast_rect,
+    RepoList, SearchBox, ThemeSelector, TitleBar,
 };
 use ratatui::prelude::*;
 use ratatui::widgets::{Clear, Paragraph};
@@ -62,6 +62,12 @@ pub fn render(frame: &mut Frame, app: &mut App) {
             render_main_ui(frame, area, app, &theme);
             render_main_dir_manager(frame, area, app, &theme);
         }
+        AppState::ConfirmingDeleteRepo { .. } => {
+            // Render main UI in background
+            render_main_ui(frame, area, app, &theme);
+            // Render delete confirmation dialog as overlay
+            render_repo_delete_confirmation_dialog(frame, area, app, &theme);
+        }
         AppState::ChoosingMoveTarget {
             ref targets,
             selected_index,
@@ -97,15 +103,6 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         }
         AppState::Quit => {
             // Don't render anything when quitting
-        }
-    }
-
-    // Render toasts on top of everything
-    if app.toast_manager.has_toasts() {
-        if let Some(toast) = app.toast_manager.current() {
-            let toast_rect = calculate_toast_rect(area, toast);
-            let toast_widget = ToastWidget::new(toast);
-            frame.render_widget(toast_widget, toast_rect);
         }
     }
 }
@@ -409,6 +406,56 @@ fn render_delete_confirmation_dialog(frame: &mut Frame, area: Rect, app: &mut Ap
                 .borders(ratatui::widgets::Borders::ALL)
                 .border_style(Style::default().fg(theme.colors.error.into()))
                 .title("Confirm Delete"),
+        );
+
+    frame.render_widget(paragraph, popup_area);
+}
+
+/// Render repository delete confirmation dialog
+fn render_repo_delete_confirmation_dialog(
+    frame: &mut Frame,
+    area: Rect,
+    app: &mut App,
+    theme: &Theme,
+) {
+    // Create a centered popup for the confirmation dialog
+    let popup_area = centered_popup(50, 30, area);
+
+    // Clear background
+    frame.render_widget(Clear, popup_area);
+
+    // Get the repository name being deleted
+    let (repo_name, repo_path) = if let AppState::ConfirmingDeleteRepo {
+        ref repo_name,
+        ref repo_path,
+        ..
+    } = &app.state
+    {
+        (repo_name.clone(), repo_path.clone())
+    } else {
+        ("Unknown".to_string(), std::path::PathBuf::new())
+    };
+
+    // Build dialog content with warning about filesystem deletion
+    let text = format!(
+        "⚠️  Delete Repository\n\n\"{}\"\n\nThis will PERMANENTLY delete the repository from your filesystem.\n\nPath: {}\n\n[y] Confirm Delete  [n] Cancel",
+        repo_name,
+        repo_path.display()
+    );
+
+    let paragraph = Paragraph::new(text)
+        .alignment(Alignment::Center)
+        .wrap(ratatui::widgets::Wrap { trim: true })
+        .style(
+            Style::default()
+                .fg(theme.colors.foreground.into())
+                .bg(theme.colors.background.into()),
+        )
+        .block(
+            ratatui::widgets::Block::default()
+                .borders(ratatui::widgets::Borders::ALL)
+                .border_style(Style::default().fg(theme.colors.error.into()))
+                .title("⚠️  Confirm Delete"),
         );
 
     frame.render_widget(paragraph, popup_area);

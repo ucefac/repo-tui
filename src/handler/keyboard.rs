@@ -16,6 +16,9 @@ pub fn handle_key_event(key: KeyEvent, app: &mut App, runtime: &Runtime) {
 
     // State-based handling (priority order)
     match &app.state {
+        AppState::ConfirmingDeleteRepo { .. } => {
+            handle_delete_confirmation_keys(key, app);
+        }
         AppState::Cloning { .. } => {
             handle_cloning_keys(key, app);
         }
@@ -508,6 +511,11 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
         KeyCode::Char('c') => {
             // c: Start clone operation
             let _ = app.msg_tx.try_send(AppMsg::StartClone);
+        }
+
+        KeyCode::Delete => {
+            // Delete: Show delete confirmation for repository
+            let _ = app.msg_tx.try_send(AppMsg::ShowDeleteRepoConfirmation);
         }
 
         KeyCode::Char('U') => {
@@ -1049,5 +1057,22 @@ fn handle_cloning_keys(key: KeyEvent, app: &mut App) {
             }
         }
         None => {}
+    }
+}
+
+/// Handle keys in repository delete confirmation dialog
+fn handle_delete_confirmation_keys(key: KeyEvent, app: &mut App) {
+    match key.code {
+        KeyCode::Char('y') | KeyCode::Enter => {
+            // Confirm deletion
+            if let AppState::ConfirmingDeleteRepo { repo_index, .. } = &app.state {
+                let _ = app.msg_tx.try_send(AppMsg::DeleteRepository(*repo_index));
+            }
+        }
+        KeyCode::Char('n') | KeyCode::Esc => {
+            // Cancel deletion
+            let _ = app.msg_tx.try_send(AppMsg::CancelDeleteRepoConfirmation);
+        }
+        _ => {}
     }
 }

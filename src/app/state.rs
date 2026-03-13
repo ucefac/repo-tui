@@ -274,6 +274,16 @@ pub enum AppState {
         confirming_delete: bool,
     },
 
+    /// Confirming repository deletion
+    ConfirmingDeleteRepo {
+        /// Repository index in filtered list
+        repo_index: usize,
+        /// Repository path for deletion
+        repo_path: PathBuf,
+        /// Repository name for display
+        repo_name: String,
+    },
+
     /// Showing help panel
     ShowingHelp {
         /// Scroll offset for viewport
@@ -355,6 +365,7 @@ impl AppState {
             AppState::Cloning { .. } => 6,
             AppState::ShowingHelp { .. } => 4,
             AppState::ManagingDirs { .. } => 4,
+            AppState::ConfirmingDeleteRepo { .. } => 5,
             AppState::ChoosingMoveTarget { .. } => 5,
             AppState::ChoosingDir { .. } => 3,
             AppState::SelectingTheme { .. } => 3,
@@ -373,6 +384,7 @@ impl AppState {
                 | AppState::SelectingTheme { .. }
                 | AppState::ManagingDirs { .. }
                 | AppState::Cloning { .. }
+                | AppState::ConfirmingDeleteRepo { .. }
                 | AppState::ChoosingMoveTarget { .. }
         )
     }

@@ -339,6 +339,48 @@ impl Runtime {
                 });
             }
 
+            Cmd::DeleteRepository(_repo_index, repo_path, repo_name) => {
+                tokio::spawn(async move {
+                    tracing::info!("Deleting repository: {} at {:?}", repo_name, repo_path);
+
+                    // 6-layer validation chain for safe deletion
+                    let validation_error = validate_delete_path(&repo_path).await;
+
+                    let msg = if let Some(error_msg) = validation_error {
+                        tracing::error!("Delete validation failed: {}", error_msg);
+                        AppMsg::RepositoryDeleted {
+                            repo_path,
+                            repo_name,
+                            success: false,
+                        }
+                    } else {
+                        // Delete the repository directory
+                        let result = tokio::fs::remove_dir_all(&repo_path).await;
+
+                        match result {
+                            Ok(_) => {
+                                tracing::info!("Repository deleted successfully: {}", repo_name);
+                                AppMsg::RepositoryDeleted {
+                                    repo_path,
+                                    repo_name,
+                                    success: true,
+                                }
+                            }
+                            Err(e) => {
+                                tracing::error!("Failed to delete repository: {}", e);
+                                AppMsg::RepositoryDeleted {
+                                    repo_path,
+                                    repo_name,
+                                    success: false,
+                                }
+                            }
+                        }
+                    };
+
+                    let _ = msg_tx.send(msg).await;
+                });
+            }
+
             Cmd::MoveRepository(repo, target_main_dir) => {
                 tokio::spawn(async move {
                     tracing::info!(
@@ -383,6 +425,48 @@ impl Clone for Runtime {
             msg_tx: self.msg_tx.clone(),
         }
     }
+}
+
+/// Validate path for deletion with 6-layer validation chain
+///
+/// Returns `Some(error_message)` if validation fails, `None` if valid
+async fn validate_delete_path(repo_path: &std::path::Path) -> Option<String> {
+    // 1. Empty path check
+    if repo_path.as_os_str().is_empty() {
+        return Some("Empty path".to_string());
+    }
+
+    // 2. Normalize to absolute path
+    let abs_path = match tokio::fs::canonicalize(repo_path).await {
+        Ok(p) => p,
+        Err(e) => return Some(format!("Path does not exist: {}", e)),
+    };
+
+    // 3. Check existence (already verified by canonicalize, but double-check)
+    if !abs_path.exists() {
+        return Some("Path does not exist".to_string());
+    }
+
+    // 4. Check is directory
+    if !abs_path.is_dir() {
+        return Some("Path is not a directory".to_string());
+    }
+
+    // 5. Check starts with home directory
+    if let Some(home) = dirs::home_dir() {
+        if !abs_path.starts_with(&home) {
+            return Some("Path is outside home directory".to_string());
+        }
+    }
+
+    // 6. Verify is git repository (has .git directory)
+    let git_dir = abs_path.join(".git");
+    if !git_dir.exists() {
+        return Some("Not a git repository (no .git directory)".to_string());
+    }
+
+    // All validations passed
+    None
 }
 
 #[cfg(test)]

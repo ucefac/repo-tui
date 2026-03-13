@@ -513,10 +513,6 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
             AppState::ShowingHelp { .. } => {
                 app.state = AppState::Running;
             }
-            AppState::ChoosingMoveTarget { .. } => {
-                // Cancel move operation - return to running state
-                app.state = AppState::Running;
-            }
             AppState::Running => {
                 // Cancel from search focus
                 if app.search_active {
@@ -954,6 +950,49 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
             }
         }
 
+        // === Repository Delete ===
+        AppMsg::ShowDeleteRepoConfirmation => {
+            // Get selected repository info
+            if let Some(repo) = app.selected_repository() {
+                if let Some(repo_index) = app.selected_index() {
+                    let repo_path = repo.path.clone();
+                    let repo_name = repo.name.clone();
+
+                    app.state = AppState::ConfirmingDeleteRepo {
+                        repo_index,
+                        repo_path,
+                        repo_name,
+                    };
+                }
+            }
+        }
+
+        AppMsg::CancelDeleteRepoConfirmation => {
+            // Return to running state
+            app.state = AppState::Running;
+        }
+
+        AppMsg::DeleteRepository(repo_index) => {
+            // Get the repository path and name from the state
+            let (repo_path, repo_name) = if let AppState::ConfirmingDeleteRepo {
+                ref repo_path,
+                ref repo_name,
+                ..
+            } = app.state
+            {
+                (repo_path.clone(), repo_name.clone())
+            } else {
+                app.state = AppState::Running;
+                return;
+            };
+
+            // Return to running state
+            app.state = AppState::Running;
+
+            // Delete the repository directory asynchronously
+            runtime.dispatch(Cmd::DeleteRepository(repo_index, repo_path, repo_name));
+        }
+
         // === Single Repository Management ===
         AppMsg::ShowAddSingleRepoChooser => {
             app.state = AppState::ChoosingDir {
@@ -1350,6 +1389,26 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 config.update.ignored_version = Some(version);
                 // Trigger config save
                 runtime.dispatch(Cmd::SaveConfig(config.clone()));
+            }
+        }
+
+        // === Repository Delete Result ===
+        AppMsg::RepositoryDeleted {
+            repo_path,
+            repo_name,
+            success,
+        } => {
+            if success {
+                // Remove repository from the list
+                if let Some(idx) = app.repositories.iter().position(|r| r.path == repo_path) {
+                    app.repositories.remove(idx);
+                    app.apply_filter();
+                }
+                // Show success message
+                app.error_message = Some(format!("\"{}\" 已被删除", repo_name));
+            } else {
+                // Show error message
+                app.error_message = Some(format!("删除失败：\"{}\"", repo_name));
             }
         }
 

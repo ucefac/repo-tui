@@ -50,11 +50,14 @@ pub enum Cmd {
         target_path: PathBuf,
     },
 
+    /// Check for updates
+    CheckForUpdate,
+
     /// Move repository to target main directory
     MoveRepository(Repository, PathBuf),
 
-    /// Check for updates
-    CheckForUpdate,
+    /// Delete a repository from filesystem
+    DeleteRepository(usize, PathBuf, String),
 }
 
 /// Application messages
@@ -297,6 +300,15 @@ pub enum AppMsg {
     /// Cancel delete confirmation for main directory
     CancelDeleteMainDirConfirmation,
 
+    /// Show delete confirmation for repository
+    ShowDeleteRepoConfirmation,
+
+    /// Cancel delete confirmation for repository
+    CancelDeleteRepoConfirmation,
+
+    /// Delete repository from filesystem
+    DeleteRepository(usize),
+
     // === Single Repository Management ===
     /// Show add single repo chooser
     ShowAddSingleRepoChooser,
@@ -331,6 +343,16 @@ pub enum AppMsg {
 
     /// Ignore update version
     IgnoreUpdateVersion(String),
+
+    /// Repository deleted result
+    RepositoryDeleted {
+        /// Repository path
+        repo_path: PathBuf,
+        /// Repository name
+        repo_name: String,
+        /// Success flag
+        success: bool,
+    },
 
     // === Repository Move ===
     /// Open move target selector
