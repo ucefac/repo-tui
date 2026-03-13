@@ -102,9 +102,7 @@ impl GitStatusScheduler {
                         cache.insert(repo.path.clone(), status.clone());
 
                         // Send to UI
-                        let _ = msg_tx
-                            .send(AppMsg::GitStatusChecked(idx, Ok(status)))
-                            .await;
+                        let _ = msg_tx.send(AppMsg::GitStatusChecked(idx, Ok(status))).await;
                     }
                     Err(e) => {
                         // Send error to UI (non-fatal)
@@ -331,7 +329,10 @@ mod tests {
 
         // The method should return immediately, not wait for all tasks
         let elapsed = start.elapsed();
-        assert!(elapsed.as_millis() < 100, "schedule_batch should return immediately");
+        assert!(
+            elapsed.as_millis() < 100,
+            "schedule_batch should return immediately"
+        );
 
         // Give async tasks time to complete
         tokio::time::sleep(Duration::from_millis(500)).await;

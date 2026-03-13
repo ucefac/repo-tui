@@ -57,16 +57,14 @@ impl DirectoryChooserState {
     /// Get subtitle based on mode
     pub fn subtitle(&self) -> &'static str {
         match &self.mode {
-            DirectoryChooserMode::SelectMainDirectory { return_to, .. } => {
-                match return_to {
-                    ReturnTarget::ManagingDirs => {
-                        "Select a folder to serve as root for multiple git repositories"
-                    }
-                    ReturnTarget::Running => {
-                        "Select a git-managed folder to add to the repository list"
-                    }
+            DirectoryChooserMode::SelectMainDirectory { return_to, .. } => match return_to {
+                ReturnTarget::ManagingDirs => {
+                    "Select a folder to serve as root for multiple git repositories"
                 }
-            }
+                ReturnTarget::Running => {
+                    "Select a git-managed folder to add to the repository list"
+                }
+            },
             DirectoryChooserMode::AddSingleRepository => {
                 "Select a git-managed folder to add to the repository list"
             }
