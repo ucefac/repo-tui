@@ -1,0 +1,5 @@
+# Use LF for all Rust source files
+*.rs text eol=lf
+*.toml text eol=lf
+*.md text eol=lf
+*.sh text eol=lf
