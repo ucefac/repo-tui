@@ -420,7 +420,7 @@ fn test_clone_retry() {
     // Manually set error state to simulate clone failure
     if let AppState::Cloning { clone_state } = &mut app.state {
         clone_state.stage = CloneStage::Error(CloneError::InvalidUrl(
-            "Simulated clone failure".to_string()
+            "Simulated clone failure".to_string(),
         ));
     }
 
