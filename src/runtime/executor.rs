@@ -338,6 +338,31 @@ impl Runtime {
                         .await;
                 });
             }
+
+            Cmd::MoveRepository(repo, target_main_dir) => {
+                tokio::spawn(async move {
+                    tracing::info!(
+                        "Moving repository {} to {:?}",
+                        repo.name,
+                        target_main_dir
+                    );
+
+                    // Perform the move operation
+                    let result = tokio::task::spawn_blocking(move || {
+                        repo::move_module::move_repository(&repo, &target_main_dir)
+                    })
+                    .await;
+
+                    // Handle the result
+                    let result = match result {
+                        Ok(Ok(new_path)) => Ok(new_path),
+                        Ok(Err(e)) => Err(e),
+                        Err(e) => Err(crate::error::MoveError::Io(e.to_string())),
+                    };
+
+                    let _ = msg_tx.send(AppMsg::MoveCompleted(result)).await;
+                });
+            }
         }
     }
 

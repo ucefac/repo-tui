@@ -22,6 +22,9 @@ pub fn handle_key_event(key: KeyEvent, app: &mut App, runtime: &Runtime) {
         AppState::ShowingHelp { .. } => {
             handle_help_keys(key, app);
         }
+        AppState::ChoosingMoveTarget { .. } => {
+            handle_move_target_keys(key, app);
+        }
         AppState::ChoosingDir { mode, .. } => {
             let mode = mode.clone();
             handle_chooser_keys(key, app, runtime, mode);
@@ -98,6 +101,31 @@ fn handle_theme_selector_keys(key: KeyEvent, app: &mut App) {
             if let Some(name) = theme_name {
                 let _ = app.msg_tx.try_send(AppMsg::SelectTheme(name));
             }
+        }
+        _ => {}
+    }
+}
+
+/// Handle keys in move target selector
+fn handle_move_target_keys(key: KeyEvent, app: &mut App) {
+    match key.code {
+        KeyCode::Esc => {
+            let _ = app.msg_tx.try_send(AppMsg::CancelMove);
+        }
+        KeyCode::Char('j') | KeyCode::Down => {
+            let _ = app.msg_tx.try_send(AppMsg::MoveTargetNavDown);
+        }
+        KeyCode::Char('k') | KeyCode::Up => {
+            let _ = app.msg_tx.try_send(AppMsg::MoveTargetNavUp);
+        }
+        KeyCode::Enter => {
+            let _ = app.msg_tx.try_send(AppMsg::MoveTargetConfirm);
+        }
+        KeyCode::Home => {
+            let _ = app.msg_tx.try_send(AppMsg::MoveTargetJumpToFirst);
+        }
+        KeyCode::End => {
+            let _ = app.msg_tx.try_send(AppMsg::MoveTargetJumpToLast);
         }
         _ => {}
     }
@@ -340,6 +368,11 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
         // Change main directory - open main directory manager
         KeyCode::Char('m') => {
             let _ = app.msg_tx.try_send(AppMsg::ShowMainDirectoryManager);
+        }
+
+        // Move repository to another main directory (Shift+M or M)
+        KeyCode::Char('M') => {
+            let _ = app.msg_tx.try_send(AppMsg::OpenMoveTargetSelector);
         }
 
         // Direct action triggers (1-7 keys)

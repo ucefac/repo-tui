@@ -308,6 +308,18 @@ pub enum AppState {
         /// Clone state
         clone_state: CloneState,
     },
+
+    /// Choosing move target directory
+    ChoosingMoveTarget {
+        /// Target main directories
+        targets: Vec<PathBuf>,
+        /// Selected index
+        selected_index: usize,
+        /// Current repository path
+        current_repo_path: PathBuf,
+        /// Current main directory index (for skipping same directory)
+        current_main_dir_index: Option<usize>,
+    },
 }
 
 /// Main directory edit state
@@ -343,6 +355,7 @@ impl AppState {
             AppState::Cloning { .. } => 6,
             AppState::ShowingHelp { .. } => 4,
             AppState::ManagingDirs { .. } => 4,
+            AppState::ChoosingMoveTarget { .. } => 5,
             AppState::ChoosingDir { .. } => 3,
             AppState::SelectingTheme { .. } => 3,
             AppState::Running => 1,
@@ -360,6 +373,7 @@ impl AppState {
                 | AppState::SelectingTheme { .. }
                 | AppState::ManagingDirs { .. }
                 | AppState::Cloning { .. }
+                | AppState::ChoosingMoveTarget { .. }
         )
     }
 

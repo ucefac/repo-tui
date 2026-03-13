@@ -18,6 +18,9 @@ pub enum AppError {
     #[error("Clone error: {0}")]
     Clone(#[from] CloneError),
 
+    #[error("Move error: {0}")]
+    Move(#[from] MoveError),
+
     #[error("Terminal error: {0}")]
     Terminal(String),
 
@@ -199,6 +202,65 @@ pub enum CloneError {
 
     #[error("IO error: {0}")]
     Io(String),
+}
+
+/// Move operation errors
+#[derive(Error, Debug, Clone, PartialEq, Eq)]
+pub enum MoveError {
+    #[error("No repository selected")]
+    NoRepositorySelected,
+
+    #[error("Need at least 2 main directories to move")]
+    NeedMoreMainDirs,
+
+    #[error("Repository already in target directory")]
+    AlreadyInTargetDir,
+
+    #[error("Target already exists: {0}")]
+    TargetAlreadyExists(PathBuf),
+
+    #[error("Permission denied: {0}")]
+    PermissionDenied(PathBuf),
+
+    #[error("IO error: {0}")]
+    Io(String),
+
+    #[error("Path error: {0}")]
+    PathError(String),
+
+    #[error("Cancelled")]
+    Cancelled,
+}
+
+impl MoveError {
+    /// Get user-friendly error message
+    pub fn user_message(&self) -> String {
+        match self {
+            MoveError::NoRepositorySelected => "请先选择一个仓库".to_string(),
+            MoveError::NeedMoreMainDirs => "需要至少 2 个主目录才能移动仓库".to_string(),
+            MoveError::AlreadyInTargetDir => "仓库已在该主目录中，无需移动".to_string(),
+            MoveError::TargetAlreadyExists(path) => {
+                format!("目标位置已存在同名仓库：{}", path.display())
+            }
+            MoveError::PermissionDenied(path) => {
+                format!("权限不足，无法写入：{}", path.display())
+            }
+            MoveError::Io(msg) => format!("移动失败：{}", msg),
+            MoveError::PathError(msg) => format!("路径错误：{}", msg),
+            MoveError::Cancelled => "移动操作已取消".to_string(),
+        }
+    }
+
+    /// Get error severity
+    pub fn severity(&self) -> ErrorSeverity {
+        match self {
+            MoveError::Cancelled => ErrorSeverity::Info,
+            MoveError::AlreadyInTargetDir => ErrorSeverity::Info,
+            MoveError::NoRepositorySelected => ErrorSeverity::Info,
+            MoveError::NeedMoreMainDirs => ErrorSeverity::Warning,
+            _ => ErrorSeverity::Error,
+        }
+    }
 }
 
 /// Update check errors

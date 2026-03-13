@@ -50,6 +50,9 @@ pub enum Cmd {
         target_path: PathBuf,
     },
 
+    /// Move repository to target main directory
+    MoveRepository(Repository, PathBuf),
+
     /// Check for updates
     CheckForUpdate,
 }
@@ -328,6 +331,34 @@ pub enum AppMsg {
 
     /// Ignore update version
     IgnoreUpdateVersion(String),
+
+    // === Repository Move ===
+    /// Open move target selector
+    OpenMoveTargetSelector,
+
+    /// Cancel move operation
+    CancelMove,
+
+    /// Move target selected
+    MoveTargetSelected(usize),
+
+    /// Move completed
+    MoveCompleted(Result<PathBuf, crate::error::MoveError>),
+
+    /// Navigate up in move target selector
+    MoveTargetNavUp,
+
+    /// Navigate down in move target selector
+    MoveTargetNavDown,
+
+    /// Confirm move target selection
+    MoveTargetConfirm,
+
+    /// Jump to first item in move target selector
+    MoveTargetJumpToFirst,
+
+    /// Jump to last item in move target selector
+    MoveTargetJumpToLast,
 }
 
 impl AppMsg {

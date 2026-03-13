@@ -5,7 +5,8 @@ use crate::app::state::AppState;
 use crate::ui::theme::Theme;
 use crate::ui::widgets::{
     centered_help_popup, centered_popup, centered_rect, CloneDialog, DirectoryChooser,
-    DirectoryChooserState, HelpPanel, MainDirManager, RepoList, SearchBox, ThemeSelector, TitleBar,
+    DirectoryChooserState, HelpPanel, MainDirManager, MoveTargetSelector, MoveTargetSelectorState,
+    RepoList, SearchBox, ThemeSelector, TitleBar, ToastWidget, calculate_toast_rect,
 };
 use ratatui::prelude::*;
 use ratatui::widgets::{Clear, Paragraph};
@@ -61,6 +62,23 @@ pub fn render(frame: &mut Frame, app: &mut App) {
             render_main_ui(frame, area, app, &theme);
             render_main_dir_manager(frame, area, app, &theme);
         }
+        AppState::ChoosingMoveTarget {
+            ref targets,
+            selected_index,
+            ref current_repo_path,
+            current_main_dir_index,
+        } => {
+            render_main_ui(frame, area, app, &theme);
+            render_move_target_selector(
+                frame,
+                area,
+                targets,
+                selected_index,
+                current_repo_path,
+                current_main_dir_index,
+                &theme,
+            );
+        }
         AppState::Running => {
             render_main_ui(frame, area, app, &theme);
         }
@@ -79,6 +97,15 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         }
         AppState::Quit => {
             // Don't render anything when quitting
+        }
+    }
+
+    // Render toasts on top of everything
+    if app.toast_manager.has_toasts() {
+        if let Some(toast) = app.toast_manager.current() {
+            let toast_rect = calculate_toast_rect(area, toast);
+            let toast_widget = ToastWidget::new(toast);
+            frame.render_widget(toast_widget, toast_rect);
         }
     }
 }
@@ -465,4 +492,44 @@ fn render_clone_dialog(frame: &mut Frame, area: Rect, app: &mut App, theme: &The
         .validation_error(validation_error);
 
     frame.render_widget(dialog, popup_area);
+}
+
+/// Render move target selector
+fn render_move_target_selector(
+    frame: &mut Frame,
+    area: Rect,
+    targets: &[PathBuf],
+    _selected_index: usize,
+    current_repo_path: &PathBuf,
+    current_main_dir_index: Option<usize>,
+    _theme: &Theme,
+) {
+    use crate::ui::widgets::move_target_centered_rect;
+
+    let popup_area = move_target_centered_rect(area, 50, 40);
+
+    // Clear background for modal
+    frame.render_widget(Clear, popup_area);
+
+    // Convert targets to strings for display
+    let target_strings: Vec<String> = targets.iter().map(|p| p.display().to_string()).collect();
+
+    // Get repo name from path
+    let repo_name = current_repo_path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("unknown")
+        .to_string();
+
+    // Create selector state
+    let selector_state = MoveTargetSelectorState::new(
+        target_strings,
+        repo_name,
+        current_main_dir_index,
+    );
+
+    // Create and render the selector
+    let selector = MoveTargetSelector::new(&selector_state);
+
+    frame.render_widget(selector, popup_area);
 }

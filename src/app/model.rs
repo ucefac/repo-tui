@@ -123,6 +123,9 @@ pub struct App {
 
     /// Terminal needs reinitialization (after external TUI exit)
     pub needs_terminal_reinit: bool,
+
+    /// Toast manager for notifications
+    pub toast_manager: crate::ui::widgets::toast::ToastManager,
 }
 
 impl App {
@@ -166,6 +169,7 @@ impl App {
             available_update: None,
             update_notification_dismissed: false,
             needs_terminal_reinit: false,
+            toast_manager: crate::ui::widgets::toast::ToastManager::new(),
         }
     }
 
