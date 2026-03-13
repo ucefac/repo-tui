@@ -1,4 +1,4 @@
-> **声明**: 本项目完全通过 vide coding 方式开发
+> **Statement**: This project was developed entirely via live coding.
 
 [中文文档](./README.zh.md)
 
