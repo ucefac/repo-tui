@@ -57,9 +57,8 @@ impl<'a> Widget for MainDirManager<'a> {
             .constraints([
                 Constraint::Length(3), // Title
                 Constraint::Min(5),    // Directory list
-                Constraint::Length(3), // Help
+                Constraint::Length(1), // Help
             ])
-            .margin(2)
             .split(area);
 
         self.render_title(chunks[0], buf);
@@ -149,7 +148,7 @@ impl<'a> MainDirManager<'a> {
         let spans = parse_help_text(help_text, self.theme);
 
         let paragraph = Paragraph::new(Line::from(spans))
-            .alignment(Alignment::Center)
+            .alignment(Alignment::Left)
             .style(Style::default().fg(self.theme.colors.text_muted.into()));
 
         paragraph.render(area, buf);
