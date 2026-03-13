@@ -57,7 +57,7 @@ impl MockFs {
     /// Create a nested directory structure with repos
     pub fn create_nested_repos(&self, parent: &str, repo_names: &[&str]) -> PathBuf {
         let parent_path = self.temp_dir.path().join(parent);
-        fs::create_dir(&parent_path).unwrap();
+        fs::create_dir_all(&parent_path).unwrap();
 
         for name in repo_names {
             let repo_path = parent_path.join(name);
@@ -175,9 +175,8 @@ impl MockFs {
 
         for parent in parent_dirs {
             let parent_path = self.temp_dir.path().join(parent);
-            if !parent_path.exists() {
-                fs::create_dir(&parent_path).unwrap();
-            }
+            // Use create_dir_all to create parent directories recursively
+            fs::create_dir_all(&parent_path).unwrap();
 
             let repo_path = parent_path.join(name);
             fs::create_dir(&repo_path).unwrap();

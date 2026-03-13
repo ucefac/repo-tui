@@ -371,9 +371,10 @@ fn test_clone_invalid_url_error() {
 
     repotui::app::update::update(AppMsg::CloneUrlConfirm, &mut app, &runtime);
 
-    // Should transition to error state within cloning
+    // Should have validation error (but stay in InputUrl stage)
     if let AppState::Cloning { clone_state } = &app.state {
-        assert!(matches!(clone_state.stage, CloneStage::Error(_)));
+        assert!(matches!(clone_state.stage, CloneStage::InputUrl));
+        assert!(clone_state.validation_error.is_some());
     }
 }
 
@@ -407,6 +408,8 @@ fn test_clone_url_clear() {
 /// Test clone retry after error
 #[test]
 fn test_clone_retry() {
+    use repotui::error::CloneError;
+
     let (tx, _rx) = tokio::sync::mpsc::channel(100);
     let mut app = repotui::app::model::App::new(tx);
     let runtime = repotui::runtime::executor::Runtime::new(app.msg_tx.clone());
@@ -414,11 +417,12 @@ fn test_clone_retry() {
     // Start clone
     repotui::app::update::update(AppMsg::StartClone, &mut app, &runtime);
 
-    // Enter URL and confirm with invalid URL to trigger error
-    for c in "invalid".chars() {
-        repotui::app::update::update(AppMsg::CloneUrlInput(c), &mut app, &runtime);
+    // Manually set error state to simulate clone failure
+    if let AppState::Cloning { clone_state } = &mut app.state {
+        clone_state.stage = CloneStage::Error(CloneError::InvalidUrl(
+            "Simulated clone failure".to_string()
+        ));
     }
-    repotui::app::update::update(AppMsg::CloneUrlConfirm, &mut app, &runtime);
 
     // Verify error state
     let was_error = if let AppState::Cloning { clone_state } = &app.state {

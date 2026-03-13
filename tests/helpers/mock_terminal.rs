@@ -6,8 +6,6 @@
 use ratatui::backend::TestBackend;
 use ratatui::buffer::Buffer;
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use ratatui::layout::Rect;
-use ratatui::widgets::Widget;
 use ratatui::Terminal;
 
 /// Mock terminal for testing UI rendering
@@ -126,9 +124,9 @@ impl MockTerminal {
 
     /// Resize the terminal
     pub fn resize(&mut self, width: u16, height: u16) {
-        self.terminal
-            .resize(Rect::new(0, 0, width, height))
-            .unwrap();
+        // TestBackend doesn't properly support resize, so we recreate it
+        let backend = TestBackend::new(width, height);
+        self.terminal = Terminal::new(backend).unwrap();
     }
 
     /// Draw a widget to the terminal
@@ -220,7 +218,16 @@ mod tests {
     #[test]
     fn test_resize() {
         let mut term = MockTerminal::new(80, 24);
+
+        // Resize and clear to force backend to update
         term.resize(100, 30);
+        term.clear();
+
+        // Force a redraw to update the buffer
+        term.draw(|f| {
+            let block = Block::default();
+            f.render_widget(block, f.area());
+        });
 
         assert_eq!(term.width(), 100);
         assert_eq!(term.height(), 30);
