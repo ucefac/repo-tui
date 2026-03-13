@@ -1273,6 +1273,11 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                         });
                     }
 
+                    // Clear progress lines before returning to Running state
+                    if let Some(clone_state) = app.state.clone_state_mut() {
+                        clone_state.clear_progress();
+                    }
+
                     // Return to Running state
                     app.state = AppState::Running;
                 }
@@ -1280,6 +1285,8 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                     // Clone failed - show error
                     if let Some(clone_state) = app.state.clone_state_mut() {
                         clone_state.stage = crate::app::state::CloneStage::Error(e);
+                        // Clear progress lines to prepare for retry or cancel
+                        clone_state.clear_progress();
                     }
                 }
             }
@@ -1295,8 +1302,9 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
 
         AppMsg::CancelClone => {
             // Cancel clone operation and return to Running state
-            if let Some(clone_state) = app.state.clone_state() {
+            if let Some(clone_state) = app.state.clone_state_mut() {
                 clone_state.cancel();
+                clone_state.clear_progress();
             }
             app.state = AppState::Running;
         }
