@@ -513,6 +513,10 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
             AppState::ShowingHelp { .. } => {
                 app.state = AppState::Running;
             }
+            AppState::ChoosingMoveTarget { .. } => {
+                // Cancel move operation - return to running state
+                app.state = AppState::Running;
+            }
             AppState::Running => {
                 // Cancel from search focus
                 if app.search_active {
@@ -1347,6 +1351,185 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 // Trigger config save
                 runtime.dispatch(Cmd::SaveConfig(config.clone()));
             }
+        }
+
+        // === Repository Move ===
+        AppMsg::OpenMoveTargetSelector => {
+            // Check if a repository is selected
+            if let Some(repo) = app.selected_repository().cloned() {
+                // Get enabled main directories as targets
+                let targets: Vec<PathBuf> = app
+                    .main_directories
+                    .iter()
+                    .filter(|d| d.enabled)
+                    .map(|d| d.path.clone())
+                    .collect();
+
+                // Check if we have at least 2 main directories
+                if targets.len() < 2 {
+                    app.toast_manager
+                        .info("需要至少 2 个主目录才能移动仓库");
+                    return;
+                }
+
+                // Find current main directory index
+                let current_main_dir_index = app.active_main_dir_index;
+
+                // Transition to ChoosingMoveTarget state
+                app.state = AppState::ChoosingMoveTarget {
+                    targets,
+                    selected_index: 0,
+                    current_repo_path: repo.path.clone(),
+                    current_main_dir_index,
+                };
+            } else {
+                app.toast_manager.info("请先选择一个仓库");
+            }
+        }
+
+        AppMsg::CancelMove => {
+            if matches!(app.state, AppState::ChoosingMoveTarget { .. }) {
+                app.state = AppState::Running;
+            }
+        }
+
+        AppMsg::MoveTargetNavUp => {
+            if let AppState::ChoosingMoveTarget {
+                selected_index,
+                targets,
+                ..
+            } = &mut app.state
+            {
+                if !targets.is_empty() {
+                    *selected_index =
+                        (*selected_index + targets.len() - 1) % targets.len();
+                }
+            }
+        }
+
+        AppMsg::MoveTargetNavDown => {
+            if let AppState::ChoosingMoveTarget {
+                selected_index,
+                targets,
+                ..
+            } = &mut app.state
+            {
+                if !targets.is_empty() {
+                    *selected_index = (*selected_index + 1) % targets.len();
+                }
+            }
+        }
+
+        AppMsg::MoveTargetJumpToFirst => {
+            if let AppState::ChoosingMoveTarget {
+                selected_index, ..
+            } = &mut app.state
+            {
+                *selected_index = 0;
+            }
+        }
+
+        AppMsg::MoveTargetJumpToLast => {
+            if let AppState::ChoosingMoveTarget {
+                selected_index,
+                targets,
+                ..
+            } = &mut app.state
+            {
+                if !targets.is_empty() {
+                    *selected_index = targets.len() - 1;
+                }
+            }
+        }
+
+        AppMsg::MoveTargetConfirm => {
+            if let AppState::ChoosingMoveTarget {
+                selected_index,
+                targets,
+                current_repo_path,
+                current_main_dir_index,
+            } = &app.state
+            {
+                let selected_index = *selected_index;
+                let targets = targets.clone();
+                let current_repo_path = current_repo_path.clone();
+                let current_main_dir_index = *current_main_dir_index;
+
+                // Check if target is same as current
+                if current_main_dir_index == Some(selected_index) {
+                    app.toast_manager.info("仓库已在该主目录中，无需移动");
+                    app.state = AppState::Running;
+                    return;
+                }
+
+                // Get the repository to move
+                if let Some(repo) = app
+                    .repositories
+                    .iter()
+                    .find(|r| r.path == current_repo_path)
+                    .cloned()
+                {
+                    let target_path = targets[selected_index].clone();
+
+                    // Dispatch move command
+                    runtime.dispatch(Cmd::MoveRepository(repo, target_path));
+                } else {
+                    app.toast_manager.error("未找到要移动的仓库");
+                    app.state = AppState::Running;
+                }
+            }
+        }
+
+        AppMsg::MoveTargetSelected(index) => {
+            // This message is deprecated - selection is done via Enter key
+            // Keep for backwards compatibility
+            let _ = index;
+        }
+
+        AppMsg::MoveCompleted(result) => {
+            match result {
+                Ok(new_path) => {
+                    // Update repository path
+                    let new_path_clone = new_path.clone();
+                    if let Some(repo) = app
+                        .repositories
+                        .iter_mut()
+                        .find(|r| r.path == new_path_clone.parent().unwrap().join(&r.name))
+                    {
+                        repo.path = new_path_clone;
+                    }
+
+                    // Update main directory info if needed
+                    if let Some(new_main_dir_idx) = app
+                        .main_directories
+                        .iter()
+                        .position(|d| new_path.starts_with(&d.path))
+                    {
+                        app.active_main_dir_index = Some(new_main_dir_idx);
+                    }
+
+                    // Show success toast
+                    let repo_name = new_path
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("unknown")
+                        .to_string();
+                    let main_dir_name = app
+                        .main_directories
+                        .iter()
+                        .find(|d| new_path.starts_with(&d.path))
+                        .map(|d| d.display_name.as_str())
+                        .unwrap_or("unknown")
+                        .to_string();
+
+                    app.toast_manager
+                        .success(format!("{} 移动到 {} 成功", repo_name, main_dir_name));
+                }
+                Err(e) => {
+                    app.toast_manager.error(e.user_message());
+                }
+            }
+            app.state = AppState::Running;
         }
 
         // Deprecated messages (no longer used, but kept for backwards compatibility)
