@@ -83,6 +83,14 @@ pub fn render(frame: &mut Frame, app: &mut App) {
             render_main_ui(frame, area, app, &theme);
             render_clone_dialog(frame, area, app, &theme);
         }
+        AppState::SelectingMoveTarget { .. } => {
+            render_main_ui(frame, area, app, &theme);
+            render_main_dir_selector(frame, area, app, &theme);
+        }
+        AppState::ConfirmingMove { .. } => {
+            render_main_ui(frame, area, app, &theme);
+            render_move_confirmation_dialog(frame, area, app, &theme);
+        }
         AppState::Quit => {
             // Don't render anything when quitting
         }
@@ -521,4 +529,114 @@ fn render_clone_dialog(frame: &mut Frame, area: Rect, app: &mut App, theme: &The
         .validation_error(validation_error);
 
     frame.render_widget(dialog, popup_area);
+}
+
+/// Render main directory selector for move target selection
+fn render_main_dir_selector(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
+    use crate::ui::widgets::{centered_main_dir_selector_rect, MainDirSelector};
+
+    // Get move target directories and selected index
+    let (main_dirs, selected_index) = if let AppState::SelectingMoveTarget {
+        list_state,
+        move_target_dirs,
+        ..
+    } = &mut app.state
+    {
+        let selected = list_state.selected().unwrap_or(0);
+        (move_target_dirs.as_slice(), selected)
+    } else {
+        return;
+    };
+
+    // Calculate popup area
+    let popup_area = centered_main_dir_selector_rect(area, 60, 15);
+
+    // Clear the area behind the popup
+    frame.render_widget(Clear, popup_area);
+
+    // Create and render the selector
+    let selector = MainDirSelector::new(main_dirs, selected_index, theme);
+    frame.render_widget(selector, popup_area);
+}
+
+/// Render move confirmation dialog
+fn render_move_confirmation_dialog(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
+    use crate::ui::theme::Theme as BaseTheme;
+    use ratatui::widgets::{Block, Borders, Paragraph};
+
+    // Get confirmation state
+    let (conflict_exists, source_repo, target_path) = if let AppState::ConfirmingMove {
+        conflict_exists,
+        source_repo,
+        target_path,
+        ..
+    } = &app.state
+    {
+        (*conflict_exists, *source_repo, target_path.clone())
+    } else {
+        return;
+    };
+
+    // Get repository name
+    let repo_name = app
+        .repositories
+        .get(source_repo)
+        .map(|r| r.name.as_str())
+        .unwrap_or("unknown");
+
+    let target_name = target_path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("target");
+
+    // Build dialog content
+    let title = if conflict_exists {
+        "⚠️  目标目录已存在同名仓库"
+    } else {
+        "✅ 确认移动仓库"
+    };
+
+    let mut content = vec![
+        Line::from(""),
+        Line::from(format!("仓库：{}", repo_name)),
+        Line::from(format!("目标：{}", target_name.display())),
+        Line::from(""),
+    ];
+
+    if conflict_exists {
+        content.push(Line::from(Span::styled(
+            "⚠️  警告：目标位置已存在同名仓库！",
+            Style::default().fg(Color::Yellow),
+        )));
+        content.push(Line::from(""));
+        content.push(Line::from("请选择:"));
+        content.push(Line::from("  Y - 移动并重命名 (添加 _1 后缀)"));
+        content.push(Line::from("  N - 取消操作"));
+    } else {
+        content.push(Line::from("请选择:"));
+        content.push(Line::from("  Y/Enter - 确认移动"));
+        content.push(Line::from("  N/Esc - 取消操作"));
+    }
+
+    content.push(Line::from(""));
+
+    let paragraph = Paragraph::new(content)
+        .block(
+            Block::default()
+                .title(title)
+                .title_alignment(Alignment::Center)
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(theme.colors.primary.into()))
+                .style(Style::default().bg(theme.colors.panel_bg.into())),
+        )
+        .style(Style::default().fg(Color::White))
+        .alignment(Alignment::Left);
+
+    // Calculate centered popup area
+    let popup_area = crate::ui::widgets::centered_popup(50, 15, area);
+
+    // Clear the area behind the popup
+    frame.render_widget(Clear, popup_area);
+
+    frame.render_widget(paragraph, popup_area);
 }
