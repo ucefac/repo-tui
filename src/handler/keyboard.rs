@@ -2,7 +2,7 @@
 
 use crate::app::model::App;
 use crate::app::msg::AppMsg;
-use crate::app::state::{AppState, DirectoryChooserMode, ViewMode};
+use crate::app::state::{AppState, ViewMode};
 use crate::runtime::executor::Runtime;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
@@ -346,7 +346,12 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
             let _ = app.msg_tx.try_send(AppMsg::OpenThemeSelector);
         }
 
-        // Change main directory - open main directory manager
+        // Move repository to main directory (Ctrl+M)
+        KeyCode::Char('m') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            let _ = app.msg_tx.try_send(AppMsg::TriggerMoveRepository);
+        }
+
+        // Change main directory - open main directory manager (m key)
         KeyCode::Char('m') => {
             let _ = app.msg_tx.try_send(AppMsg::ShowMainDirectoryManager);
         }
@@ -484,11 +489,6 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
         KeyCode::Char('c') => {
             // c: Start clone operation
             let _ = app.msg_tx.try_send(AppMsg::StartClone);
-        }
-
-        KeyCode::Char('m') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-            // Ctrl+M: Move repository to main directory
-            let _ = app.msg_tx.try_send(AppMsg::TriggerMoveRepository);
         }
 
         KeyCode::Char('d') => {
@@ -1073,14 +1073,9 @@ fn handle_selecting_move_target(key: KeyEvent, app: &mut App) {
         }
         KeyCode::Down => {
             // Navigate down in main directory list
-            if let AppState::SelectingMoveTarget {
-                list_state,
-                main_dirs,
-                ..
-            } = &mut app.state
-            {
+            if let AppState::SelectingMoveTarget { list_state, .. } = &mut app.state {
                 let current = list_state.selected().unwrap_or(0);
-                if current < main_dirs.len().saturating_sub(1) {
+                if current < app.move_target_dirs.len().saturating_sub(1) {
                     list_state.select(Some(current + 1));
                 }
             }
@@ -1089,14 +1084,13 @@ fn handle_selecting_move_target(key: KeyEvent, app: &mut App) {
             // Confirm selected main directory
             if let AppState::SelectingMoveTarget {
                 list_state,
-                main_dirs,
-                source_repo,
+                source_repo: _,
                 ..
             } = &app.state
             {
                 let selected = list_state.selected().unwrap_or(0);
-                if selected < main_dirs.len() {
-                    let target_index = main_dirs[selected].0;
+                if selected < app.move_target_dirs.len() {
+                    let target_index = app.move_target_dirs[selected].0;
                     let _ = app
                         .msg_tx
                         .try_send(AppMsg::SelectMainDirForMove(target_index));

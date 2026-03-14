@@ -43,6 +43,7 @@ impl DirectoryChooserState {
         match &self.mode {
             DirectoryChooserMode::SelectMainDirectory { .. } => "Select Main Directory",
             DirectoryChooserMode::AddSingleRepository => "Add Single Repository",
+            DirectoryChooserMode::SelectMoveTarget { .. } => "Select Move Target",
         }
     }
 
@@ -51,6 +52,7 @@ impl DirectoryChooserState {
         match &self.mode {
             DirectoryChooserMode::SelectMainDirectory { .. } => "📁",
             DirectoryChooserMode::AddSingleRepository => "📦",
+            DirectoryChooserMode::SelectMoveTarget { .. } => "📦",
         }
     }
 
@@ -68,6 +70,9 @@ impl DirectoryChooserState {
             DirectoryChooserMode::AddSingleRepository => {
                 "Select a git-managed folder to add to the repository list"
             }
+            DirectoryChooserMode::SelectMoveTarget { .. } => {
+                "Select target main directory for moving repository"
+            }
         }
     }
 
@@ -83,6 +88,9 @@ impl DirectoryChooserState {
             }
             DirectoryChooserMode::AddSingleRepository => {
                 "↑↓ navigate   ← back   → enter   SPACE select repo   Esc cancel"
+            }
+            DirectoryChooserMode::SelectMoveTarget { .. } => {
+                "↑↓ navigate   Enter confirm   Esc cancel"
             }
         }
     }
@@ -140,7 +148,7 @@ impl<'a> Widget for DirectoryChooser<'a> {
             DirectoryChooserMode::SelectMainDirectory {
                 allow_multiple: true,
                 ..
-            }
+            } | DirectoryChooserMode::SelectMoveTarget { .. }
         );
 
         let chunks = Layout::default()
@@ -229,6 +237,7 @@ impl<'a> DirectoryChooser<'a> {
             let empty_text = match &self.state.mode {
                 DirectoryChooserMode::SelectMainDirectory { .. } => "(empty directory)",
                 DirectoryChooserMode::AddSingleRepository => "(no Git repositories found)",
+                DirectoryChooserMode::SelectMoveTarget { .. } => "(no main directories available)",
             };
             let paragraph = Paragraph::new(empty_text)
                 .alignment(Alignment::Center)

@@ -536,14 +536,8 @@ fn render_main_dir_selector(frame: &mut Frame, area: Rect, app: &mut App, theme:
     use crate::ui::widgets::{centered_main_dir_selector_rect, MainDirSelector};
 
     // Get move target directories and selected index
-    let (main_dirs, selected_index) = if let AppState::SelectingMoveTarget {
-        list_state,
-        move_target_dirs,
-        ..
-    } = &mut app.state
-    {
-        let selected = list_state.selected().unwrap_or(0);
-        (move_target_dirs.as_slice(), selected)
+    let selected_index = if let AppState::SelectingMoveTarget { list_state, .. } = &mut app.state {
+        list_state.selected().unwrap_or(0)
     } else {
         return;
     };
@@ -555,13 +549,12 @@ fn render_main_dir_selector(frame: &mut Frame, area: Rect, app: &mut App, theme:
     frame.render_widget(Clear, popup_area);
 
     // Create and render the selector
-    let selector = MainDirSelector::new(main_dirs, selected_index, theme);
+    let selector = MainDirSelector::new(&app.move_target_dirs, selected_index, theme);
     frame.render_widget(selector, popup_area);
 }
 
 /// Render move confirmation dialog
 fn render_move_confirmation_dialog(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
-    use crate::ui::theme::Theme as BaseTheme;
     use ratatui::widgets::{Block, Borders, Paragraph};
 
     // Get confirmation state
@@ -599,7 +592,7 @@ fn render_move_confirmation_dialog(frame: &mut Frame, area: Rect, app: &mut App,
     let mut content = vec![
         Line::from(""),
         Line::from(format!("仓库：{}", repo_name)),
-        Line::from(format!("目标：{}", target_name.display())),
+        Line::from(format!("目标：{}", target_name)),
         Line::from(""),
     ];
 
@@ -627,7 +620,7 @@ fn render_move_confirmation_dialog(frame: &mut Frame, area: Rect, app: &mut App,
                 .title_alignment(Alignment::Center)
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(theme.colors.primary.into()))
-                .style(Style::default().bg(theme.colors.panel_bg.into())),
+                .style(Style::default().bg(Color::Black)),
         )
         .style(Style::default().fg(Color::White))
         .alignment(Alignment::Left);

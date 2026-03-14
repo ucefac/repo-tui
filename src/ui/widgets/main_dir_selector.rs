@@ -41,8 +41,7 @@ impl Widget for MainDirSelector<'_> {
         let block = Block::default()
             .title(title.as_str())
             .borders(Borders::ALL)
-            .border_style(self.theme.panel_border())
-            .style(self.theme.panel_bg());
+            .border_style(self.theme.focused_border_style());
 
         let inner = block.inner(area);
 
@@ -59,7 +58,7 @@ impl Widget for MainDirSelector<'_> {
             .main_dirs
             .iter()
             .enumerate()
-            .map(|(idx, (index, path, repo_count))| {
+            .map(|(idx, (_index, path, repo_count))| {
                 let is_selected = idx == self.selected_index;
 
                 // Format: ▌ path/to/dir (N repos)
@@ -70,9 +69,9 @@ impl Widget for MainDirSelector<'_> {
                 };
 
                 let style = if is_selected {
-                    self.theme.list_selected()
+                    self.theme.selected_style()
                 } else {
-                    self.theme.list_unselected()
+                    Style::default().fg(Color::White)
                 };
 
                 ListItem::new(display_text).style(style)
@@ -80,15 +79,15 @@ impl Widget for MainDirSelector<'_> {
             .collect();
 
         // Create list widget
-        let list = List::new(items).block(Block::default().style(self.theme.list_bg()));
+        let list = List::new(items);
 
         // Render list
-        list.render(inner, buf);
+        ratatui::prelude::Widget::render(list, inner, buf);
 
         // Render help text at bottom
         let help_text = "↑↓ navigate   Enter confirm   Esc cancel";
         let help = Paragraph::new(help_text)
-            .style(self.theme.help_text())
+            .style(self.theme.secondary_text_style())
             .alignment(Alignment::Center);
 
         // Calculate help position (bottom of inner area)

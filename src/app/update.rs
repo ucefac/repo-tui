@@ -405,6 +405,11 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                         }
                     }
                 }
+                crate::app::state::DirectoryChooserMode::SelectMoveTarget { source_repo } => {
+                    // Handle move target selection - this should not happen here
+                    // SelectMoveTarget is handled by SelectMainDirForMove message
+                    app.state = AppState::Running;
+                }
             }
         }
 
@@ -1427,7 +1432,8 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                             .iter()
                             .filter(|r| r.path.starts_with(&dir.path))
                             .count();
-                        (idx, dir.display_name(), repo_count)
+                        let name = dir.display_name.clone();
+                        (idx, name, repo_count)
                     })
                     .collect();
 
