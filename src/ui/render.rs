@@ -366,23 +366,10 @@ fn render_main_dir_manager(frame: &mut Frame, area: Rect, app: &mut App, theme: 
     if let AppState::ManagingDirs {
         selected_dir_index,
         editing,
-        scroll_offset,
         ..
-    } = &mut app.state
+    } = &app.state
     {
-        // Update scroll offset to ensure selected item is visible
-        let list_area_height = area.height.saturating_sub(8) as usize; // Account for title and help
-        if list_area_height > 0 && !app.main_directories.is_empty() {
-            let selected = *selected_dir_index;
-            if selected >= *scroll_offset + list_area_height {
-                *scroll_offset = selected.saturating_sub(list_area_height - 1);
-            } else if selected < *scroll_offset {
-                *scroll_offset = selected;
-            }
-        }
-
-        let manager = MainDirManager::new(&app.main_directories, *selected_dir_index, theme)
-            .scroll_offset(*scroll_offset);
+        let manager = MainDirManager::new(&app.main_directories, *selected_dir_index, theme);
 
         // If editing, add editing state
         let manager = if let Some(edit) = editing {

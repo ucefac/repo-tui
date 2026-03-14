@@ -146,8 +146,8 @@ impl<'a> RepoList<'a> {
 
     /// Calculate how many items can be visible
     fn visible_count(&self) -> usize {
-        // Reserve space for borders
-        self.visible_height.saturating_sub(2) as usize
+        // Reserve space for borders (top+bottom = 2) and title (1) = 3 total
+        self.visible_height.saturating_sub(3) as usize
     }
 
     /// Update scroll offset to ensure selected item is visible

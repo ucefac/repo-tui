@@ -89,7 +89,7 @@ impl<'a> ThemeSelector<'a> {
     /// Update scroll offset to ensure selected item is visible
     pub fn update_scroll(&mut self) {
         // Calculate visible count from the actual layout
-        // Title: 2, Preview: 7, Help: 1, Border: 2
+        // Title: 2, Preview: 7, Help: 1, Border: 2, Total: 12
         let visible_count = self.visible_height.saturating_sub(12) as usize;
         if visible_count == 0 {
             return;

@@ -143,7 +143,8 @@ impl<'a> DirectoryChooser<'a> {
     /// Update scroll offset to ensure selected item is visible
     pub fn update_scroll(&mut self) {
         // Calculate visible count from the actual layout
-        let visible_count = self.visible_height.saturating_sub(10) as usize; // Title 3 + Path 3 + Stats 2 + Spacer 1 + Help 1
+        // Use area.height - 2 (borders only) to match render_directory_list
+        let visible_count = self.visible_height.saturating_sub(2) as usize;
         if visible_count == 0 {
             return;
         }
@@ -151,7 +152,7 @@ impl<'a> DirectoryChooser<'a> {
         let selected = self.state.selected_index;
         let current_offset = self.state.scroll_offset;
 
-        // Scroll down if selected is below visible area
+        // Scroll down if selected is below visible area (use > not >=)
         if selected > current_offset + visible_count - 1 {
             self.state.scroll_offset = selected.saturating_sub(visible_count - 1);
         }

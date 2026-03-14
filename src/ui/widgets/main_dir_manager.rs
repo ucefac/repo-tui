@@ -57,8 +57,11 @@ impl<'a> MainDirManager<'a> {
     /// Update scroll offset to ensure selected item is visible
     pub fn update_scroll(&mut self, area: Rect) {
         // Calculate visible count from the actual layout
-        // Title: 2 (title + subtitle), Help: 1, Border: 2
-        let visible_count = area.height.saturating_sub(5) as usize;
+        // Layout: Title 3 + Directory list (Min(5)) + Help 3, with margin 2 on each side
+        // For scroll calculation, use the full area height minus non-list areas
+        // Title: 3, Help: 3, Border: 2 (top+bottom of widget) = 8
+        // But we use area.height - 6 as a reasonable estimate
+        let visible_count = area.height.saturating_sub(6) as usize;
         if visible_count == 0 {
             return;
         }
