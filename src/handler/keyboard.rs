@@ -480,8 +480,8 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
             let _ = app.msg_tx.try_send(AppMsg::StartClone);
         }
 
-        KeyCode::Delete => {
-            // Delete: Show delete confirmation for repository
+        KeyCode::Char('d') => {
+            // d: Show delete confirmation for repository
             let _ = app.msg_tx.try_send(AppMsg::ShowDeleteRepoConfirmation);
         }
 
@@ -509,7 +509,7 @@ fn handle_main_dir_manager_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime
     // If confirming delete, handle confirmation keys
     if is_confirming {
         match key.code {
-            KeyCode::Char('y') | KeyCode::Enter => {
+            KeyCode::Enter => {
                 // Confirm deletion
                 if let AppState::ManagingDirs {
                     selected_dir_index, ..
@@ -520,7 +520,7 @@ fn handle_main_dir_manager_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime
                         .try_send(AppMsg::RemoveMainDirectory(*selected_dir_index));
                 }
             }
-            KeyCode::Char('n') | KeyCode::Esc => {
+            KeyCode::Esc => {
                 // Cancel deletion
                 let _ = app.msg_tx.try_send(AppMsg::CancelDeleteMainDirConfirmation);
             }
@@ -1030,13 +1030,13 @@ fn handle_cloning_keys(key: KeyEvent, app: &mut App) {
 /// Handle keys in repository delete confirmation dialog
 fn handle_delete_confirmation_keys(key: KeyEvent, app: &mut App) {
     match key.code {
-        KeyCode::Char('y') | KeyCode::Enter => {
+        KeyCode::Enter => {
             // Confirm deletion
             if let AppState::ConfirmingDeleteRepo { repo_index, .. } = &app.state {
                 let _ = app.msg_tx.try_send(AppMsg::DeleteRepository(*repo_index));
             }
         }
-        KeyCode::Char('n') | KeyCode::Esc => {
+        KeyCode::Esc => {
             // Cancel deletion
             let _ = app.msg_tx.try_send(AppMsg::CancelDeleteRepoConfirmation);
         }

@@ -351,7 +351,7 @@ fn render_main_dir_manager(frame: &mut Frame, area: Rect, app: &mut App, theme: 
 /// Render delete confirmation dialog
 fn render_delete_confirmation_dialog(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
     // Create a centered popup for the confirmation dialog
-    let popup_area = centered_popup(50, 30, area);
+    let popup_area = centered_popup(80, 30, area);
 
     // Clear background
     frame.render_widget(Clear, popup_area);
@@ -371,7 +371,7 @@ fn render_delete_confirmation_dialog(frame: &mut Frame, area: Rect, app: &mut Ap
 
     // Build dialog content
     let text = format!(
-        "⚠️  Delete Main Directory\n\n\"{}\"\n\nThis will remove the directory from the list.\nRepositories will not be deleted.\n\n[y] Confirm  [n] Cancel",
+        "⚠️  Delete Main Directory\n\n\"{}\"\n\nThis will remove the directory from the list.\nRepositories will not be deleted.\n\n[Enter] Confirm  [Esc] Cancel",
         dir_name
     );
 
@@ -401,7 +401,7 @@ fn render_repo_delete_confirmation_dialog(
     theme: &Theme,
 ) {
     // Create a centered popup for the confirmation dialog
-    let popup_area = centered_popup(50, 30, area);
+    let popup_area = centered_popup(80, 30, area);
 
     // Clear background
     frame.render_widget(Clear, popup_area);
@@ -420,7 +420,7 @@ fn render_repo_delete_confirmation_dialog(
 
     // Build dialog content with warning about filesystem deletion
     let text = format!(
-        "⚠️  Delete Repository\n\n\"{}\"\n\nThis will PERMANENTLY delete the repository from your filesystem.\n\nPath: {}\n\n[y] Confirm Delete  [n] Cancel",
+        "⚠️  Delete Repository\n\n\"{}\"\n\nThis will PERMANENTLY delete the repository from your filesystem.\n\nPath: {}\n\n[Enter] Confirm Delete  [Esc] Cancel",
         repo_name,
         repo_path.display()
     );
