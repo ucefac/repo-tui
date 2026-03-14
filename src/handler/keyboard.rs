@@ -2,7 +2,7 @@
 
 use crate::app::model::App;
 use crate::app::msg::AppMsg;
-use crate::app::state::{AppState, ViewMode};
+use crate::app::state::{AppState, DirectoryChooserMode, ViewMode};
 use crate::runtime::executor::Runtime;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
@@ -16,6 +16,9 @@ pub fn handle_key_event(key: KeyEvent, app: &mut App, runtime: &Runtime) {
 
     // State-based handling (priority order)
     match &app.state {
+        AppState::ConfirmingMove { .. } => {
+            handle_move_confirmation_keys(key, app);
+        }
         AppState::ConfirmingDeleteRepo { .. } => {
             handle_delete_confirmation_keys(key, app);
         }
@@ -24,6 +27,9 @@ pub fn handle_key_event(key: KeyEvent, app: &mut App, runtime: &Runtime) {
         }
         AppState::ShowingHelp { .. } => {
             handle_help_keys(key, app);
+        }
+        AppState::SelectingMoveTarget { .. } => {
+            handle_selecting_move_target(key, app);
         }
         AppState::ChoosingDir { mode, .. } => {
             let mode = mode.clone();
@@ -478,6 +484,11 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
         KeyCode::Char('c') => {
             // c: Start clone operation
             let _ = app.msg_tx.try_send(AppMsg::StartClone);
+        }
+
+        KeyCode::Char('m') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            // Ctrl+M: Move repository to main directory
+            let _ = app.msg_tx.try_send(AppMsg::TriggerMoveRepository);
         }
 
         KeyCode::Char('d') => {
@@ -1039,6 +1050,81 @@ fn handle_delete_confirmation_keys(key: KeyEvent, app: &mut App) {
         KeyCode::Esc => {
             // Cancel deletion
             let _ = app.msg_tx.try_send(AppMsg::CancelDeleteRepoConfirmation);
+        }
+        _ => {}
+    }
+}
+
+/// Handle keys in move target selection state
+fn handle_selecting_move_target(key: KeyEvent, app: &mut App) {
+    match key.code {
+        KeyCode::Esc => {
+            // Cancel move operation
+            let _ = app.msg_tx.try_send(AppMsg::CancelMoveConfirmation);
+        }
+        KeyCode::Up => {
+            // Navigate up in main directory list
+            if let AppState::SelectingMoveTarget { list_state, .. } = &mut app.state {
+                let current = list_state.selected().unwrap_or(0);
+                if current > 0 {
+                    list_state.select(Some(current - 1));
+                }
+            }
+        }
+        KeyCode::Down => {
+            // Navigate down in main directory list
+            if let AppState::SelectingMoveTarget {
+                list_state,
+                main_dirs,
+                ..
+            } = &mut app.state
+            {
+                let current = list_state.selected().unwrap_or(0);
+                if current < main_dirs.len().saturating_sub(1) {
+                    list_state.select(Some(current + 1));
+                }
+            }
+        }
+        KeyCode::Enter => {
+            // Confirm selected main directory
+            if let AppState::SelectingMoveTarget {
+                list_state,
+                main_dirs,
+                source_repo,
+                ..
+            } = &app.state
+            {
+                let selected = list_state.selected().unwrap_or(0);
+                if selected < main_dirs.len() {
+                    let target_index = main_dirs[selected].0;
+                    let _ = app
+                        .msg_tx
+                        .try_send(AppMsg::SelectMainDirForMove(target_index));
+                }
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Handle keys in move confirmation dialog
+fn handle_move_confirmation_keys(key: KeyEvent, app: &mut App) {
+    match key.code {
+        KeyCode::Esc | KeyCode::Char('n') | KeyCode::Char('N') => {
+            // Cancel move
+            let _ = app.msg_tx.try_send(AppMsg::CancelMoveConfirmation);
+        }
+        KeyCode::Enter | KeyCode::Char('y') | KeyCode::Char('Y') => {
+            // Confirm move (with suffix if conflict exists)
+            if let AppState::ConfirmingMove {
+                conflict_exists, ..
+            } = &app.state
+            {
+                let add_suffix = *conflict_exists;
+                let _ = app
+                    .msg_tx
+                    .try_send(AppMsg::ConfirmMoveRepository { add_suffix });
+            }
         }
         _ => {}
     }
