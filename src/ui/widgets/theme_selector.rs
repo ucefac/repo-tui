@@ -22,6 +22,8 @@ pub struct ThemeSelector<'a> {
     pub title: &'a str,
     /// Scroll offset for list
     pub scroll_offset: usize,
+    /// Visible height for scroll calculation
+    pub visible_height: u16,
 }
 
 impl<'a> ThemeSelector<'a> {
@@ -39,6 +41,7 @@ impl<'a> ThemeSelector<'a> {
             preview_theme,
             title: "Select Theme",
             scroll_offset: 0,
+            visible_height: 10,
         }
     }
 
@@ -51,6 +54,12 @@ impl<'a> ThemeSelector<'a> {
     /// Set scroll offset
     pub fn scroll_offset(mut self, offset: usize) -> Self {
         self.scroll_offset = offset;
+        self
+    }
+
+    /// Set visible height for scroll calculation
+    pub fn visible_height(mut self, height: u16) -> Self {
+        self.visible_height = height;
         self
     }
 
@@ -76,10 +85,35 @@ impl<'a> ThemeSelector<'a> {
             };
         }
     }
+
+    /// Update scroll offset to ensure selected item is visible
+    pub fn update_scroll(&mut self) {
+        // Calculate visible count from the actual layout
+        // Title: 2, Preview: 7, Help: 1, Border: 2
+        let visible_count = self.visible_height.saturating_sub(12) as usize;
+        if visible_count == 0 {
+            return;
+        }
+
+        let selected = self.selected_index;
+        let current_offset = self.scroll_offset;
+
+        // Scroll down if selected is below visible area (use > not >=)
+        if selected > current_offset + visible_count - 1 {
+            self.scroll_offset = selected.saturating_sub(visible_count - 1);
+        }
+        // Scroll up if selected is above visible area
+        else if selected < current_offset {
+            self.scroll_offset = selected;
+        }
+    }
 }
 
 impl<'a> Widget for ThemeSelector<'a> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+    fn render(mut self, area: Rect, buf: &mut Buffer) {
+        // Update scroll offset first
+        self.update_scroll();
+
         // Create outer block with focused border for visual distinction
         let outer_block = Block::default()
             .borders(Borders::ALL)

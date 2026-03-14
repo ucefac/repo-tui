@@ -99,7 +99,7 @@ impl DirectoryChooserState {
 /// Directory chooser widget
 pub struct DirectoryChooser<'a> {
     /// State
-    pub state: &'a DirectoryChooserState,
+    pub state: &'a mut DirectoryChooserState,
     /// Theme
     pub theme: &'a Theme,
     /// Visible height
@@ -112,7 +112,7 @@ pub struct DirectoryChooser<'a> {
 
 impl<'a> DirectoryChooser<'a> {
     /// Create new chooser
-    pub fn new(state: &'a DirectoryChooserState, theme: &'a Theme) -> Self {
+    pub fn new(state: &'a mut DirectoryChooserState, theme: &'a Theme) -> Self {
         Self {
             state,
             theme,
@@ -139,10 +139,34 @@ impl<'a> DirectoryChooser<'a> {
         self.selected_paths = Some(paths);
         self
     }
+
+    /// Update scroll offset to ensure selected item is visible
+    pub fn update_scroll(&mut self) {
+        // Calculate visible count from the actual layout
+        let visible_count = self.visible_height.saturating_sub(10) as usize; // Title 3 + Path 3 + Stats 2 + Spacer 1 + Help 1
+        if visible_count == 0 {
+            return;
+        }
+
+        let selected = self.state.selected_index;
+        let current_offset = self.state.scroll_offset;
+
+        // Scroll down if selected is below visible area
+        if selected > current_offset + visible_count - 1 {
+            self.state.scroll_offset = selected.saturating_sub(visible_count - 1);
+        }
+        // Scroll up if selected is above visible area
+        else if selected < current_offset {
+            self.state.scroll_offset = selected;
+        }
+    }
 }
 
 impl<'a> Widget for DirectoryChooser<'a> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+    fn render(mut self, area: Rect, buf: &mut Buffer) {
+        // Update scroll offset first
+        let _ = self.update_scroll(); // Ignore result, just call it
+
         let show_selection_indicator = matches!(
             self.state.mode,
             DirectoryChooserMode::SelectMainDirectory {
@@ -373,7 +397,7 @@ mod tests {
         let mut terminal = Terminal::new(backend).unwrap();
         let theme = Theme::dark();
 
-        let state = DirectoryChooserState::new(
+        let mut state = DirectoryChooserState::new(
             PathBuf::from("/tmp"),
             DirectoryChooserMode::SelectMainDirectory {
                 allow_multiple: false,
@@ -385,7 +409,7 @@ mod tests {
         terminal
             .draw(|f| {
                 let area = f.area();
-                let chooser = DirectoryChooser::new(&state, &theme);
+                let chooser = DirectoryChooser::new(&mut state, &theme);
                 f.render_widget(chooser, area);
             })
             .unwrap();
@@ -397,7 +421,7 @@ mod tests {
         let mut terminal = Terminal::new(backend).unwrap();
         let theme = Theme::dark();
 
-        let state = DirectoryChooserState::new(
+        let mut state = DirectoryChooserState::new(
             PathBuf::from("/home/user"),
             DirectoryChooserMode::AddSingleRepository,
         );
@@ -405,7 +429,7 @@ mod tests {
         terminal
             .draw(|f| {
                 let area = f.area();
-                let chooser = DirectoryChooser::new(&state, &theme);
+                let chooser = DirectoryChooser::new(&mut state, &theme);
                 f.render_widget(chooser, area);
             })
             .unwrap();
@@ -435,7 +459,7 @@ mod tests {
         terminal
             .draw(|f| {
                 let area = f.area();
-                let chooser = DirectoryChooser::new(&state, &theme).git_repo_count(5);
+                let chooser = DirectoryChooser::new(&mut state, &theme).git_repo_count(5);
                 f.render_widget(chooser, area);
             })
             .unwrap();
@@ -467,7 +491,7 @@ mod tests {
         terminal
             .draw(|f| {
                 let area = f.area();
-                let chooser = DirectoryChooser::new(&state, &theme).selected_paths(&selected);
+                let chooser = DirectoryChooser::new(&mut state, &theme).selected_paths(&selected);
                 f.render_widget(chooser, area);
             })
             .unwrap();

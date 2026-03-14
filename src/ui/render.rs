@@ -326,7 +326,7 @@ fn render_directory_chooser(frame: &mut Frame, area: Rect, app: &mut App, theme:
     };
 
     // Create state for the chooser
-    let state = DirectoryChooserState {
+    let mut state = DirectoryChooserState {
         current_path: path.to_path_buf(),
         entries: entries.to_vec(),
         selected_index,
@@ -335,10 +335,16 @@ fn render_directory_chooser(frame: &mut Frame, area: Rect, app: &mut App, theme:
     };
 
     // Use DirectoryChooser component with scroll support
-    let chooser =
-        DirectoryChooser::new(&state, theme).visible_height(popup_area.height.saturating_sub(10));
+    // DirectoryChooser now takes mutable reference to state
+    DirectoryChooser::new(&mut state, theme)
+        .visible_height(popup_area.height.saturating_sub(10))
+        .update_scroll();
 
-    frame.render_widget(chooser, popup_area);
+    frame.render_widget(
+        DirectoryChooser::new(&mut state, theme)
+            .visible_height(popup_area.height.saturating_sub(10)),
+        popup_area,
+    );
 }
 
 /// Render main directory manager

@@ -53,10 +53,35 @@ impl<'a> MainDirManager<'a> {
         self.scroll_offset = offset;
         self
     }
+
+    /// Update scroll offset to ensure selected item is visible
+    pub fn update_scroll(&mut self, area: Rect) {
+        // Calculate visible count from the actual layout
+        // Title: 2 (title + subtitle), Help: 1, Border: 2
+        let visible_count = area.height.saturating_sub(5) as usize;
+        if visible_count == 0 {
+            return;
+        }
+
+        let selected = self.selected_index;
+        let current_offset = self.scroll_offset;
+
+        // Scroll down if selected is below visible area (use > not >=)
+        if selected > current_offset + visible_count - 1 {
+            self.scroll_offset = selected.saturating_sub(visible_count - 1);
+        }
+        // Scroll up if selected is above visible area
+        else if selected < current_offset {
+            self.scroll_offset = selected;
+        }
+    }
 }
 
 impl<'a> Widget for MainDirManager<'a> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+    fn render(mut self, area: Rect, buf: &mut Buffer) {
+        // Update scroll offset first
+        self.update_scroll(area);
+
         // Clear background
         Clear.render(area, buf);
 

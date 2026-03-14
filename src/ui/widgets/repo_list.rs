@@ -160,7 +160,8 @@ impl<'a> RepoList<'a> {
         let selected = self.selected_index.unwrap_or(0);
 
         // Scroll down if selected is below visible area
-        if selected >= self.scroll_offset + visible_count {
+        // 使用 > 而不是 >=，确保选中项在最后一行时才滚动
+        if selected > self.scroll_offset + visible_count - 1 {
             self.scroll_offset = selected.saturating_sub(visible_count - 1);
         }
         // Scroll up if selected is above visible area
