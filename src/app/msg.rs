@@ -55,6 +55,16 @@ pub enum Cmd {
 
     /// Delete a repository from filesystem
     DeleteRepository(usize, PathBuf, String),
+
+    /// Move a repository to target directory
+    MoveRepository {
+        /// Source repository path
+        repo_path: PathBuf,
+        /// Target main directory
+        target_dir: PathBuf,
+        /// Add suffix if conflict exists
+        add_suffix: bool,
+    },
 }
 
 /// Application messages
@@ -349,6 +359,32 @@ pub enum AppMsg {
         repo_name: String,
         /// Success flag
         success: bool,
+    },
+
+    // === Repository Move Operations ===
+    /// Trigger repository move operation
+    TriggerMoveRepository,
+
+    /// Select main directory for move
+    SelectMainDirForMove(usize),
+
+    /// Confirm repository move
+    ConfirmMoveRepository {
+        /// Add suffix if conflict exists
+        add_suffix: bool,
+    },
+
+    /// Cancel move confirmation
+    CancelMoveConfirmation,
+
+    /// Repository move completed
+    RepositoryMoved {
+        /// Repository path
+        repo_path: PathBuf,
+        /// Success flag
+        success: bool,
+        /// Error message if failed
+        error: Option<crate::error::MoveError>,
     },
 }
 
