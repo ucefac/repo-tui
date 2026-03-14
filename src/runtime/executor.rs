@@ -380,6 +380,73 @@ impl Runtime {
                     let _ = msg_tx.send(msg).await;
                 });
             }
+
+            Cmd::MoveRepository {
+                repo_path,
+                target_dir,
+                add_suffix,
+            } => {
+                tokio::spawn(async move {
+                    tracing::info!(
+                        "Moving repository: {:?} to {:?} (add_suffix: {})",
+                        repo_path,
+                        target_dir,
+                        add_suffix
+                    );
+
+                    // Validate move path
+                    let validation_error = validate_move_path(&repo_path, &target_dir).await;
+
+                    let msg = if let Some(error) = validation_error {
+                        tracing::error!("Move validation failed: {}", error);
+                        AppMsg::RepositoryMoved {
+                            repo_path,
+                            success: false,
+                            error: Some(error),
+                        }
+                    } else {
+                        // Generate target path
+                        let repo_name = repo_path
+                            .file_name()
+                            .and_then(|n| n.to_str())
+                            .unwrap_or("repo");
+
+                        let final_target_path = if add_suffix {
+                            generate_unique_path(&target_dir, repo_name).await
+                        } else {
+                            target_dir.join(repo_name)
+                        };
+
+                        // Execute move operation using atomic rename
+                        let result = tokio::fs::rename(&repo_path, &final_target_path).await;
+
+                        match result {
+                            Ok(_) => {
+                                tracing::info!(
+                                    "Repository moved successfully: {:?} -> {:?}",
+                                    repo_path,
+                                    final_target_path
+                                );
+                                AppMsg::RepositoryMoved {
+                                    repo_path: final_target_path,
+                                    success: true,
+                                    error: None,
+                                }
+                            }
+                            Err(e) => {
+                                tracing::error!("Failed to move repository: {}", e);
+                                AppMsg::RepositoryMoved {
+                                    repo_path,
+                                    success: false,
+                                    error: Some(crate::error::MoveError::Io(e.to_string())),
+                                }
+                            }
+                        }
+                    };
+
+                    let _ = msg_tx.send(msg).await;
+                });
+            }
         }
     }
 
@@ -442,6 +509,99 @@ async fn validate_delete_path(repo_path: &std::path::Path) -> Option<String> {
 
     // All validations passed
     None
+}
+
+/// Validate paths for repository move operation with 5+1 layer validation chain
+///
+/// Returns `Some(MoveError)` if validation fails, `None` if valid
+async fn validate_move_path(
+    repo_path: &std::path::Path,
+    target_dir: &std::path::Path,
+) -> Option<crate::error::MoveError> {
+    use crate::error::MoveError;
+
+    // 1. Empty path check for source
+    if repo_path.as_os_str().is_empty() {
+        return Some(MoveError::SourceNotFound(repo_path.to_path_buf()));
+    }
+
+    // 2. Empty path check for target
+    if target_dir.as_os_str().is_empty() {
+        return Some(MoveError::TargetNotFound(target_dir.to_path_buf()));
+    }
+
+    // 3. Normalize to absolute path for source
+    let abs_source = match tokio::fs::canonicalize(repo_path).await {
+        Ok(p) => p,
+        Err(_) => return Some(MoveError::SourceNotFound(repo_path.to_path_buf())),
+    };
+
+    // 4. Check source exists
+    if !abs_source.exists() {
+        return Some(MoveError::SourceNotFound(abs_source));
+    }
+
+    // 5. Check source is directory
+    if !abs_source.is_dir() {
+        return Some(MoveError::SourceNotADirectory(abs_source));
+    }
+
+    // 6. Normalize to absolute path for target
+    let abs_target = match tokio::fs::canonicalize(target_dir).await {
+        Ok(p) => p,
+        Err(_) => return Some(MoveError::TargetNotFound(target_dir.to_path_buf())),
+    };
+
+    // 7. Check target exists
+    if !abs_target.exists() {
+        return Some(MoveError::TargetNotFound(abs_target));
+    }
+
+    // 8. Check target is directory
+    if !abs_target.is_dir() {
+        return Some(MoveError::TargetNotADirectory(abs_target));
+    }
+
+    // 9. Check starts with home directory (source)
+    if let Some(home) = dirs::home_dir() {
+        if !abs_source.starts_with(&home) {
+            return Some(MoveError::PathOutsideHome(abs_source));
+        }
+    }
+
+    // 10. Check starts with home directory (target)
+    if let Some(home) = dirs::home_dir() {
+        if !abs_target.starts_with(&home) {
+            return Some(MoveError::PathOutsideHome(abs_target));
+        }
+    }
+
+    // 11. Check write permission for target directory
+    if let Ok(metadata) = tokio::fs::metadata(&abs_target).await {
+        use std::os::unix::fs::PermissionsExt;
+        let permissions = metadata.permissions();
+        // Check if owner can write (simplified check)
+        if permissions.mode() & 0o200 == 0 {
+            return Some(MoveError::WritePermissionDenied(abs_target));
+        }
+    }
+
+    // All validations passed
+    None
+}
+
+/// Generate unique path by adding numeric suffix if conflict exists
+async fn generate_unique_path(target_dir: &std::path::Path, base_name: &str) -> std::path::PathBuf {
+    let mut candidate = target_dir.join(base_name);
+    let mut suffix = 1;
+
+    // Check if path exists, if not return as-is
+    while tokio::fs::metadata(&candidate).await.is_ok() {
+        candidate = target_dir.join(format!("{}_{}", base_name, suffix));
+        suffix += 1;
+    }
+
+    candidate
 }
 
 #[cfg(test)]
