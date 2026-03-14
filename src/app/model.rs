@@ -112,6 +112,9 @@ pub struct App {
     /// Active main directory index
     pub active_main_dir_index: Option<usize>,
 
+    /// Move target directories (for Ctrl+M move operation)
+    pub move_target_dirs: Vec<(usize, String, usize)>,
+
     /// Update check status
     pub update_status: crate::update::UpdateStatus,
 
@@ -162,6 +165,7 @@ impl App {
             main_directories: Vec::new(),
             single_repositories: Vec::new(),
             active_main_dir_index: None,
+            move_target_dirs: Vec::new(),
             update_status: crate::update::UpdateStatus::NeverChecked,
             available_update: None,
             update_notification_dismissed: false,

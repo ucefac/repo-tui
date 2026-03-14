@@ -1412,6 +1412,169 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
             }
         }
 
+        // === Repository Move Operations ===
+        AppMsg::TriggerMoveRepository => {
+            // Get selected repository
+            if let Some(repo_idx) = app.selected_index() {
+                // Build main directory list with repo counts
+                let main_dirs: Vec<(usize, String, usize)> = app
+                    .main_directories
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, dir)| {
+                        let repo_count = app
+                            .repositories
+                            .iter()
+                            .filter(|r| r.path.starts_with(&dir.path))
+                            .count();
+                        (idx, dir.display_name(), repo_count)
+                    })
+                    .collect();
+
+                if main_dirs.is_empty() {
+                    app.error_message = Some("没有可用的主目录".to_string());
+                    return;
+                }
+
+                // Enter SelectingMoveTarget state
+                use ratatui::widgets::ListState;
+                let mut list_state = ListState::default();
+                list_state.select(Some(0));
+
+                app.state = AppState::SelectingMoveTarget {
+                    source_repo: repo_idx,
+                    list_state,
+                };
+
+                // Store main_dirs in app for rendering
+                app.move_target_dirs = main_dirs;
+            } else {
+                app.error_message = Some("未选择仓库".to_string());
+            }
+        }
+
+        AppMsg::SelectMainDirForMove(target_dir_index) => {
+            // Get source repo and target directory
+            let source_repo_path =
+                if let AppState::SelectingMoveTarget { source_repo, .. } = &app.state {
+                    app.repositories.get(*source_repo).map(|r| r.path.clone())
+                } else {
+                    None
+                };
+
+            if let Some(source_path) = source_repo_path {
+                let target_path = app
+                    .main_directories
+                    .get(target_dir_index)
+                    .map(|d| d.path.clone());
+
+                if let Some(target_dir) = target_path {
+                    // Check if moving to same directory
+                    let source_parent = source_path.parent();
+                    let is_same_dir = source_parent == Some(target_dir.as_path());
+
+                    if is_same_dir {
+                        app.error_message = Some("无法移动到同一目录".to_string());
+                        let _ = app.msg_tx.try_send(AppMsg::CancelMoveConfirmation);
+                        return;
+                    }
+
+                    // Check if target directory exists and if there's a conflict
+                    let conflict_exists = target_dir
+                        .join(source_path.file_name().unwrap_or_default())
+                        .exists();
+
+                    // Enter ConfirmingMove state
+                    app.state = AppState::ConfirmingMove {
+                        source_repo: if let AppState::SelectingMoveTarget { source_repo, .. } =
+                            &app.state
+                        {
+                            *source_repo
+                        } else {
+                            0
+                        },
+                        target_dir: target_dir_index,
+                        target_path: target_dir,
+                        conflict_exists,
+                    };
+                } else {
+                    app.error_message = Some("目标目录无效".to_string());
+                    let _ = app.msg_tx.try_send(AppMsg::CancelMoveConfirmation);
+                }
+            } else {
+                app.error_message = Some("源仓库不存在".to_string());
+                let _ = app.msg_tx.try_send(AppMsg::CancelMoveConfirmation);
+            }
+        }
+
+        AppMsg::ConfirmMoveRepository { add_suffix } => {
+            // Get move parameters from state
+            let params = if let AppState::ConfirmingMove {
+                source_repo,
+                target_dir,
+                target_path,
+                ..
+            } = &app.state
+            {
+                let repo_path = app.repositories.get(*source_repo).map(|r| r.path.clone());
+                let target = target_path.clone();
+                let idx = *target_dir;
+                Some((repo_path, target, idx, add_suffix))
+            } else {
+                None
+            };
+
+            if let Some((Some(repo_path), target_dir, _, add_suffix)) = params {
+                // Dispatch async move command
+                runtime.dispatch(Cmd::MoveRepository {
+                    repo_path,
+                    target_dir,
+                    add_suffix,
+                });
+
+                // Enter loading state
+                app.state = AppState::Loading {
+                    message: "正在移动仓库...".to_string(),
+                };
+            } else {
+                app.error_message = Some("移动参数无效".to_string());
+                let _ = app.msg_tx.try_send(AppMsg::CancelMoveConfirmation);
+            }
+        }
+
+        AppMsg::CancelMoveConfirmation => {
+            // Return to running state
+            app.state = AppState::Running;
+            app.move_target_dirs.clear();
+        }
+
+        AppMsg::RepositoryMoved {
+            repo_path,
+            success,
+            error,
+        } => {
+            // Return to running state
+            app.state = AppState::Running;
+            app.move_target_dirs.clear();
+
+            if success {
+                // Update repository path in the list
+                if let Some(idx) = app.repositories.iter().position(|r| r.path == repo_path) {
+                    // Repository was moved, need to update its path
+                    // For now, just refresh the list
+                    app.apply_filter();
+                }
+                // Show success message
+                app.error_message = Some("仓库移动成功".to_string());
+            } else {
+                // Show error message
+                let error_msg = error
+                    .map(|e| format!("{}", e))
+                    .unwrap_or_else(|| "移动失败".to_string());
+                app.error_message = Some(format!("移动仓库失败：{}", error_msg));
+            }
+        }
+
         // Deprecated messages (no longer used, but kept for backwards compatibility)
         AppMsg::OpenActions | AppMsg::CloseActions => {
             // No-op: these messages are deprecated
