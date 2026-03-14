@@ -343,8 +343,8 @@ fn handle_running_keys(key: KeyEvent, app: &mut App, _runtime: &Runtime) {
             let _ = app.msg_tx.try_send(AppMsg::OpenThemeSelector);
         }
 
-        // Move repository to main directory (Ctrl+M)
-        KeyCode::Char('m') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+        // Move repository to main directory (Shift+M)
+        KeyCode::Char('M') if key.modifiers.contains(KeyModifiers::SHIFT) => {
             let _ = app.msg_tx.try_send(AppMsg::TriggerMoveRepository);
         }
 
@@ -1117,17 +1117,17 @@ mod ctrl_m_tests {
     use crate::repo::{RepoSource, Repository};
     use std::path::PathBuf;
 
-    fn create_ctrl_m_key() -> KeyEvent {
+    fn create_shift_m_key() -> KeyEvent {
         KeyEvent {
-            code: KeyCode::Char('m'),
-            modifiers: KeyModifiers::CONTROL,
+            code: KeyCode::Char('M'),
+            modifiers: KeyModifiers::SHIFT,
             kind: crossterm::event::KeyEventKind::Press,
             state: crossterm::event::KeyEventState::NONE,
         }
     }
 
     #[tokio::test]
-    async fn test_ctrl_m_triggers_move_repository() {
+    async fn test_shift_m_triggers_move_repository() {
         let (tx, mut rx) = tokio::sync::mpsc::channel(100);
         let mut app = App::new(tx.clone());
         let runtime = Runtime::new(tx);
@@ -1146,8 +1146,8 @@ mod ctrl_m_tests {
         app.set_selected_index(Some(0));
         app.state = AppState::Running;
 
-        // Press Ctrl+M
-        handle_key_event(create_ctrl_m_key(), &mut app, &runtime);
+        // Press Shift+M
+        handle_key_event(create_shift_m_key(), &mut app, &runtime);
 
         // Check that TriggerMoveRepository message was sent
         tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
@@ -1156,7 +1156,7 @@ mod ctrl_m_tests {
         let msg = rx.try_recv();
         assert!(
             msg.is_ok(),
-            "Ctrl+M should send TriggerMoveRepository message"
+            "Shift+M should send TriggerMoveRepository message"
         );
 
         if let Ok(AppMsg::TriggerMoveRepository) = msg {

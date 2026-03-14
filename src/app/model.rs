@@ -112,7 +112,7 @@ pub struct App {
     /// Active main directory index
     pub active_main_dir_index: Option<usize>,
 
-    /// Move target directories (for Ctrl+M move operation)
+    /// Move target directories (for Shift+M move operation)
     pub move_target_dirs: Vec<(usize, String, usize)>,
 
     /// Update check status

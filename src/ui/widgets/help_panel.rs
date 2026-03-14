@@ -97,7 +97,7 @@ impl HelpPanel {
                 "Repository Management",
                 Style::default().add_modifier(Modifier::BOLD),
             )),
-            Line::from("  Ctrl+M      - Move repository to main directory"),
+            Line::from("  Shift+M     - Move repository to main directory"),
             Line::from(""),
         ];
 
