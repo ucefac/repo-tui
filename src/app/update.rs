@@ -1405,7 +1405,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
         } => {
             if success {
                 // Remove repository from the list
-                if let Some(_idx) = app.repositories.iter().position(|r| r.path == repo_path) {
+                if let Some(idx) = app.repositories.iter().position(|r| r.path == repo_path) {
                     app.repositories.remove(idx);
                     app.apply_filter();
                 }
