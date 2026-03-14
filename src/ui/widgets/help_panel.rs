@@ -93,6 +93,12 @@ impl HelpPanel {
             Line::from("  ?           - Show this help"),
             Line::from("  Ctrl+C      - Force quit"),
             Line::from(""),
+            Line::from(Span::styled(
+                "Repository Management",
+                Style::default().add_modifier(Modifier::BOLD),
+            )),
+            Line::from("  Ctrl+M      - Move repository to main directory"),
+            Line::from(""),
         ];
 
         // Calculate scroll bounds based on the longer column
