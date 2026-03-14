@@ -1578,12 +1578,40 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
             app.move_target_dirs.clear();
 
             if success {
-                // Update repository path in the list
-                if let Some(_idx) = app.repositories.iter().position(|r| r.path == repo_path) {
-                    // Repository was moved, need to update its path
-                    // For now, just refresh the list
+                // Update repository path in the list - repo_path is the NEW path after move
+                if let Some(idx) = app.repositories.iter().position(|r| {
+                    // Find the repo by checking if it was moved from old path
+                    // The old path would be target_dir's sibling with same name
+                    r.path == repo_path || r.path.file_name() == repo_path.file_name()
+                }) {
+                    // Update the repository path
+                    app.repositories[idx].path = repo_path.clone();
+                }
+
+                // Reload repositories to ensure correct state
+                if let Some(ref config) = app.config {
+                    let main_dirs: Vec<(std::path::PathBuf, Option<usize>)> = config
+                        .main_directories
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, d)| d.enabled)
+                        .map(|(idx, d)| (d.path.clone(), Some(idx)))
+                        .collect();
+
+                    let single_repos: Vec<std::path::PathBuf> = config
+                        .single_repositories
+                        .iter()
+                        .map(|r| r.path.clone())
+                        .collect();
+
+                    runtime.dispatch(crate::app::msg::Cmd::LoadRepositoriesMulti {
+                        main_dirs,
+                        single_repos,
+                    });
+                } else {
                     app.apply_filter();
                 }
+
                 // Show success message
                 app.error_message = Some("仓库移动成功".to_string());
             } else {
