@@ -145,7 +145,6 @@ fn render_main_ui(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
 
     // Render repository list using component
     // Update scroll offset to ensure selected item is visible
-    app.update_scroll_offset(chunks[2].height);
 
     let favorites_set: std::collections::HashSet<usize> = app
         .favorites

@@ -269,7 +269,10 @@ fn format_repo_item(
 }
 
 impl<'a> Widget for RepoList<'a> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+    fn render(mut self, area: Rect, buf: &mut Buffer) {
+        // Update scroll offset to ensure selected item is visible
+        self.update_scroll();
+
         let (start, end) = self.visible_range();
         let display_mode = self.display_mode();
 
