@@ -146,8 +146,9 @@ impl<'a> RepoList<'a> {
 
     /// Calculate how many items can be visible
     fn visible_count(&self) -> usize {
-        // Reserve space for borders (top+bottom = 2) and title (1) = 3 total
-        self.visible_height.saturating_sub(3) as usize
+        // Reserve space for borders (top+bottom = 2)
+        // Title is inside the border, doesn't reduce visible items
+        self.visible_height.saturating_sub(2) as usize
     }
 
     /// Update scroll offset to ensure selected item is visible
@@ -160,9 +161,8 @@ impl<'a> RepoList<'a> {
         let selected = self.selected_index.unwrap_or(0);
 
         // Scroll down if selected is below visible area
-        // 使用 > 而不是 >=，确保选中项在最后一行时才滚动
-        if selected > self.scroll_offset + visible_count - 1 {
-            self.scroll_offset = selected.saturating_sub(visible_count - 1);
+        if selected >= self.scroll_offset + visible_count {
+            self.scroll_offset = selected - visible_count + 1;
         }
         // Scroll up if selected is above visible area
         else if selected < self.scroll_offset {
