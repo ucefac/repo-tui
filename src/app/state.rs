@@ -213,6 +213,11 @@ pub enum DirectoryChooserMode {
     },
     /// Add single repository (validates .git exists)
     AddSingleRepository,
+    /// Select move target main directory
+    SelectMoveTarget {
+        /// Source repository index
+        source_repo: usize,
+    },
 }
 
 impl Default for DirectoryChooserMode {
@@ -318,6 +323,26 @@ pub enum AppState {
         /// Clone state
         clone_state: CloneState,
     },
+
+    /// Selecting move target main directory
+    SelectingMoveTarget {
+        /// Source repository index
+        source_repo: usize,
+        /// Main directory list state
+        list_state: ratatui::widgets::ListState,
+    },
+
+    /// Confirming repository move
+    ConfirmingMove {
+        /// Source repository index
+        source_repo: usize,
+        /// Target main directory index
+        target_dir: usize,
+        /// Target main directory path
+        target_path: PathBuf,
+        /// Conflict exists flag
+        conflict_exists: bool,
+    },
 }
 
 /// Main directory edit state
@@ -351,10 +376,12 @@ impl AppState {
     pub fn priority(&self) -> u8 {
         match self {
             AppState::Cloning { .. } => 6,
+            AppState::ConfirmingMove { .. } => 5,
             AppState::ShowingHelp { .. } => 4,
             AppState::ManagingDirs { .. } => 4,
             AppState::ConfirmingDeleteRepo { .. } => 5,
             AppState::ChoosingDir { .. } => 3,
+            AppState::SelectingMoveTarget { .. } => 3,
             AppState::SelectingTheme { .. } => 3,
             AppState::Running => 1,
             AppState::Loading { .. } | AppState::Error { .. } => 0,
@@ -372,6 +399,8 @@ impl AppState {
                 | AppState::ManagingDirs { .. }
                 | AppState::Cloning { .. }
                 | AppState::ConfirmingDeleteRepo { .. }
+                | AppState::SelectingMoveTarget { .. }
+                | AppState::ConfirmingMove { .. }
         )
     }
 
