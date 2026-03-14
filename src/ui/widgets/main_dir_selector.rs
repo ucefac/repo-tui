@@ -158,11 +158,28 @@ impl Widget for MainDirSelector<'_> {
             }
         }
 
-        // Render help text at bottom
-        let help_text = "↑↓ navigate   Enter confirm   Esc cancel";
-        let help = Paragraph::new(help_text)
-            .style(self.theme.primary_text_style())
-            .alignment(Alignment::Center);
+        // Render help text at bottom with styled key hints
+        let help = Paragraph::new(Line::from(vec![
+            Span::styled("↑↓", Style::default().fg(self.theme.colors.primary.into())),
+            Span::styled(
+                " navigate   ",
+                Style::default().fg(self.theme.colors.text_muted.into()),
+            ),
+            Span::styled(
+                "Enter",
+                Style::default().fg(self.theme.colors.primary.into()),
+            ),
+            Span::styled(
+                " confirm   ",
+                Style::default().fg(self.theme.colors.text_muted.into()),
+            ),
+            Span::styled("Esc", Style::default().fg(self.theme.colors.primary.into())),
+            Span::styled(
+                " cancel",
+                Style::default().fg(self.theme.colors.text_muted.into()),
+            ),
+        ]))
+        .alignment(Alignment::Center);
 
         // Calculate help position (bottom of inner area)
         let help_y = inner.y + inner.height.saturating_sub(1);
