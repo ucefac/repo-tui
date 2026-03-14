@@ -277,6 +277,8 @@ pub enum AppState {
         editing: Option<MainDirEdit>,
         /// Delete confirmation state
         confirming_delete: bool,
+        /// Scroll offset for list viewport
+        scroll_offset: usize,
     },
 
     /// Confirming repository deletion
@@ -316,6 +318,8 @@ pub enum AppState {
         theme_list_state: ratatui::widgets::ListState,
         /// Preview theme (stored to ensure "what you see is what you get")
         preview_theme: crate::ui::theme::Theme,
+        /// Scroll offset for list viewport
+        scroll_offset: usize,
     },
 
     /// Cloning repository
@@ -486,6 +490,7 @@ mod tests {
         let mut state = AppState::SelectingTheme {
             theme_list_state: ratatui::widgets::ListState::default(),
             preview_theme: crate::ui::theme::Theme::dark(),
+            scroll_offset: 0,
         };
 
         assert!(state.is_modal());

@@ -36,6 +36,7 @@ async fn test_theme_selector_closes() {
     app.state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
         preview_theme: Theme::dark(),
+        scroll_offset: 0,
     };
 
     // Close theme selector
@@ -54,6 +55,7 @@ async fn test_theme_navigation() {
     app.state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
         preview_theme: Theme::dark(),
+        scroll_offset: 0,
     };
 
     // Navigate down
@@ -106,6 +108,7 @@ async fn test_theme_selection() {
     app.state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
         preview_theme: Theme::dark(),
+        scroll_offset: 0,
     };
     app.config = Some(config::Config::default());
 
@@ -148,6 +151,7 @@ fn test_theme_list_state_mut() {
     let mut state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
         preview_theme: Theme::dark(),
+        scroll_offset: 0,
     };
 
     // Should get mutable reference

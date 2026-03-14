@@ -398,6 +398,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                                 selected_dir_index: 0,
                                 editing: None,
                                 confirming_delete: false,
+                                scroll_offset: 0,
                             };
                         }
                         crate::app::state::ReturnTarget::Running => {
@@ -436,33 +437,23 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
 
         AppMsg::DirectoryNavDown => {
             if let AppState::ChoosingDir {
-                path: _,
                 entries,
                 selected_index,
-                scroll_offset,
-                mode: _,
-                return_to: _,
+                ..
             } = &mut app.state
             {
                 if !entries.is_empty() {
                     let len = entries.len();
                     *selected_index = (*selected_index + 1) % len;
-                    let visible_count = 15usize;
-                    if *selected_index >= *scroll_offset + visible_count {
-                        *scroll_offset = selected_index.saturating_sub(visible_count - 1);
-                    }
                 }
             }
         }
 
         AppMsg::DirectoryNavUp => {
             if let AppState::ChoosingDir {
-                path: _,
                 entries,
                 selected_index,
-                scroll_offset,
-                mode: _,
-                return_to: _,
+                ..
             } = &mut app.state
             {
                 if !entries.is_empty() {
@@ -472,9 +463,6 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                     } else {
                         *selected_index - 1
                     };
-                    if *selected_index < *scroll_offset {
-                        *scroll_offset = *selected_index;
-                    }
                 }
             }
         }
@@ -617,6 +605,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
             app.state = AppState::SelectingTheme {
                 theme_list_state,
                 preview_theme,
+                scroll_offset: 0,
             };
         }
 
@@ -787,6 +776,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 selected_dir_index: 0,
                 editing: None,
                 confirming_delete: false,
+                scroll_offset: 0,
             };
         }
 
@@ -1093,6 +1083,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                         selected_dir_index: 0,
                         editing: None,
                         confirming_delete: false,
+                        scroll_offset: 0,
                     };
                 }
                 crate::app::state::ReturnTarget::Running => {
@@ -1955,6 +1946,7 @@ mod tests {
         app.state = AppState::SelectingTheme {
             theme_list_state: ratatui::widgets::ListState::default(),
             preview_theme: Theme::dark(),
+            scroll_offset: 0,
         };
 
         update(AppMsg::ThemeNavDown, &mut app, &runtime);
@@ -1986,6 +1978,7 @@ mod tests {
         app.state = AppState::SelectingTheme {
             theme_list_state: ratatui::widgets::ListState::default(),
             preview_theme: Theme::dark(),
+            scroll_offset: 0,
         };
 
         if let AppState::SelectingTheme {
@@ -2030,6 +2023,7 @@ mod tests {
         app.state = AppState::SelectingTheme {
             theme_list_state: ratatui::widgets::ListState::default(),
             preview_theme: Theme::dark(),
+            scroll_offset: 0,
         };
         app.config = Some(crate::config::Config::default());
 

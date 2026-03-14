@@ -820,6 +820,7 @@ mod tests {
         app.state = AppState::SelectingTheme {
             theme_list_state: ratatui::widgets::ListState::default(),
             preview_theme: Theme::dark(),
+            scroll_offset: 0,
         };
 
         // Test close

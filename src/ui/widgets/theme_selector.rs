@@ -20,6 +20,8 @@ pub struct ThemeSelector<'a> {
     pub preview_theme: Theme,
     /// Title
     pub title: &'a str,
+    /// Scroll offset for list
+    pub scroll_offset: usize,
 }
 
 impl<'a> ThemeSelector<'a> {
@@ -36,12 +38,19 @@ impl<'a> ThemeSelector<'a> {
             current_theme,
             preview_theme,
             title: "Select Theme",
+            scroll_offset: 0,
         }
     }
 
     /// Set the title
     pub fn title(mut self, title: &'a str) -> Self {
         self.title = title;
+        self
+    }
+
+    /// Set scroll offset
+    pub fn scroll_offset(mut self, offset: usize) -> Self {
+        self.scroll_offset = offset;
         self
     }
 
@@ -114,6 +123,7 @@ impl<'a> Widget for ThemeSelector<'a> {
             self.themes,
             self.selected_index,
             &self.preview_theme,
+            self.scroll_offset,
         );
 
         // Render help text
@@ -243,6 +253,7 @@ fn render_theme_list(
     themes: &[&str],
     selected_index: usize,
     theme: &Theme,
+    scroll_offset: usize,
 ) {
     if themes.is_empty() {
         let empty_text = "(no themes available)";
@@ -253,20 +264,28 @@ fn render_theme_list(
         return;
     }
 
-    let items: Vec<ListItem> = themes
+    // Calculate visible range
+    let visible_count = area.height.saturating_sub(2) as usize;
+    let start = scroll_offset;
+    let end = (start + visible_count).min(themes.len());
+
+    let items: Vec<ListItem> = themes[start..end]
         .iter()
         .enumerate()
-        .map(|(i, &name)| {
+        .map(|(visible_idx, &name)| {
+            let absolute_idx = start + visible_idx;
+            let is_selected = absolute_idx == selected_index;
+
             let mut style = Style::default().fg(theme.colors.foreground.into());
 
-            if i == selected_index {
+            if is_selected {
                 style = style
                     .bg(theme.colors.selected_bg.into())
                     .fg(theme.colors.selected_fg.into())
                     .add_modifier(Modifier::BOLD);
             }
 
-            let prefix = if i == selected_index { "▶ " } else { "  " };
+            let prefix = if is_selected { "▶ " } else { "  " };
             ListItem::new(format!("{}{}", prefix, name)).style(style)
         })
         .collect();

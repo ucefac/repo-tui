@@ -38,6 +38,7 @@ async fn test_theme_navigation_jk_keys() {
     app.state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
         preview_theme: Theme::dark(),
+        scroll_offset: 0,
     };
 
     // Navigate down with 'j'
@@ -86,6 +87,7 @@ async fn test_theme_navigation_arrow_keys() {
     app.state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
         preview_theme: Theme::dark(),
+        scroll_offset: 0,
     };
 
     // Navigate down with ↓
@@ -117,6 +119,7 @@ async fn test_theme_selection_with_enter() {
     app.state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
         preview_theme: Theme::dark(),
+        scroll_offset: 0,
     };
     app.config = Some(Config::default());
 
@@ -146,6 +149,7 @@ async fn test_config_updated_on_theme_selection() {
     app.state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
         preview_theme: Theme::dark(),
+        scroll_offset: 0,
     };
     app.config = Some(Config::default());
 
@@ -169,6 +173,7 @@ async fn test_config_updated_on_theme_selection() {
         app.state = AppState::SelectingTheme {
             theme_list_state: ratatui::widgets::ListState::default(),
             preview_theme: Theme::dark(),
+            scroll_offset: 0,
         };
     }
 }
@@ -203,6 +208,7 @@ async fn test_esc_closes_theme_selector() {
     app.state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
         preview_theme: Theme::dark(),
+        scroll_offset: 0,
     };
 
     // Close with Esc
@@ -224,6 +230,7 @@ async fn test_theme_preview_instant_update() {
     app.state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
         preview_theme: Theme::dark(),
+        scroll_offset: 0,
     };
     app.config = Some(Config::default());
 
@@ -247,6 +254,7 @@ async fn test_theme_preview_instant_update() {
         app.state = AppState::SelectingTheme {
             theme_list_state: ratatui::widgets::ListState::default(),
             preview_theme: Theme::dark(),
+            scroll_offset: 0,
         };
     }
 }
@@ -261,6 +269,7 @@ async fn test_theme_navigation_cyclic() {
     app.state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
         preview_theme: Theme::dark(),
+        scroll_offset: 0,
     };
 
     // Navigate to last theme
@@ -324,6 +333,7 @@ async fn test_theme_selector_cyclic() {
     app.state = AppState::SelectingTheme {
         theme_list_state: ratatui::widgets::ListState::default(),
         preview_theme: Theme::dark(),
+        scroll_offset: 0,
     };
 
     // Navigate up from first item - should wrap to last

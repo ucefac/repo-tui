@@ -38,24 +38,8 @@ pub fn render(frame: &mut Frame, app: &mut App) {
         AppState::Error { ref message } => {
             render_error(frame, area, message, &theme);
         }
-        AppState::ChoosingDir {
-            ref path,
-            ref entries,
-            selected_index,
-            scroll_offset,
-            ref mode,
-            return_to: _,
-        } => {
-            render_directory_chooser(
-                frame,
-                area,
-                path,
-                entries,
-                selected_index,
-                scroll_offset,
-                mode,
-                &theme,
-            );
+        AppState::ChoosingDir { .. } => {
+            render_directory_chooser(frame, area, app, &theme);
         }
         AppState::ManagingDirs { .. } => {
             render_main_ui(frame, area, app, &theme);
@@ -160,6 +144,9 @@ fn render_main_ui(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
     frame.render_widget(search_box, chunks[1]);
 
     // Render repository list using component
+    // Update scroll offset to ensure selected item is visible
+    app.update_scroll_offset(chunks[2].height);
+
     let favorites_set: std::collections::HashSet<usize> = app
         .favorites
         .get_all()
@@ -281,20 +268,62 @@ fn render_help(frame: &mut Frame, area: Rect, scroll_offset: usize, theme: &Them
 
 /// Render directory chooser using component
 #[allow(clippy::too_many_arguments)]
-fn render_directory_chooser(
-    frame: &mut Frame,
-    area: Rect,
-    path: &std::path::Path,
-    entries: &[String],
-    selected_index: usize,
-    scroll_offset: usize,
-    mode: &crate::app::state::DirectoryChooserMode,
-    theme: &Theme,
-) {
+fn render_directory_chooser(frame: &mut Frame, area: Rect, app: &mut App, theme: &Theme) {
     let popup_area = centered_rect(80, 80, area);
 
     // Clear background for modal
     frame.render_widget(Clear, popup_area);
+
+    // Extract state fields
+    let (path, entries, selected_index, scroll_offset, mode) = if let AppState::ChoosingDir {
+        path,
+        entries,
+        selected_index,
+        scroll_offset,
+        mode,
+        ..
+    } = &app.state
+    {
+        (
+            path.clone(),
+            entries.clone(),
+            *selected_index,
+            *scroll_offset,
+            mode.clone(),
+        )
+    } else {
+        return;
+    };
+
+    // Update scroll offset to ensure selected item is visible
+    let visible_height = popup_area.height.saturating_sub(10) as usize;
+    if visible_height > 0 && !entries.is_empty() {
+        let selected = selected_index;
+        if selected >= scroll_offset + visible_height {
+            if let AppState::ChoosingDir {
+                scroll_offset: ref mut so,
+                ..
+            } = &mut app.state
+            {
+                *so = selected.saturating_sub(visible_height - 1);
+            }
+        } else if selected < scroll_offset {
+            if let AppState::ChoosingDir {
+                scroll_offset: ref mut so,
+                ..
+            } = &mut app.state
+            {
+                *so = selected;
+            }
+        }
+    }
+
+    // Re-fetch scroll_offset after update
+    let scroll_offset = if let AppState::ChoosingDir { scroll_offset, .. } = &app.state {
+        *scroll_offset
+    } else {
+        0
+    };
 
     // Create state for the chooser
     let state = DirectoryChooserState {
@@ -331,10 +360,23 @@ fn render_main_dir_manager(frame: &mut Frame, area: Rect, app: &mut App, theme: 
     if let AppState::ManagingDirs {
         selected_dir_index,
         editing,
+        scroll_offset,
         ..
-    } = &app.state
+    } = &mut app.state
     {
-        let manager = MainDirManager::new(&app.main_directories, *selected_dir_index, theme);
+        // Update scroll offset to ensure selected item is visible
+        let list_area_height = area.height.saturating_sub(8) as usize; // Account for title and help
+        if list_area_height > 0 && !app.main_directories.is_empty() {
+            let selected = *selected_dir_index;
+            if selected >= *scroll_offset + list_area_height {
+                *scroll_offset = selected.saturating_sub(list_area_height - 1);
+            } else if selected < *scroll_offset {
+                *scroll_offset = selected;
+            }
+        }
+
+        let manager = MainDirManager::new(&app.main_directories, *selected_dir_index, theme)
+            .scroll_offset(*scroll_offset);
 
         // If editing, add editing state
         let manager = if let Some(edit) = editing {
@@ -467,12 +509,29 @@ fn render_theme_selector(frame: &mut Frame, area: Rect, app: &mut App, theme: &T
         Theme::dark()
     };
 
-    // Get theme list state
-    if let Some(theme_list_state) = app.state.theme_list_state_mut() {
+    // Get theme list state and scroll_offset
+    if let AppState::SelectingTheme {
+        theme_list_state,
+        scroll_offset,
+        ..
+    } = &mut app.state
+    {
         let selected_index = theme_list_state.selected().unwrap_or(0);
+
+        // Update scroll offset to ensure selected item is visible
+        let list_area_height = popup_area.height.saturating_sub(12) as usize; // Account for title, preview, help
+        if list_area_height > 0 {
+            if selected_index >= *scroll_offset + list_area_height {
+                *scroll_offset = selected_index.saturating_sub(list_area_height - 1);
+            } else if selected_index < *scroll_offset {
+                *scroll_offset = selected_index;
+            }
+        }
+
         let selector =
             ThemeSelector::new(THEME_NAMES, selected_index, &current_theme, preview_theme)
-                .title("🎨 Select Theme");
+                .title("🎨 Select Theme")
+                .scroll_offset(*scroll_offset);
 
         frame.render_widget(selector, popup_area);
     }

@@ -20,6 +20,8 @@ pub struct MainDirManager<'a> {
     pub editing_index: Option<usize>,
     /// Editing name (if editing)
     pub editing_name: &'a str,
+    /// Scroll offset for list
+    pub scroll_offset: usize,
 }
 
 impl<'a> MainDirManager<'a> {
@@ -35,6 +37,7 @@ impl<'a> MainDirManager<'a> {
             theme,
             editing_index: None,
             editing_name: "",
+            scroll_offset: 0,
         }
     }
 
@@ -42,6 +45,12 @@ impl<'a> MainDirManager<'a> {
     pub fn editing(mut self, index: usize, name: &'a str) -> Self {
         self.editing_index = Some(index);
         self.editing_name = name;
+        self
+    }
+
+    /// Set scroll offset
+    pub fn scroll_offset(mut self, offset: usize) -> Self {
+        self.scroll_offset = offset;
         self
     }
 }
@@ -94,13 +103,27 @@ impl<'a> MainDirManager<'a> {
     }
 
     fn render_directory_list(&self, area: Rect, buf: &mut Buffer) {
-        let items: Vec<ListItem> = self
-            .directories
+        if self.directories.is_empty() {
+            let empty_text = "(no main directories configured)";
+            let paragraph = Paragraph::new(empty_text)
+                .alignment(Alignment::Center)
+                .style(Style::default().fg(self.theme.colors.text_muted.into()));
+            paragraph.render(area, buf);
+            return;
+        }
+
+        // Calculate visible range
+        let visible_count = area.height.saturating_sub(2) as usize;
+        let start = self.scroll_offset;
+        let end = (start + visible_count).min(self.directories.len());
+
+        let items: Vec<ListItem> = self.directories[start..end]
             .iter()
             .enumerate()
-            .map(|(i, dir)| {
-                let is_selected = i == self.selected_index;
-                let is_editing = self.editing_index == Some(i);
+            .map(|(visible_idx, dir)| {
+                let absolute_idx = start + visible_idx;
+                let is_selected = absolute_idx == self.selected_index;
+                let is_editing = self.editing_index == Some(absolute_idx);
 
                 // Build display text
                 let enabled_icon = if dir.enabled { "✓" } else { "✗" };
