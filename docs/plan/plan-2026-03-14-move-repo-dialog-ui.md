@@ -33,14 +33,14 @@ worktree: fix-2026-03-14-move-repo-dialog-ui
 
 | 序号 | 任务 | 角色 | 依赖 | 状态 |
 |------|------|------|------|------|
-| 1 | 修复帮助面板边框使用主题色 | frontend-dev | - | pending |
-| 2 | 修改移动弹窗宽度为 80% | frontend-dev | - | pending |
-| 3 | 修改移动弹窗底部按键文本使用主题色 | frontend-dev | - | pending |
-| 4 | 合并 `SelectingMoveTarget` 和 `ConfirmingMove` 状态 | frontend-dev | - | pending |
-| 5 | 修改 `MainDirSelector` 组件显示确认信息 | frontend-dev | 4 | pending |
-| 6 | 删除废弃的 `ConfirmMoveRepository` 消息和处理逻辑 | frontend-dev | 4 | pending |
-| 7 | 修改键盘处理逻辑整合确认操作 | frontend-dev | 4 | pending |
-| 8 | 删除 `render_move_confirmation_dialog` 函数 | frontend-dev | 4 | pending |
+| 1 | 修复帮助面板边框使用主题色 | frontend-dev | - | completed |
+| 2 | 修改移动弹窗宽度为 80% | frontend-dev | - | completed |
+| 3 | 修改移动弹窗底部按键文本使用主题色 | frontend-dev | - | completed |
+| 4 | 合并 `SelectingMoveTarget` 和 `ConfirmingMove` 状态 | frontend-dev | - | completed |
+| 5 | 修改 `MainDirSelector` 组件显示确认信息 | frontend-dev | 4 | completed |
+| 6 | 删除废弃的 `ConfirmMoveRepository` 消息 | frontend-dev | 4 | completed |
+| 7 | 修改键盘处理逻辑整合确认操作 | frontend-dev | 4 | completed |
+| 8 | 删除 `render_move_confirmation_dialog` 函数 | frontend-dev | 4 | completed |
 
 ## 详细实现方案
 
