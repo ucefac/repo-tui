@@ -1123,3 +1123,57 @@ fn handle_move_confirmation_keys(key: KeyEvent, app: &mut App) {
         _ => {}
     }
 }
+
+#[cfg(test)]
+mod ctrl_m_tests {
+    use super::*;
+    use crate::app::msg::AppMsg;
+    use crate::repo::{RepoSource, Repository};
+    use std::path::PathBuf;
+
+    fn create_ctrl_m_key() -> KeyEvent {
+        KeyEvent {
+            code: KeyCode::Char('m'),
+            modifiers: KeyModifiers::CONTROL,
+            kind: crossterm::event::KeyEventKind::Press,
+            state: crossterm::event::KeyEventState::NONE,
+        }
+    }
+
+    #[tokio::test]
+    async fn test_ctrl_m_triggers_move_repository() {
+        let (tx, mut rx) = tokio::sync::mpsc::channel(100);
+        let mut app = App::new(tx.clone());
+        let runtime = Runtime::new(tx);
+
+        // Setup: add a mock repository and select it
+        app.repositories = vec![Repository {
+            name: "test-repo".to_string(),
+            path: PathBuf::from("/tmp/test-repo"),
+            last_modified: None,
+            is_dirty: false,
+            branch: Some("main".to_string()),
+            is_git_repo: true,
+            source: RepoSource::Standalone,
+        }];
+        app.filtered_indices = vec![0];
+        app.set_selected_index(Some(0));
+        app.state = AppState::Running;
+
+        // Press Ctrl+M
+        handle_key_event(create_ctrl_m_key(), &mut app, &runtime);
+
+        // Check that TriggerMoveRepository message was sent
+        tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+        
+        // Try to receive the message
+        let msg = rx.try_recv();
+        assert!(msg.is_ok(), "Ctrl+M should send TriggerMoveRepository message");
+        
+        if let Ok(AppMsg::TriggerMoveRepository) = msg {
+            // Success
+        } else {
+            panic!("Expected TriggerMoveRepository message, got {:?}", msg);
+        }
+    }
+}

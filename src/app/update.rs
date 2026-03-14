@@ -405,7 +405,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                         }
                     }
                 }
-                crate::app::state::DirectoryChooserMode::SelectMoveTarget { source_repo } => {
+                crate::app::state::DirectoryChooserMode::SelectMoveTarget { source_repo: _ } => {
                     // Handle move target selection - this should not happen here
                     // SelectMoveTarget is handled by SelectMainDirForMove message
                     app.state = AppState::Running;
@@ -1405,7 +1405,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
         } => {
             if success {
                 // Remove repository from the list
-                if let Some(idx) = app.repositories.iter().position(|r| r.path == repo_path) {
+                if let Some(_idx) = app.repositories.iter().position(|r| r.path == repo_path) {
                     app.repositories.remove(idx);
                     app.apply_filter();
                 }
@@ -1565,7 +1565,7 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
 
             if success {
                 // Update repository path in the list
-                if let Some(idx) = app.repositories.iter().position(|r| r.path == repo_path) {
+                if let Some(_idx) = app.repositories.iter().position(|r| r.path == repo_path) {
                     // Repository was moved, need to update its path
                     // For now, just refresh the list
                     app.apply_filter();
