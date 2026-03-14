@@ -1450,6 +1450,9 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                 app.state = AppState::SelectingMoveTarget {
                     source_repo: repo_idx,
                     list_state,
+                    target_dir: None,
+                    target_path: None,
+                    conflict_exists: false,
                 };
 
                 // Store main_dirs in app for rendering

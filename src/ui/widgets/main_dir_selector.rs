@@ -114,7 +114,7 @@ impl Widget for MainDirSelector<'_> {
 
         // Render confirmation info if available
         let mut lines_to_reserve = 1; // Help text
-        if let Some(repo_name) = self.repo_name {
+        if let Some(_repo_name) = self.repo_name {
             lines_to_reserve += 2; // Repo name and target path
             if self.conflict_exists {
                 lines_to_reserve += 2; // Conflict warning and empty line
@@ -172,7 +172,7 @@ impl Widget for MainDirSelector<'_> {
 }
 
 /// Calculate centered rectangle for main directory selector
-pub fn centered_main_dir_selector_rect(area: Rect, min_width: u16, min_height: u16) -> Rect {
+pub fn centered_main_dir_selector_rect(area: Rect, _min_width: u16, _min_height: u16) -> Rect {
     let popup_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints([

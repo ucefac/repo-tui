@@ -79,12 +79,13 @@ fn test_help_panel_includes_m_key() {
     let mut terminal = Terminal::new(backend).unwrap();
 
     let panel = HelpPanel::new();
+    let theme = repotui::ui::Theme::dark();
 
     // Should render without panic
     terminal
         .draw(|f| {
             let area = Rect::new(10, 2, 60, 28);
-            panel.render(f, area);
+            panel.render(f, area, &theme);
         })
         .unwrap();
 }
