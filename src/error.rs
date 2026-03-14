@@ -18,6 +18,9 @@ pub enum AppError {
     #[error("Clone error: {0}")]
     Clone(#[from] CloneError),
 
+    #[error("Move error: {0}")]
+    Move(#[from] MoveError),
+
     #[error("Terminal error: {0}")]
     Terminal(String),
 
@@ -220,6 +223,37 @@ pub enum UpdateError {
     RateLimitExceeded,
 }
 
+/// Repository move errors
+#[derive(Error, Debug, Clone)]
+pub enum MoveError {
+    #[error("Cannot move to same directory: {0}")]
+    SameDirectory(PathBuf),
+
+    #[error("Target directory not found: {0}")]
+    TargetNotFound(PathBuf),
+
+    #[error("Permission denied: {0}")]
+    PermissionDenied(PathBuf),
+
+    #[error("Write permission denied: {0}")]
+    WritePermissionDenied(PathBuf),
+
+    #[error("Source not found: {0}")]
+    SourceNotFound(PathBuf),
+
+    #[error("Source is not a directory: {0}")]
+    SourceNotADirectory(PathBuf),
+
+    #[error("Target is not a directory: {0}")]
+    TargetNotADirectory(PathBuf),
+
+    #[error("Path outside home directory: {0}")]
+    PathOutsideHome(PathBuf),
+
+    #[error("IO error: {0}")]
+    Io(String),
+}
+
 impl AppError {
     /// Get user-friendly error message
     pub fn user_message(&self) -> String {
@@ -252,6 +286,7 @@ impl AppError {
                 format!("Not a git repository: {}", path.display())
             }
             AppError::Clone(clone_err) => clone_err.user_message(),
+            AppError::Move(move_err) => move_err.user_message(),
             _ => self.to_string(),
         }
     }
@@ -268,6 +303,7 @@ impl AppError {
             AppError::Action(ActionError::ExecutionFailed(_)) => ErrorSeverity::Error,
             AppError::Repo(RepoError::NotGitRepo(_)) => ErrorSeverity::Info,
             AppError::Clone(clone_err) => clone_err.severity(),
+            AppError::Move(move_err) => move_err.severity(),
             _ => ErrorSeverity::Info,
         }
     }
@@ -411,6 +447,60 @@ impl CloneError {
             CloneError::AlreadyExists(_) => ErrorSeverity::Warning,
             CloneError::Network(_) => ErrorSeverity::Warning,
             _ => ErrorSeverity::Error,
+        }
+    }
+}
+
+impl MoveError {
+    /// Get user-friendly error message
+    pub fn user_message(&self) -> String {
+        match self {
+            MoveError::SameDirectory(path) => {
+                format!("Cannot move to same directory: {}", path.display())
+            }
+            MoveError::TargetNotFound(path) => {
+                format!("Target directory not found: {}", path.display())
+            }
+            MoveError::PermissionDenied(path) => {
+                format!(
+                    "Permission denied: {}. Check directory permissions",
+                    path.display()
+                )
+            }
+            MoveError::WritePermissionDenied(path) => {
+                format!(
+                    "Write permission denied: {}. Check directory permissions",
+                    path.display()
+                )
+            }
+            MoveError::SourceNotFound(path) => {
+                format!("Source directory not found: {}", path.display())
+            }
+            MoveError::SourceNotADirectory(path) => {
+                format!("Source is not a directory: {}", path.display())
+            }
+            MoveError::TargetNotADirectory(path) => {
+                format!("Target is not a directory: {}", path.display())
+            }
+            MoveError::PathOutsideHome(path) => {
+                format!("Path outside home directory: {}", path.display())
+            }
+            _ => self.to_string(),
+        }
+    }
+
+    /// Get error severity
+    pub fn severity(&self) -> ErrorSeverity {
+        match self {
+            MoveError::SameDirectory(_) => ErrorSeverity::Warning,
+            MoveError::TargetNotFound(_) => ErrorSeverity::Warning,
+            MoveError::PermissionDenied(_) => ErrorSeverity::Error,
+            MoveError::WritePermissionDenied(_) => ErrorSeverity::Error,
+            MoveError::SourceNotFound(_) => ErrorSeverity::Warning,
+            MoveError::SourceNotADirectory(_) => ErrorSeverity::Warning,
+            MoveError::TargetNotADirectory(_) => ErrorSeverity::Warning,
+            MoveError::PathOutsideHome(_) => ErrorSeverity::Error,
+            MoveError::Io(_) => ErrorSeverity::Error,
         }
     }
 }
