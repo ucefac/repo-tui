@@ -1490,19 +1490,18 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
                         .join(source_path.file_name().unwrap_or_default())
                         .exists();
 
-                    // Enter ConfirmingMove state
-                    app.state = AppState::ConfirmingMove {
-                        source_repo: if let AppState::SelectingMoveTarget { source_repo, .. } =
-                            &app.state
-                        {
-                            *source_repo
-                        } else {
-                            0
-                        },
-                        target_dir: target_dir_index,
-                        target_path: target_dir,
-                        conflict_exists,
-                    };
+                    // Update SelectingMoveTarget state with confirmation info
+                    if let AppState::SelectingMoveTarget {
+                        target_dir: ref mut dir,
+                        target_path: ref mut path,
+                        conflict_exists: ref mut conflict,
+                        ..
+                    } = &mut app.state
+                    {
+                        *dir = Some(target_dir_index);
+                        *path = Some(target_dir);
+                        *conflict = conflict_exists;
+                    }
                 } else {
                     app.error_message = Some("目标目录无效".to_string());
                     let _ = app.msg_tx.try_send(AppMsg::CancelMoveConfirmation);
@@ -1515,22 +1514,34 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
 
         AppMsg::ConfirmMoveRepository { add_suffix } => {
             // Get move parameters from state
-            let params = if let AppState::ConfirmingMove {
+            let params = if let AppState::SelectingMoveTarget {
                 source_repo,
                 target_dir,
                 target_path,
+                conflict_exists,
                 ..
             } = &app.state
             {
-                let repo_path = app.repositories.get(*source_repo).map(|r| r.path.clone());
-                let target = target_path.clone();
-                let idx = *target_dir;
-                Some((repo_path, target, idx, add_suffix))
+                if let (Some(target_dir_idx), Some(target_path_val)) = (target_dir, target_path) {
+                    let repo_path = app.repositories.get(*source_repo).map(|r| r.path.clone());
+                    let target = target_path_val.clone();
+                    let idx = *target_dir_idx;
+                    Some((repo_path, target, idx, add_suffix, *conflict_exists))
+                } else {
+                    None
+                }
             } else {
                 None
             };
 
-            if let Some((Some(repo_path), target_dir, _, add_suffix)) = params {
+            if let Some((Some(repo_path), target_dir, _, add_suffix, conflict_exists)) = params {
+                // If conflict exists and user didn't confirm with add_suffix, cancel
+                if conflict_exists && !add_suffix {
+                    app.error_message =
+                        Some("目标目录已存在同名仓库，请选择重命名或取消".to_string());
+                    return;
+                }
+
                 // Dispatch async move command
                 runtime.dispatch(Cmd::MoveRepository {
                     repo_path,

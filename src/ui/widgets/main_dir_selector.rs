@@ -4,6 +4,7 @@
 
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, List, ListItem, Paragraph};
+use std::path::PathBuf;
 
 use crate::ui::theme::Theme;
 
@@ -15,6 +16,12 @@ pub struct MainDirSelector<'a> {
     pub selected_index: usize,
     /// Theme
     pub theme: &'a Theme,
+    /// Repository name being moved (optional, for confirmation display)
+    pub repo_name: Option<&'a str>,
+    /// Conflict exists flag
+    pub conflict_exists: bool,
+    /// Target path (for confirmation display)
+    pub target_path: Option<&'a PathBuf>,
 }
 
 impl<'a> MainDirSelector<'a> {
@@ -28,7 +35,28 @@ impl<'a> MainDirSelector<'a> {
             main_dirs,
             selected_index,
             theme,
+            repo_name: None,
+            conflict_exists: false,
+            target_path: None,
         }
+    }
+
+    /// Set repository name for confirmation display
+    pub fn repo_name(mut self, repo_name: Option<&'a str>) -> Self {
+        self.repo_name = repo_name;
+        self
+    }
+
+    /// Set conflict flag
+    pub fn conflict_exists(mut self, conflict: bool) -> Self {
+        self.conflict_exists = conflict;
+        self
+    }
+
+    /// Set target path
+    pub fn target_path(mut self, target_path: Option<&'a PathBuf>) -> Self {
+        self.target_path = target_path;
+        self
     }
 }
 
@@ -84,19 +112,61 @@ impl Widget for MainDirSelector<'_> {
         // Render list
         ratatui::prelude::Widget::render(list, inner, buf);
 
+        // Render confirmation info if available
+        let mut lines_to_reserve = 1; // Help text
+        if let Some(repo_name) = self.repo_name {
+            lines_to_reserve += 2; // Repo name and target path
+            if self.conflict_exists {
+                lines_to_reserve += 2; // Conflict warning and empty line
+            }
+        }
+
+        let available_height = inner.height.saturating_sub(lines_to_reserve);
+
+        // Render confirmation info
+        if let Some(repo_name) = self.repo_name {
+            if let Some(target_path) = self.target_path {
+                let confirm_y = inner.y + available_height;
+
+                // Repo name
+                let repo_line = format!("仓库：{}", repo_name);
+                let repo_para = Paragraph::new(repo_line)
+                    .style(self.theme.primary_text_style())
+                    .alignment(Alignment::Center);
+                let repo_area = Rect::new(inner.x, confirm_y, inner.width, 1);
+                repo_para.render(repo_area, buf);
+
+                // Target path
+                let target_y = confirm_y + 1;
+                let target_line = format!("目标：{}", target_path.display());
+                let target_para = Paragraph::new(target_line)
+                    .style(self.theme.primary_text_style())
+                    .alignment(Alignment::Center);
+                let target_area = Rect::new(inner.x, target_y, inner.width, 1);
+                target_para.render(target_area, buf);
+
+                // Conflict warning
+                if self.conflict_exists {
+                    let warning_y = target_y + 1;
+                    let warning_line = "⚠️  目标目录已存在同名仓库！";
+                    let warning_para = Paragraph::new(warning_line)
+                        .style(Style::default().fg(Color::Yellow))
+                        .alignment(Alignment::Center);
+                    let warning_area = Rect::new(inner.x, warning_y, inner.width, 1);
+                    warning_para.render(warning_area, buf);
+                }
+            }
+        }
+
         // Render help text at bottom
         let help_text = "↑↓ navigate   Enter confirm   Esc cancel";
         let help = Paragraph::new(help_text)
-            .style(self.theme.secondary_text_style())
+            .style(self.theme.primary_text_style())
             .alignment(Alignment::Center);
 
         // Calculate help position (bottom of inner area)
-        let help_area = Rect::new(
-            inner.x,
-            inner.y + inner.height.saturating_sub(1),
-            inner.width,
-            1,
-        );
+        let help_y = inner.y + inner.height.saturating_sub(1);
+        let help_area = Rect::new(inner.x, help_y, inner.width, 1);
         help.render(help_area, buf);
     }
 }
@@ -106,18 +176,18 @@ pub fn centered_main_dir_selector_rect(area: Rect, min_width: u16, min_height: u
     let popup_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Percentage(50),
-            Constraint::Min(min_height),
-            Constraint::Percentage(50),
+            Constraint::Percentage(10),
+            Constraint::Percentage(80),
+            Constraint::Percentage(10),
         ])
         .split(area);
 
     Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Percentage(50),
-            Constraint::Min(min_width),
-            Constraint::Percentage(50),
+            Constraint::Percentage(10),
+            Constraint::Percentage(80),
+            Constraint::Percentage(10),
         ])
         .split(popup_layout[1])[1]
 }

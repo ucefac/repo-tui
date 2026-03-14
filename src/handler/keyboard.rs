@@ -16,9 +16,6 @@ pub fn handle_key_event(key: KeyEvent, app: &mut App, runtime: &Runtime) {
 
     // State-based handling (priority order)
     match &app.state {
-        AppState::ConfirmingMove { .. } => {
-            handle_move_confirmation_keys(key, app);
-        }
         AppState::ConfirmingDeleteRepo { .. } => {
             handle_delete_confirmation_keys(key, app);
         }
@@ -1081,43 +1078,32 @@ fn handle_selecting_move_target(key: KeyEvent, app: &mut App) {
             }
         }
         KeyCode::Enter => {
-            // Confirm selected main directory
+            // Confirm move with selected main directory
             if let AppState::SelectingMoveTarget {
                 list_state,
                 source_repo: _,
+                target_dir,
+                conflict_exists,
                 ..
             } = &app.state
             {
                 let selected = list_state.selected().unwrap_or(0);
                 if selected < app.move_target_dirs.len() {
                     let target_index = app.move_target_dirs[selected].0;
-                    let _ = app
-                        .msg_tx
-                        .try_send(AppMsg::SelectMainDirForMove(target_index));
-                }
-            }
-        }
-        _ => {}
-    }
-}
 
-/// Handle keys in move confirmation dialog
-fn handle_move_confirmation_keys(key: KeyEvent, app: &mut App) {
-    match key.code {
-        KeyCode::Esc | KeyCode::Char('n') | KeyCode::Char('N') => {
-            // Cancel move
-            let _ = app.msg_tx.try_send(AppMsg::CancelMoveConfirmation);
-        }
-        KeyCode::Enter | KeyCode::Char('y') | KeyCode::Char('Y') => {
-            // Confirm move (with suffix if conflict exists)
-            if let AppState::ConfirmingMove {
-                conflict_exists, ..
-            } = &app.state
-            {
-                let add_suffix = *conflict_exists;
-                let _ = app
-                    .msg_tx
-                    .try_send(AppMsg::ConfirmMoveRepository { add_suffix });
+                    // If target not yet selected, select it first
+                    if target_dir.is_none() {
+                        let _ = app
+                            .msg_tx
+                            .try_send(AppMsg::SelectMainDirForMove(target_index));
+                    } else {
+                        // Target already selected, confirm the move
+                        let add_suffix = *conflict_exists;
+                        let _ = app
+                            .msg_tx
+                            .try_send(AppMsg::ConfirmMoveRepository { add_suffix });
+                    }
+                }
             }
         }
         _ => {}
@@ -1165,11 +1151,14 @@ mod ctrl_m_tests {
 
         // Check that TriggerMoveRepository message was sent
         tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
-        
+
         // Try to receive the message
         let msg = rx.try_recv();
-        assert!(msg.is_ok(), "Ctrl+M should send TriggerMoveRepository message");
-        
+        assert!(
+            msg.is_ok(),
+            "Ctrl+M should send TriggerMoveRepository message"
+        );
+
         if let Ok(AppMsg::TriggerMoveRepository) = msg {
             // Success
         } else {

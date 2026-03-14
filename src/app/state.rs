@@ -330,16 +330,10 @@ pub enum AppState {
         source_repo: usize,
         /// Main directory list state
         list_state: ratatui::widgets::ListState,
-    },
-
-    /// Confirming repository move
-    ConfirmingMove {
-        /// Source repository index
-        source_repo: usize,
-        /// Target main directory index
-        target_dir: usize,
+        /// Target main directory index (selected)
+        target_dir: Option<usize>,
         /// Target main directory path
-        target_path: PathBuf,
+        target_path: Option<PathBuf>,
         /// Conflict exists flag
         conflict_exists: bool,
     },
@@ -376,7 +370,6 @@ impl AppState {
     pub fn priority(&self) -> u8 {
         match self {
             AppState::Cloning { .. } => 6,
-            AppState::ConfirmingMove { .. } => 5,
             AppState::ShowingHelp { .. } => 4,
             AppState::ManagingDirs { .. } => 4,
             AppState::ConfirmingDeleteRepo { .. } => 5,
@@ -400,7 +393,6 @@ impl AppState {
                 | AppState::Cloning { .. }
                 | AppState::ConfirmingDeleteRepo { .. }
                 | AppState::SelectingMoveTarget { .. }
-                | AppState::ConfirmingMove { .. }
         )
     }
 

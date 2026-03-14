@@ -22,7 +22,7 @@ impl HelpPanel {
     }
 
     /// Render the help panel with scroll support
-    pub fn render(&self, frame: &mut Frame, area: Rect) {
+    pub fn render(&self, frame: &mut Frame, area: Rect, theme: &crate::ui::theme::Theme) {
         // Clear the area behind the popup
         frame.render_widget(Clear, area);
 
@@ -159,7 +159,7 @@ impl HelpPanel {
                     .title(" Keyboard Shortcuts ")
                     .title_alignment(Alignment::Center)
                     .borders(Borders::ALL)
-                    .border_style(Style::default().fg(Color::Green))
+                    .border_style(Style::default().fg(theme.colors.primary.into()))
                     .style(Style::default().bg(Color::Black)),
             )
             .style(Style::default().fg(Color::White))
