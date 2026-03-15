@@ -576,7 +576,8 @@ async fn validate_move_path(
         }
     }
 
-    // 11. Check write permission for target directory
+    // 11. Check write permission for target directory (Unix only)
+    #[cfg(target_family = "unix")]
     if let Ok(metadata) = tokio::fs::metadata(&abs_target).await {
         use std::os::unix::fs::PermissionsExt;
         let permissions = metadata.permissions();
