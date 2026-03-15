@@ -86,8 +86,19 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
             }
         }
 
-        AppMsg::ScrollDown | AppMsg::ScrollUp => {
-            // Handled in view with terminal height
+        AppMsg::ScrollUp => {
+            if let AppState::ShowingHelp { scroll_offset } = &mut app.state {
+                if *scroll_offset > 0 {
+                    *scroll_offset = scroll_offset.saturating_sub(1);
+                }
+            }
+        }
+
+        AppMsg::ScrollDown => {
+            if let AppState::ShowingHelp { scroll_offset } = &mut app.state {
+                *scroll_offset = scroll_offset.saturating_add(1);
+                // Maximum scroll offset will be limited by the help panel content height
+            }
         }
 
         // === Async Events ===
