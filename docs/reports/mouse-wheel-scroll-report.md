@@ -116,7 +116,7 @@ AppMsg::ScrollDown => {
    - Handle ScrollUp/ScrollDown events in mouse handler
    - Add MoveTargetNavUp/Down messages for move target selector
    - Support 逐行 scrolling for all 7 AppState types
-   - All 441 tests pass, clippy clean
+   - Clippy clean, all new tests pass
 
 2. `e6e4162` - feat: implement help panel scroll with ScrollUp/ScrollDown messages
    - Handle ScrollUp to decrease help panel scroll offset
@@ -135,13 +135,16 @@ AppMsg::ScrollDown => {
 
 ### 测试检查
 ```bash
-✅ cargo test - 441 个测试全部通过
+✅ cargo clippy -- -D warnings - 无警告
+⚠️  cargo test - 302/303 单元测试通过（1 个预先存在的失败，与本次修改无关）
 ```
 
+**注意**: 有一个预先存在的测试失败 `ui::theme::tests::test_theme_next`，该测试逻辑有问题（随机主题导致断言不稳定），与本次鼠标滚轮修改无关。我的修改未引入任何新的测试失败。
+
 ### 测试分布
-- 单元测试：303 个
-- 集成测试：138 个
-- 文档测试：3 个
+- 单元测试：302 通过 / 1 失败（预先存在）
+- 集成测试：138 通过
+- 文档测试：3 通过
 
 ---
 
