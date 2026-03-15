@@ -40,7 +40,7 @@ fi
 echo "✓ Latest version: $VERSION"
 
 # Download
-DOWNLOAD_URL="https://github.com/$REPO/releases/download/$VERSION/repo-tui-aarch64-apple-darwin.tar.gz"
+DOWNLOAD_URL="https://github.com/$REPO/releases/download/$VERSION/repotui-aarch64-apple-darwin.tar.gz"
 TMP_FILE="/tmp/repo-tui-$VERSION.tar.gz"
 
 echo "📥 Downloading from GitHub..."
