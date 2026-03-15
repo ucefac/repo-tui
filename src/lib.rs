@@ -1,4 +1,4 @@
-//! repotui - A TUI tool for browsing and managing GitHub repositories
+//! repo-tui - A TUI tool for browsing and managing GitHub repositories
 //!
 //! # Architecture
 //!
@@ -11,7 +11,7 @@
 //! # Example
 //!
 //! ```rust,no_run
-//! use repotui::run;
+//! use repo_tui::run;
 //!
 //! #[tokio::main]
 //! async fn main() -> anyhow::Result<()> {
@@ -81,7 +81,7 @@ fn restore_terminal() -> Result<()> {
 /// Run the application
 pub async fn run() -> Result<()> {
     init_logging()?;
-    tracing::info!("Starting repotui");
+    tracing::info!("Starting repo-tui");
 
     let mut terminal = init_terminal()?;
     terminal.clear()?;

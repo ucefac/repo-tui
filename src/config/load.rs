@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 
 /// Get configuration directory path
 pub fn get_config_dir() -> AppResult<PathBuf> {
-    // Use ~/.config/repotui on all platforms for consistency
+    // Use ~/.config/repo-tui on all platforms for consistency
     let home_dir = dirs::home_dir().ok_or(ConfigError::HomeNotFound)?;
     let config_dir = home_dir.join(".config").join(CONFIG_DIR_NAME);
 

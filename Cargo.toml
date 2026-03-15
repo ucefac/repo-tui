@@ -1,12 +1,12 @@
 [package]
-name = "repotui"
+name = "repo-tui"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.75"
-authors = ["repotui Team"]
+authors = ["repo-tui Team"]
 description = "A TUI tool for browsing and managing GitHub repositories"
 license = "MIT"
-repository = "https://github.com/repotui/repotui"
+repository = "https://github.com/ucefac/repo-tui"
 
 [dependencies]
 # TUI Framework

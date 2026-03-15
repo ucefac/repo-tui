@@ -55,14 +55,14 @@ impl<'a> TitleBar<'a> {
     /// Get the title text based on view mode
     fn get_title_text(&self) -> String {
         if self.selection_mode {
-            format!("repotui — 多选模式 (已选 {} 个)", self.selected_count)
+            format!("repo-tui — 多选模式 (已选 {} 个)", self.selected_count)
         } else {
             let view_text = match self.view_mode {
                 ViewMode::All => "全部视图",
                 ViewMode::Favorites => "收藏夹",
                 ViewMode::Recent => "最近视图",
             };
-            format!("repotui — {}", view_text)
+            format!("repo-tui — {}", view_text)
         }
     }
 

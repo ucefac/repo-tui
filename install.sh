@@ -3,12 +3,12 @@ set -e
 
 # Configuration
 REPO="ucefac/repo-tui"
-INSTALL_DIR="$HOME/.config/repotui"
+INSTALL_DIR="$HOME/.config/repo-tui"
 BIN_DIR="$INSTALL_DIR/bin"
 ZSH_DIR="$INSTALL_DIR/zsh"
-ZSH_CONFIG="$ZSH_DIR/repotui.zsh"
+ZSH_CONFIG="$ZSH_DIR/repo-tui.zsh"
 
-echo "🚀 Installing repotui..."
+echo "🚀 Installing repo-tui..."
 
 # Architecture check
 ARCH=$(uname -m)
@@ -40,7 +40,7 @@ fi
 echo "✓ Latest version: $VERSION"
 
 # Download
-DOWNLOAD_URL="https://github.com/$REPO/releases/download/$VERSION/repotui-aarch64-apple-darwin.tar.gz"
+DOWNLOAD_URL="https://github.com/$REPO/releases/download/$VERSION/repo-tui-aarch64-apple-darwin.tar.gz"
 TMP_FILE="/tmp/repo-tui-$VERSION.tar.gz"
 
 echo "📥 Downloading from GitHub..."
@@ -55,41 +55,41 @@ echo "✓ Download completed"
 echo "📦 Installing..."
 mkdir -p "$BIN_DIR" "$ZSH_DIR"
 tar -xzf "$TMP_FILE" -C "$BIN_DIR"
-chmod +x "$BIN_DIR/repotui"
+chmod +x "$BIN_DIR/repo-tui"
 
 echo "✓ Binary installed to $BIN_DIR"
 
 # Create zsh config
 cat > "$ZSH_CONFIG" << EOF
-# repotui Zsh Integration - DO NOT EDIT MANUALLY
-export REPOTUI_BIN_DIR="$HOME/.config/repotui/bin"
-export PATH="$REPOTUI_BIN_DIR:$PATH"
+# repo-tui Zsh Integration - DO NOT EDIT MANUALLY
+export REPO_TUI_BIN_DIR="$HOME/.config/repo-tui/bin"
+export PATH="$REPO_TUI_BIN_DIR:$PATH"
 EOF
 
 echo "✓ Zsh configuration created"
 
 # Add to .zshrc if not present
 ZSHRC="$HOME/.zshrc"
-SOURCE_LINE='[[ -f "$HOME/.config/repotui/zsh/repotui.zsh" ]] && source "$HOME/.config/repotui/zsh/repotui.zsh"'
+SOURCE_LINE='[[ -f "$HOME/.config/repo-tui/zsh/repo-tui.zsh" ]] && source "$HOME/.config/repo-tui/zsh/repo-tui.zsh"'
 
 if [[ ! -f "$ZSHRC" ]]; then
     touch "$ZSHRC"
 fi
 
-if ! grep -q "repotui.zsh" "$ZSHRC" 2>/dev/null; then
+if ! grep -q "repo-tui.zsh" "$ZSHRC" 2>/dev/null; then
     echo "" >> "$ZSHRC"
-    echo "# repotui Shell Integration" >> "$ZSHRC"
+    echo "# repo-tui Shell Integration" >> "$ZSHRC"
     echo "$SOURCE_LINE" >> "$ZSHRC"
-    echo "✓ Added repotui to PATH in ~/.zshrc"
+    echo "✓ Added repo-tui to PATH in ~/.zshrc"
 else
-    echo "✓ repotui already configured in ~/.zshrc"
+    echo "✓ repo-tui already configured in ~/.zshrc"
 fi
 
 # Cleanup
 rm "$TMP_FILE"
 
 echo ""
-echo "✅ repotui $VERSION installed successfully!"
+echo "✅ repo-tui $VERSION installed successfully!"
 echo ""
 echo "📝 Next steps:"
-echo "   Run 'source ~/.zshrc' or restart your terminal, then run 'repotui'"
+echo "   Run 'source ~/.zshrc' or restart your terminal, then run 'repo-tui'"

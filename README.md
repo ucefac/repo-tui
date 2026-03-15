@@ -37,7 +37,7 @@ cd repo-tui
 cargo build --release
 
 # Run
-./target/release/repotui
+./target/release/repo-tui
 ```
 
 ### Uninstall
@@ -49,7 +49,7 @@ curl -fsSL https://raw.githubusercontent.com/ucefac/repo-tui/main/uninstall.sh |
 Or manually remove:
 
 ```bash
-rm -rf ~/.config/repotui
+rm -rf ~/.config/repo-tui
 ```
 
 ## Quick Start
@@ -77,7 +77,7 @@ On first launch, you'll be prompted to select your main repositories directory.
 
 ## Configuration
 
-Configuration file location: `~/.config/repotui/config.toml`
+Configuration file location: `~/.config/repo-tui/config.toml`
 
 ```toml
 # Configuration version

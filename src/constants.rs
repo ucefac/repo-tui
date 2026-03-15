@@ -2,10 +2,10 @@
 
 /// Application name
 #[allow(dead_code)]
-pub const APP_NAME: &str = "repotui";
+pub const APP_NAME: &str = "repo-tui";
 
 /// Configuration directory name
-pub const CONFIG_DIR_NAME: &str = "repotui";
+pub const CONFIG_DIR_NAME: &str = "repo-tui";
 
 /// Configuration file name
 pub const CONFIG_FILE_NAME: &str = "config.toml";

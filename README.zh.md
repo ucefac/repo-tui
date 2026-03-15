@@ -37,7 +37,7 @@ cd repo-tui
 cargo build --release
 
 # 运行
-./target/release/repotui
+./target/release/repo-tui
 ```
 
 ### 卸载
@@ -49,7 +49,7 @@ curl -fsSL https://raw.githubusercontent.com/ucefac/repo-tui/main/uninstall.sh |
 或手动删除：
 
 ```bash
-rm -rf ~/.config/repotui
+rm -rf ~/.config/repo-tui
 ```
 
 ## 快速开始
@@ -77,7 +77,7 @@ rm -rf ~/.config/repotui
 
 ## 配置
 
-配置文件位置：`~/.config/repotui/config.toml`
+配置文件位置：`~/.config/repo-tui/config.toml`
 
 ```toml
 # 配置版本
