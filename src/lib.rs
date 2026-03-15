@@ -36,7 +36,7 @@ mod constants;
 
 use anyhow::Result;
 use crossterm::{
-    event::{self, EnableBracketedPaste, Event},
+    event::{self, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture, Event},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -59,7 +59,12 @@ fn init_logging() -> Result<()> {
 fn init_terminal() -> Result<Terminal<CrosstermBackend<io::Stdout>>> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableBracketedPaste)?;
+    execute!(
+        stdout,
+        EnterAlternateScreen,
+        EnableMouseCapture,
+        EnableBracketedPaste
+    )?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
     terminal.hide_cursor()?;
@@ -69,7 +74,7 @@ fn init_terminal() -> Result<Terminal<CrosstermBackend<io::Stdout>>> {
 /// Restore terminal
 fn restore_terminal() -> Result<()> {
     disable_raw_mode()?;
-    execute!(io::stdout(), LeaveAlternateScreen)?;
+    execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
     Ok(())
 }
 
