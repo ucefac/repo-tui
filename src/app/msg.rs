@@ -191,6 +191,12 @@ pub enum AppMsg {
     /// Navigate down in theme selector
     ThemeNavDown,
 
+    /// Navigate up in move target selector
+    MoveTargetNavUp,
+
+    /// Navigate down in move target selector
+    MoveTargetNavDown,
+
     /// Toggle favorite for current repository
     ToggleFavorite,
 

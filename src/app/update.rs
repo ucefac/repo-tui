@@ -678,6 +678,34 @@ pub fn update(msg: AppMsg, app: &mut App, runtime: &Runtime) {
             }
         }
 
+        AppMsg::MoveTargetNavUp => {
+            if let AppState::SelectingMoveTarget { list_state, .. } = &mut app.state {
+                let max_dirs = app.move_target_dirs.len();
+                if max_dirs == 0 {
+                    return;
+                }
+                let current = list_state.selected().unwrap_or(0);
+                let prev = if current == 0 {
+                    max_dirs - 1
+                } else {
+                    current - 1
+                };
+                list_state.select(Some(prev));
+            }
+        }
+
+        AppMsg::MoveTargetNavDown => {
+            if let AppState::SelectingMoveTarget { list_state, .. } = &mut app.state {
+                let max_dirs = app.move_target_dirs.len();
+                if max_dirs == 0 {
+                    return;
+                }
+                let current = list_state.selected().unwrap_or(0);
+                let next = (current + 1) % max_dirs;
+                list_state.select(Some(next));
+            }
+        }
+
         // === Favorites ===
         AppMsg::ToggleFavorite => {
             app.toggle_favorite();

@@ -2,25 +2,71 @@
 
 use crate::app::model::App;
 use crate::app::msg::AppMsg;
+use crate::app::state::AppState;
 use crossterm::event::{MouseButton, MouseEvent, MouseEventKind};
 
 /// Handle mouse event
 pub fn handle_mouse_event(event: MouseEvent, app: &App) -> Option<AppMsg> {
-    if let MouseEventKind::Down(MouseButton::Left) = event.kind {
-        // Check if clicked on path bar
-        if let Some(path_area) = app.path_bar_area {
-            if event.column >= path_area.x
-                && event.column < path_area.x + path_area.width
-                && event.row >= path_area.y
-                && event.row < path_area.y + path_area.height
-            {
-                if let Some(ref path) = app.main_dir {
-                    return Some(AppMsg::CopyPathToClipboard(path.clone()));
+    match event.kind {
+        // Existing click handling
+        MouseEventKind::Down(MouseButton::Left) => {
+            // Check if clicked on path bar
+            if let Some(path_area) = app.path_bar_area {
+                if event.column >= path_area.x
+                    && event.column < path_area.x + path_area.width
+                    && event.row >= path_area.y
+                    && event.row < path_area.y + path_area.height
+                {
+                    if let Some(ref path) = app.main_dir {
+                        return Some(AppMsg::CopyPathToClipboard(path.clone()));
+                    }
                 }
             }
         }
+
+        // Scroll wheel up - navigate up/previous
+        MouseEventKind::ScrollUp => {
+            return Some(get_scroll_up_message(app));
+        }
+
+        // Scroll wheel down - navigate down/next
+        MouseEventKind::ScrollDown => {
+            return Some(get_scroll_down_message(app));
+        }
+
+        _ => {}
     }
     None
+}
+
+/// Get the message to send for scroll up event based on current state
+fn get_scroll_up_message(app: &App) -> AppMsg {
+    match &app.state {
+        AppState::Running => AppMsg::PreviousRepo,
+        AppState::ChoosingDir { .. } => AppMsg::DirectoryNavUp,
+        AppState::SelectingTheme { .. } => AppMsg::ThemeNavUp,
+        AppState::ManagingDirs { .. } => AppMsg::MainDirNavUp,
+        AppState::ShowingHelp { .. } => AppMsg::ScrollUp,
+        AppState::SelectingMoveTarget { .. } => AppMsg::MoveTargetNavUp,
+        AppState::Cloning { .. } => AppMsg::ClonePreviousMainDir,
+        AppState::Loading { .. } | AppState::Error { .. } | AppState::Quit => AppMsg::PreviousRepo,
+        AppState::ConfirmingDeleteRepo { .. } => AppMsg::PreviousRepo,
+    }
+}
+
+/// Get the message to send for scroll down event based on current state
+fn get_scroll_down_message(app: &App) -> AppMsg {
+    match &app.state {
+        AppState::Running => AppMsg::NextRepo,
+        AppState::ChoosingDir { .. } => AppMsg::DirectoryNavDown,
+        AppState::SelectingTheme { .. } => AppMsg::ThemeNavDown,
+        AppState::ManagingDirs { .. } => AppMsg::MainDirNavDown,
+        AppState::ShowingHelp { .. } => AppMsg::ScrollDown,
+        AppState::SelectingMoveTarget { .. } => AppMsg::MoveTargetNavDown,
+        AppState::Cloning { .. } => AppMsg::CloneNextMainDir,
+        AppState::Loading { .. } | AppState::Error { .. } | AppState::Quit => AppMsg::NextRepo,
+        AppState::ConfirmingDeleteRepo { .. } => AppMsg::NextRepo,
+    }
 }
 
 #[cfg(test)]

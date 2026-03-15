@@ -166,7 +166,7 @@ impl<'a> DirectoryChooser<'a> {
 impl<'a> Widget for DirectoryChooser<'a> {
     fn render(mut self, area: Rect, buf: &mut Buffer) {
         // Update scroll offset first
-        let _ = self.update_scroll(); // Ignore result, just call it
+        self.update_scroll(); // Ignore result, just call it
 
         let show_selection_indicator = matches!(
             self.state.mode,
