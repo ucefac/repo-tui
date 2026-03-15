@@ -18,16 +18,38 @@ A terminal user interface (TUI) tool for browsing and managing GitHub repositori
 
 ## Installation
 
+### Quick Install (Recommended)
+
+One-line installation for macOS (ARM64 only):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ucefac/repo-tui/main/install.sh | bash
+```
+
+### Manual Install
+
 ```bash
 # Clone the repository
-git clone https://github.com/repotui/repotui.git
-cd repotui
+git clone https://github.com/ucefac/repo-tui.git
+cd repo-tui
 
 # Build in release mode
 cargo build --release
 
 # Run
 ./target/release/repotui
+```
+
+### Uninstall
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ucefac/repo-tui/main/uninstall.sh | bash
+```
+
+Or manually remove:
+
+```bash
+rm -rf ~/.config/repotui
 ```
 
 ## Quick Start

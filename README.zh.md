@@ -18,16 +18,38 @@
 
 ## 安装
 
+### 一键安装（推荐）
+
+macOS (仅 ARM64) 一键安装：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ucefac/repo-tui/main/install.sh | bash
+```
+
+### 手动安装
+
 ```bash
 # 克隆仓库
-git clone https://github.com/repotui/repotui.git
-cd repotui
+git clone https://github.com/ucefac/repo-tui.git
+cd repo-tui
 
 # Release 模式构建
 cargo build --release
 
 # 运行
 ./target/release/repotui
+```
+
+### 卸载
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ucefac/repo-tui/main/uninstall.sh | bash
+```
+
+或手动删除：
+
+```bash
+rm -rf ~/.config/repotui
 ```
 
 ## 快速开始
