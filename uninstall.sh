@@ -18,6 +18,6 @@ echo "📝 Note: ~/.zshrc entries for repo-tui were not removed."
 echo "   You can manually remove the following lines from ~/.zshrc:"
 echo ""
 echo "   # repo-tui Shell Integration"
-echo '   [[ -f "$HOME/.config/repo-tui/zsh/repo-tui.zsh" ]] && source "$HOME/.config/repo-tui/zsh/repo-tui.zsh"'
+echo '   [[ -f "$HOME/.config/repo-tui/zsh/bin/repo-tui.zsh" ]] && source "$HOME/.config/repo-tui/zsh/bin/repo-tui.zsh"'
 echo ""
 echo "   Then run 'source ~/.zshrc' or restart your terminal."

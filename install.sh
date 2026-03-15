@@ -4,9 +4,9 @@ set -e
 # Configuration
 REPO="ucefac/repo-tui"
 INSTALL_DIR="$HOME/.config/repo-tui"
-BIN_DIR="$INSTALL_DIR/bin"
 ZSH_DIR="$INSTALL_DIR/zsh"
-ZSH_CONFIG="$ZSH_DIR/repo-tui.zsh"
+BIN_DIR="$ZSH_DIR/bin"
+ZSH_CONFIG="$BIN_DIR/repo-tui.zsh"
 
 echo "🚀 Installing repo-tui..."
 
@@ -62,7 +62,7 @@ echo "✓ Binary installed to $BIN_DIR"
 # Create zsh config
 cat > "$ZSH_CONFIG" << EOF
 # repo-tui Zsh Integration - DO NOT EDIT MANUALLY
-export REPO_TUI_BIN_DIR="$HOME/.config/repo-tui/bin"
+export REPO_TUI_BIN_DIR="$HOME/.config/repo-tui/zsh/bin"
 export PATH="$REPO_TUI_BIN_DIR:$PATH"
 EOF
 
@@ -70,7 +70,7 @@ echo "✓ Zsh configuration created"
 
 # Add to .zshrc if not present
 ZSHRC="$HOME/.zshrc"
-SOURCE_LINE='[[ -f "$HOME/.config/repo-tui/zsh/repo-tui.zsh" ]] && source "$HOME/.config/repo-tui/zsh/repo-tui.zsh"'
+SOURCE_LINE='[[ -f "$HOME/.config/repo-tui/zsh/bin/repo-tui.zsh" ]] && source "$HOME/.config/repo-tui/zsh/bin/repo-tui.zsh"'
 
 if [[ ! -f "$ZSHRC" ]]; then
     touch "$ZSHRC"
