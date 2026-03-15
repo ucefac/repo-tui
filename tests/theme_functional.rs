@@ -1,13 +1,13 @@
 //! Theme system functional verification tests
 
-use repotui::app::model::App;
-use repotui::app::msg::AppMsg;
-use repotui::app::state::AppState;
-use repotui::app::update;
-use repotui::config::Config;
-use repotui::runtime::executor::Runtime;
-use repotui::ui::theme::Theme;
-use repotui::ui::themes::{get_theme, THEME_NAMES};
+use repo_tui::app::model::App;
+use repo_tui::app::msg::AppMsg;
+use repo_tui::app::state::AppState;
+use repo_tui::app::update;
+use repo_tui::config::Config;
+use repo_tui::runtime::executor::Runtime;
+use repo_tui::ui::theme::Theme;
+use repo_tui::ui::themes::{get_theme, THEME_NAMES};
 use tokio::sync::mpsc;
 
 /// Test 1: Theme selector opens with 't' key
@@ -189,7 +189,7 @@ async fn test_theme_persistence() {
     let (tx, _rx) = mpsc::channel(100);
     let mut app = App::new(tx.clone());
     app.config = Some(config.clone());
-    app.theme = repotui::ui::Theme::from_config(&config.ui.theme);
+    app.theme = repo_tui::ui::Theme::from_config(&config.ui.theme);
 
     // Verify theme persisted
     assert_eq!(

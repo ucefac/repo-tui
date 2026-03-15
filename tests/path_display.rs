@@ -1,11 +1,11 @@
 //! Integration tests for path display and directory switching
 
 use crossterm::event::{KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
-use repotui::app::model::App;
-use repotui::app::msg::AppMsg;
-use repotui::app::state::AppState;
-use repotui::handler::keyboard::handle_key_event;
-use repotui::runtime::executor::Runtime;
+use repo_tui::app::model::App;
+use repo_tui::app::msg::AppMsg;
+use repo_tui::app::state::AppState;
+use repo_tui::handler::keyboard::handle_key_event;
+use repo_tui::runtime::executor::Runtime;
 use std::path::PathBuf;
 use tempfile::TempDir;
 
@@ -35,7 +35,7 @@ async fn test_m_key_opens_main_directory_manager() {
 
     // Process the message
     if let Ok(msg) = rx.try_recv() {
-        repotui::app::update::update(msg, &mut app, &runtime);
+        repo_tui::app::update::update(msg, &mut app, &runtime);
     }
 
     // Should open main directory manager
@@ -57,7 +57,7 @@ async fn test_m_key_opens_manager_from_running() {
 
     // Process the message
     if let Ok(msg) = rx.try_recv() {
-        repotui::app::update::update(msg, &mut app, &runtime);
+        repo_tui::app::update::update(msg, &mut app, &runtime);
     }
 
     // Verify main directory manager is open
@@ -73,13 +73,13 @@ fn test_help_panel_includes_m_key() {
     use ratatui::backend::TestBackend;
     use ratatui::layout::Rect;
     use ratatui::Terminal;
-    use repotui::ui::widgets::HelpPanel;
+    use repo_tui::ui::widgets::HelpPanel;
 
     let backend = TestBackend::new(80, 30);
     let mut terminal = Terminal::new(backend).unwrap();
 
     let panel = HelpPanel::new();
-    let theme = repotui::ui::Theme::dark();
+    let theme = repo_tui::ui::Theme::dark();
 
     // Should render without panic
     terminal

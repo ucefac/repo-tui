@@ -2,9 +2,9 @@
 
 use ratatui::backend::TestBackend;
 use ratatui::Terminal;
-use repotui::repo::{RepoSource, Repository};
-use repotui::ui::theme::Theme;
-use repotui::ui::widgets::RepoList;
+use repo_tui::repo::{RepoSource, Repository};
+use repo_tui::ui::theme::Theme;
+use repo_tui::ui::widgets::RepoList;
 use std::path::PathBuf;
 
 #[test]

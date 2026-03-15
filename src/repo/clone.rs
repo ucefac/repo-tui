@@ -30,7 +30,7 @@ pub struct ParsedGitUrl {
 ///
 /// # Examples
 /// ```
-/// use repotui::repo::clone::parse_git_url;
+/// use repo_tui::repo::clone::parse_git_url;
 ///
 /// let parsed = parse_git_url("https://github.com/farion1231/cc-switch").unwrap();
 /// assert_eq!(parsed.domain, "github.com");
@@ -194,7 +194,7 @@ fn strip_tld(domain: &str) -> String {
 ///
 /// # Examples
 /// ```
-/// use repotui::repo::clone::{parse_git_url, generate_folder_name};
+/// use repo_tui::repo::clone::{parse_git_url, generate_folder_name};
 ///
 /// let parsed = parse_git_url("https://github.com/farion1231/cc-switch").unwrap();
 /// let folder_name = generate_folder_name(&parsed);

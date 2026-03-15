@@ -7,10 +7,10 @@
 //! - Progress reporting
 //! - Error handling
 
-use repotui::app::msg::AppMsg;
-use repotui::app::state::{AppState, CloneStage};
-use repotui::config::types::{EditorConfig, FavoritesConfig, RecentConfig, SecurityConfig};
-use repotui::repo::clone::{generate_folder_name, parse_git_url, validate_git_url};
+use repo_tui::app::msg::AppMsg;
+use repo_tui::app::state::{AppState, CloneStage};
+use repo_tui::config::types::{EditorConfig, FavoritesConfig, RecentConfig, SecurityConfig};
+use repo_tui::repo::clone::{generate_folder_name, parse_git_url, validate_git_url};
 use std::path::PathBuf;
 
 mod helpers;
@@ -102,15 +102,15 @@ fn test_clone_url_validation() {
 #[test]
 fn test_clone_state_transition_start() {
     let (tx, _rx) = tokio::sync::mpsc::channel(100);
-    let mut app = repotui::app::model::App::new(tx);
+    let mut app = repo_tui::app::model::App::new(tx);
 
     // Initially in loading or running state
     // Simulate starting clone
     app.state = AppState::Running;
 
     // Send StartClone message
-    let runtime = repotui::runtime::executor::Runtime::new(app.msg_tx.clone());
-    repotui::app::update::update(AppMsg::StartClone, &mut app, &runtime);
+    let runtime = repo_tui::runtime::executor::Runtime::new(app.msg_tx.clone());
+    repo_tui::app::update::update(AppMsg::StartClone, &mut app, &runtime);
 
     // Verify state changed to Cloning
     assert!(app.state.is_cloning());
@@ -124,16 +124,16 @@ fn test_clone_state_transition_start() {
 #[test]
 fn test_clone_url_input() {
     let (tx, _rx) = tokio::sync::mpsc::channel(100);
-    let mut app = repotui::app::model::App::new(tx);
-    let runtime = repotui::runtime::executor::Runtime::new(app.msg_tx.clone());
+    let mut app = repo_tui::app::model::App::new(tx);
+    let runtime = repo_tui::runtime::executor::Runtime::new(app.msg_tx.clone());
 
     // Start clone
-    repotui::app::update::update(AppMsg::StartClone, &mut app, &runtime);
+    repo_tui::app::update::update(AppMsg::StartClone, &mut app, &runtime);
     assert!(app.state.is_cloning());
 
     // Type URL
     for c in "https://github.com/user/repo".chars() {
-        repotui::app::update::update(AppMsg::CloneUrlInput(c), &mut app, &runtime);
+        repo_tui::app::update::update(AppMsg::CloneUrlInput(c), &mut app, &runtime);
     }
 
     if let AppState::Cloning { clone_state } = &app.state {
@@ -145,15 +145,15 @@ fn test_clone_url_input() {
 #[test]
 fn test_clone_url_paste() {
     let (tx, _rx) = tokio::sync::mpsc::channel(100);
-    let mut app = repotui::app::model::App::new(tx);
-    let runtime = repotui::runtime::executor::Runtime::new(app.msg_tx.clone());
+    let mut app = repo_tui::app::model::App::new(tx);
+    let runtime = repo_tui::runtime::executor::Runtime::new(app.msg_tx.clone());
 
     // Start clone
-    repotui::app::update::update(AppMsg::StartClone, &mut app, &runtime);
+    repo_tui::app::update::update(AppMsg::StartClone, &mut app, &runtime);
 
     // Paste URL
     let url = "https://github.com/anthropics/claude-code".to_string();
-    repotui::app::update::update(AppMsg::CloneUrlPaste(url), &mut app, &runtime);
+    repo_tui::app::update::update(AppMsg::CloneUrlPaste(url), &mut app, &runtime);
 
     if let AppState::Cloning { clone_state } = &app.state {
         assert_eq!(
@@ -168,19 +168,19 @@ fn test_clone_url_paste() {
 #[test]
 fn test_clone_url_backspace() {
     let (tx, _rx) = tokio::sync::mpsc::channel(100);
-    let mut app = repotui::app::model::App::new(tx);
-    let runtime = repotui::runtime::executor::Runtime::new(app.msg_tx.clone());
+    let mut app = repo_tui::app::model::App::new(tx);
+    let runtime = repo_tui::runtime::executor::Runtime::new(app.msg_tx.clone());
 
     // Start clone
-    repotui::app::update::update(AppMsg::StartClone, &mut app, &runtime);
+    repo_tui::app::update::update(AppMsg::StartClone, &mut app, &runtime);
 
     // Type some text
     for c in "abc".chars() {
-        repotui::app::update::update(AppMsg::CloneUrlInput(c), &mut app, &runtime);
+        repo_tui::app::update::update(AppMsg::CloneUrlInput(c), &mut app, &runtime);
     }
 
     // Backspace
-    repotui::app::update::update(AppMsg::CloneUrlBackspace, &mut app, &runtime);
+    repo_tui::app::update::update(AppMsg::CloneUrlBackspace, &mut app, &runtime);
 
     if let AppState::Cloning { clone_state } = &app.state {
         assert_eq!(clone_state.url_input, "ab");
@@ -192,15 +192,15 @@ fn test_clone_url_backspace() {
 #[test]
 fn test_clone_cancel() {
     let (tx, _rx) = tokio::sync::mpsc::channel(100);
-    let mut app = repotui::app::model::App::new(tx);
-    let runtime = repotui::runtime::executor::Runtime::new(app.msg_tx.clone());
+    let mut app = repo_tui::app::model::App::new(tx);
+    let runtime = repo_tui::runtime::executor::Runtime::new(app.msg_tx.clone());
 
     // Start clone
-    repotui::app::update::update(AppMsg::StartClone, &mut app, &runtime);
+    repo_tui::app::update::update(AppMsg::StartClone, &mut app, &runtime);
     assert!(app.state.is_cloning());
 
     // Cancel
-    repotui::app::update::update(AppMsg::CancelClone, &mut app, &runtime);
+    repo_tui::app::update::update(AppMsg::CancelClone, &mut app, &runtime);
 
     // Should return to Running state
     assert!(matches!(app.state, AppState::Running));
@@ -209,7 +209,7 @@ fn test_clone_cancel() {
 /// Test clone state reset after cancel
 #[test]
 fn test_clone_state_reset() {
-    use repotui::app::state::CloneState;
+    use repo_tui::app::state::CloneState;
 
     let mut state = CloneState::new();
 
@@ -231,7 +231,7 @@ fn test_clone_state_reset() {
 /// Test clone state cursor movement
 #[test]
 fn test_clone_state_cursor_movement() {
-    use repotui::app::state::CloneState;
+    use repo_tui::app::state::CloneState;
 
     let mut state = CloneState::new();
 
@@ -263,7 +263,7 @@ fn test_clone_state_cursor_movement() {
 /// Test clone state progress management
 #[test]
 fn test_clone_state_progress_management() {
-    use repotui::app::state::CloneState;
+    use repo_tui::app::state::CloneState;
 
     let mut state = CloneState::new();
 
@@ -303,19 +303,19 @@ fn test_clone_sanitize_various_inputs() {
 #[test]
 fn test_clone_with_multiple_main_dirs() {
     let (tx, _rx) = tokio::sync::mpsc::channel(100);
-    let mut app = repotui::app::model::App::new(tx);
-    let runtime = repotui::runtime::executor::Runtime::new(app.msg_tx.clone());
+    let mut app = repo_tui::app::model::App::new(tx);
+    let runtime = repo_tui::runtime::executor::Runtime::new(app.msg_tx.clone());
 
     // Configure multiple main directories
-    let config = repotui::config::Config {
+    let config = repo_tui::config::Config {
         main_directories: vec![
-            repotui::config::MainDirectoryConfig {
+            repo_tui::config::MainDirectoryConfig {
                 path: PathBuf::from("/home/user/repos"),
                 display_name: Some("Personal".to_string()),
                 max_depth: None,
                 enabled: true,
             },
-            repotui::config::MainDirectoryConfig {
+            repo_tui::config::MainDirectoryConfig {
                 path: PathBuf::from("/home/user/work"),
                 display_name: Some("Work".to_string()),
                 max_depth: None,
@@ -326,18 +326,18 @@ fn test_clone_with_multiple_main_dirs() {
         main_directory: None,
         editors: EditorConfig::default(),
         default_command: None,
-        ui: repotui::config::UiConfig::default(),
+        ui: repo_tui::config::UiConfig::default(),
         security: SecurityConfig::default(),
         favorites: FavoritesConfig::default(),
         recent: RecentConfig::default(),
-        update: repotui::update::UpdateConfig::default(),
+        update: repo_tui::update::UpdateConfig::default(),
         version: "2.0".to_string(),
     };
 
     app.config = Some(config);
 
     // Start clone
-    repotui::app::update::update(AppMsg::StartClone, &mut app, &runtime);
+    repo_tui::app::update::update(AppMsg::StartClone, &mut app, &runtime);
 
     if let AppState::Cloning { clone_state } = &app.state {
         // With multiple main dirs, should have main_dir_list_state initialized
@@ -345,7 +345,7 @@ fn test_clone_with_multiple_main_dirs() {
     }
 
     // Navigate to second directory
-    repotui::app::update::update(AppMsg::CloneNextMainDir, &mut app, &runtime);
+    repo_tui::app::update::update(AppMsg::CloneNextMainDir, &mut app, &runtime);
 
     if let AppState::Cloning { clone_state } = &app.state {
         // Still 0 because we need to know the max
@@ -358,18 +358,18 @@ fn test_clone_with_multiple_main_dirs() {
 #[test]
 fn test_clone_invalid_url_error() {
     let (tx, _rx) = tokio::sync::mpsc::channel(100);
-    let mut app = repotui::app::model::App::new(tx);
-    let runtime = repotui::runtime::executor::Runtime::new(app.msg_tx.clone());
+    let mut app = repo_tui::app::model::App::new(tx);
+    let runtime = repo_tui::runtime::executor::Runtime::new(app.msg_tx.clone());
 
     // Start clone
-    repotui::app::update::update(AppMsg::StartClone, &mut app, &runtime);
+    repo_tui::app::update::update(AppMsg::StartClone, &mut app, &runtime);
 
     // Enter invalid URL and confirm
     for c in "not-a-valid-url".chars() {
-        repotui::app::update::update(AppMsg::CloneUrlInput(c), &mut app, &runtime);
+        repo_tui::app::update::update(AppMsg::CloneUrlInput(c), &mut app, &runtime);
     }
 
-    repotui::app::update::update(AppMsg::CloneUrlConfirm, &mut app, &runtime);
+    repo_tui::app::update::update(AppMsg::CloneUrlConfirm, &mut app, &runtime);
 
     // Should have validation error (but stay in InputUrl stage)
     if let AppState::Cloning { clone_state } = &app.state {
@@ -382,13 +382,13 @@ fn test_clone_invalid_url_error() {
 #[test]
 fn test_clone_url_clear() {
     let (tx, _rx) = tokio::sync::mpsc::channel(100);
-    let mut app = repotui::app::model::App::new(tx);
-    let runtime = repotui::runtime::executor::Runtime::new(app.msg_tx.clone());
+    let mut app = repo_tui::app::model::App::new(tx);
+    let runtime = repo_tui::runtime::executor::Runtime::new(app.msg_tx.clone());
 
     // Start clone and enter URL
-    repotui::app::update::update(AppMsg::StartClone, &mut app, &runtime);
+    repo_tui::app::update::update(AppMsg::StartClone, &mut app, &runtime);
     for c in "https://github.com/test".chars() {
-        repotui::app::update::update(AppMsg::CloneUrlInput(c), &mut app, &runtime);
+        repo_tui::app::update::update(AppMsg::CloneUrlInput(c), &mut app, &runtime);
     }
 
     // Move cursor to middle
@@ -397,7 +397,7 @@ fn test_clone_url_clear() {
     }
 
     // Clear from cursor
-    repotui::app::update::update(AppMsg::CloneUrlClear, &mut app, &runtime);
+    repo_tui::app::update::update(AppMsg::CloneUrlClear, &mut app, &runtime);
 
     if let AppState::Cloning { clone_state } = &app.state {
         assert_eq!(clone_state.url_input, "https://gi");
@@ -408,14 +408,14 @@ fn test_clone_url_clear() {
 /// Test clone retry after error
 #[test]
 fn test_clone_retry() {
-    use repotui::error::CloneError;
+    use repo_tui::error::CloneError;
 
     let (tx, _rx) = tokio::sync::mpsc::channel(100);
-    let mut app = repotui::app::model::App::new(tx);
-    let runtime = repotui::runtime::executor::Runtime::new(app.msg_tx.clone());
+    let mut app = repo_tui::app::model::App::new(tx);
+    let runtime = repo_tui::runtime::executor::Runtime::new(app.msg_tx.clone());
 
     // Start clone
-    repotui::app::update::update(AppMsg::StartClone, &mut app, &runtime);
+    repo_tui::app::update::update(AppMsg::StartClone, &mut app, &runtime);
 
     // Manually set error state to simulate clone failure
     if let AppState::Cloning { clone_state } = &mut app.state {
@@ -433,7 +433,7 @@ fn test_clone_retry() {
     assert!(was_error, "Should be in error state");
 
     // Retry
-    repotui::app::update::update(AppMsg::CloneRetry, &mut app, &runtime);
+    repo_tui::app::update::update(AppMsg::CloneRetry, &mut app, &runtime);
 
     // Should be back to input stage
     if let AppState::Cloning { clone_state } = &app.state {
@@ -444,7 +444,7 @@ fn test_clone_retry() {
 /// Test clone state cancellation flag
 #[test]
 fn test_clone_cancel_flag() {
-    use repotui::app::state::CloneState;
+    use repo_tui::app::state::CloneState;
 
     let state = CloneState::new();
 
@@ -459,7 +459,7 @@ fn test_clone_cancel_flag() {
 /// Test main directory navigation
 #[test]
 fn test_clone_main_dir_navigation() {
-    use repotui::app::state::CloneState;
+    use repo_tui::app::state::CloneState;
 
     let mut state = CloneState::new();
 

@@ -1,6 +1,6 @@
 //! Directory selection integration tests
 
-use repotui::app::state::{AppState, DirectoryChooserMode, ReturnTarget};
+use repo_tui::app::state::{AppState, DirectoryChooserMode, ReturnTarget};
 
 #[test]
 fn test_directory_selection_state() {

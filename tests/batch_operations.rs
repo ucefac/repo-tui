@@ -3,9 +3,9 @@
 use std::path::PathBuf;
 use tokio::sync::mpsc;
 
-use repotui::app::model::App;
-use repotui::app::msg::AppMsg;
-use repotui::repo::{RepoSource, Repository};
+use repo_tui::app::model::App;
+use repo_tui::app::msg::AppMsg;
+use repo_tui::repo::{RepoSource, Repository};
 
 fn create_test_repo(name: &str, path: &str) -> Repository {
     Repository {
@@ -193,7 +193,7 @@ fn test_selection_mode_persistence() {
 
 #[test]
 fn test_batch_result_empty() {
-    use repotui::action::batch::BatchResult;
+    use repo_tui::action::batch::BatchResult;
 
     let result = BatchResult::new(0);
     assert_eq!(result.total, 0);
@@ -204,7 +204,7 @@ fn test_batch_result_empty() {
 
 #[test]
 fn test_batch_result_success_rate() {
-    use repotui::action::batch::BatchResult;
+    use repo_tui::action::batch::BatchResult;
 
     let mut result = BatchResult::new(10);
     result.success = 8;
@@ -215,7 +215,7 @@ fn test_batch_result_success_rate() {
 
 #[test]
 fn test_batch_result_all_succeeded() {
-    use repotui::action::batch::BatchResult;
+    use repo_tui::action::batch::BatchResult;
 
     let mut result = BatchResult::new(5);
     result.success = 5;
@@ -228,7 +228,7 @@ fn test_batch_result_all_succeeded() {
 
 #[tokio::test]
 async fn test_batch_execute_empty_list() {
-    use repotui::action::{execute_batch, Action};
+    use repo_tui::action::{execute_batch, Action};
 
     let repos: Vec<Repository> = vec![];
     let result = execute_batch(&Action::OpenFileManager, repos, 5).await;
@@ -240,7 +240,7 @@ async fn test_batch_execute_empty_list() {
 
 #[tokio::test]
 async fn test_batch_execute_concurrency() {
-    use repotui::action::{execute_batch, Action};
+    use repo_tui::action::{execute_batch, Action};
 
     // Create test repos
     let repos: Vec<Repository> = (0..5)

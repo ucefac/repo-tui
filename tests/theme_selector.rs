@@ -1,13 +1,13 @@
 //! Theme selector integration tests
 
-use repotui::app::model::App;
-use repotui::app::msg::AppMsg;
-use repotui::app::state::AppState;
-use repotui::app::update;
-use repotui::config;
-use repotui::runtime::executor::Runtime;
-use repotui::ui::theme::Theme;
-use repotui::ui::themes::THEME_NAMES;
+use repo_tui::app::model::App;
+use repo_tui::app::msg::AppMsg;
+use repo_tui::app::state::AppState;
+use repo_tui::app::update;
+use repo_tui::config;
+use repo_tui::runtime::executor::Runtime;
+use repo_tui::ui::theme::Theme;
+use repo_tui::ui::themes::THEME_NAMES;
 use tokio::sync::mpsc;
 
 #[tokio::test(flavor = "multi_thread")]

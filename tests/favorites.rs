@@ -1,7 +1,7 @@
 //! Integration tests for favorites feature
 
-use repotui::config::{self, Config};
-use repotui::favorites::FavoritesStore;
+use repo_tui::config::{self, Config};
+use repo_tui::favorites::FavoritesStore;
 use std::path::PathBuf;
 
 #[test]

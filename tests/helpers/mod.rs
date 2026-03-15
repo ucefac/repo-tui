@@ -12,11 +12,11 @@ pub mod mock_fs;
 pub mod mock_terminal;
 pub mod ui_assertions;
 
-use repotui::app::model::App;
-use repotui::app::msg::AppMsg;
-use repotui::config::types::{EditorConfig, FavoritesConfig, RecentConfig, SecurityConfig};
-use repotui::config::Config;
-use repotui::repo::Repository;
+use repo_tui::app::model::App;
+use repo_tui::app::msg::AppMsg;
+use repo_tui::config::types::{EditorConfig, FavoritesConfig, RecentConfig, SecurityConfig};
+use repo_tui::config::Config;
+use repo_tui::repo::Repository;
 use std::path::PathBuf;
 use tokio::sync::mpsc;
 
@@ -50,7 +50,7 @@ pub fn create_test_app_with_sample_repos() -> (App, mpsc::Receiver<AppMsg>) {
             is_dirty: false,
             branch: Some("main".to_string()),
             is_git_repo: true,
-            source: repotui::repo::source::RepoSource::Standalone,
+            source: repo_tui::repo::source::RepoSource::Standalone,
         },
         Repository {
             name: "vue".to_string(),
@@ -59,7 +59,7 @@ pub fn create_test_app_with_sample_repos() -> (App, mpsc::Receiver<AppMsg>) {
             is_dirty: true,
             branch: Some("dev".to_string()),
             is_git_repo: true,
-            source: repotui::repo::source::RepoSource::Standalone,
+            source: repo_tui::repo::source::RepoSource::Standalone,
         },
         Repository {
             name: "angular".to_string(),
@@ -68,7 +68,7 @@ pub fn create_test_app_with_sample_repos() -> (App, mpsc::Receiver<AppMsg>) {
             is_dirty: false,
             branch: Some("main".to_string()),
             is_git_repo: true,
-            source: repotui::repo::source::RepoSource::Standalone,
+            source: repo_tui::repo::source::RepoSource::Standalone,
         },
     ];
 
@@ -85,7 +85,7 @@ pub fn create_test_app_with_many_repos(count: usize) -> (App, mpsc::Receiver<App
             is_dirty: i % 3 == 0,
             branch: Some("main".to_string()),
             is_git_repo: true,
-            source: repotui::repo::source::RepoSource::Standalone,
+            source: repo_tui::repo::source::RepoSource::Standalone,
         })
         .collect();
 
@@ -95,7 +95,7 @@ pub fn create_test_app_with_many_repos(count: usize) -> (App, mpsc::Receiver<App
 /// Create a test configuration
 pub fn create_test_config(main_dir: PathBuf) -> Config {
     Config {
-        main_directories: vec![repotui::config::MainDirectoryConfig {
+        main_directories: vec![repo_tui::config::MainDirectoryConfig {
             path: main_dir,
             display_name: None,
             max_depth: None,
@@ -110,10 +110,10 @@ pub fn create_test_config(main_dir: PathBuf) -> Config {
         },
         default_command: Some("claude".to_string()),
         security: SecurityConfig::default(),
-        ui: repotui::config::UiConfig::default(),
+        ui: repo_tui::config::UiConfig::default(),
         favorites: FavoritesConfig::default(),
         recent: RecentConfig::default(),
-        update: repotui::update::UpdateConfig::default(),
+        update: repo_tui::update::UpdateConfig::default(),
         version: "2.0".to_string(),
     }
 }

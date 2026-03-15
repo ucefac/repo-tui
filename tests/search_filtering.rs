@@ -1,7 +1,7 @@
 //! Search filtering integration tests
 
-use repotui::app::model::App;
-use repotui::repo::{RepoSource, Repository};
+use repo_tui::app::model::App;
+use repo_tui::repo::{RepoSource, Repository};
 use std::path::PathBuf;
 use tokio::sync::mpsc;
 
